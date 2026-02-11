@@ -18,6 +18,11 @@ import OrderSuccess from "./pages/OrderSuccess";
 import Orders from "./pages/Orders";
 import ProductDetails from "./pages/ProductDetails";
 
+// POLICIES
+import Terms from "./pages/Terms";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import ReturnRefund from "./pages/ReturnRefund";
+
 // ADMIN
 import AdminLogin from "./pages/AdminLogin";
 import Admin from "./pages/Admin";
@@ -46,6 +51,11 @@ export default function App() {
 
         {/* ORDERS */}
         <Route path="/orders" element={<Orders />} />
+
+        {/* POLICIES */}
+        <Route path="/terms" element={<Terms />} />
+        <Route path="/PrivacyPolicy" element={<PrivacyPolicy />} />
+        <Route path="/ReturnRefund" element={<ReturnRefund />} />
 
         {/* ADMIN */}
         <Route path="/admin-login" element={<AdminLogin />} />

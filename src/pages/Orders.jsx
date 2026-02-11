@@ -13,16 +13,29 @@ export default function Orders() {
   const cancelOrder = (id) => {
     if (!window.confirm("Are you sure you want to cancel this order?")) return;
 
-    // Remove the order from the array
     const updatedOrders = orders.filter((o) => o.id !== id);
-
     setOrders(updatedOrders);
-
-    // Update localStorage (reverse back before saving to keep original order)
     localStorage.setItem(
       "dezaOrders",
       JSON.stringify([...updatedOrders].reverse()),
     );
+  };
+
+  const trackOrder = (status) => {
+    alert(`Your order is currently: ${status || "Pending"}`);
+  };
+
+  const getProgressStep = (status) => {
+    switch (status) {
+      case "In Progress":
+        return 2;
+      case "Shipped":
+        return 3;
+      case "Delivered":
+        return 4;
+      default:
+        return 1; // Pending
+    }
   };
 
   return (
@@ -39,9 +52,38 @@ export default function Orders() {
                 <b>Date:</b> {o.date}
               </p>
               <p>
+                <b>Total:</b> ₹{o.total}
+              </p>
+              <p>
                 <b>Payment:</b> {o.paymentMethod}
               </p>
-              <h3>Total: ₹{o.total}</h3>
+              <p>
+                <b>Status:</b> {o.status || "Pending"}
+              </p>
+
+              {/* Order Progress Bar */}
+              <div className="progress-bar-container">
+                {["Pending", "In Progress", "Shipped", "Delivered"].map(
+                  (step, index) => (
+                    <div
+                      key={step}
+                      className={`progress-step ${
+                        index < getProgressStep(o.status) ? "active" : ""
+                      }`}
+                    >
+                      {step}
+                    </div>
+                  ),
+                )}
+              </div>
+
+              {/* Track Order Button */}
+              <button
+                className="track-btn"
+                onClick={() => trackOrder(o.status)}
+              >
+                Track Order
+              </button>
 
               <div className="order-items">
                 {o.items.map((item) => (

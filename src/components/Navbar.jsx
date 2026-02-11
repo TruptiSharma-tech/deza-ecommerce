@@ -13,12 +13,13 @@ export default function Navbar() {
   const currentUser = JSON.parse(localStorage.getItem("currentUser"));
 
   useEffect(() => {
-    const closeDropdowns = () => {
-      setMenuOpen(false);
-    };
+    const closeDropdowns = () => setMenuOpen(false);
     window.addEventListener("scroll", closeDropdowns);
     return () => window.removeEventListener("scroll", closeDropdowns);
   }, []);
+
+  const isAdmin = currentUser?.isAdmin === true;
+  const isCustomer = currentUser && !isAdmin;
 
   return (
     <>
@@ -33,10 +34,10 @@ export default function Navbar() {
           <div className="navbar-links">
             <Link to="/">Home</Link>
             <Link to="/Shop">Shop</Link>
-            <Link to="/about">About</Link>
+            <Link to="/About">About</Link>
 
             {/* ADMIN PANEL BUTTON ONLY FOR ADMINS */}
-            {currentUser?.isAdmin === true && (
+            {isAdmin && (
               <button
                 className="admin-btn"
                 title="Admin Panel"
@@ -49,34 +50,33 @@ export default function Navbar() {
 
           {/* RIGHT ICONS */}
           <div className="navbar-right">
-            {/* WISHLIST */}
-            <button
-              className="icon-btn"
-              onClick={() => navigate("/wishlist")}
-              title="Wishlist"
-            >
-              <FaHeart className="nav-icon" />
-            </button>
-
-            {/* CART */}
-            <button
-              className="icon-btn"
-              onClick={() => navigate("/cart")}
-              title="Cart"
-            >
-              <FaShoppingCart className="nav-icon" />
-            </button>
+            {/* Show wishlist, cart only for regular customers */}
+            {isCustomer && (
+              <>
+                <button
+                  className="icon-btn"
+                  onClick={() => navigate("/wishlist")}
+                  title="Wishlist"
+                >
+                  <FaHeart className="nav-icon" />
+                </button>
+                <button
+                  className="icon-btn"
+                  onClick={() => navigate("/cart")}
+                  title="Cart"
+                >
+                  <FaShoppingCart className="nav-icon" />
+                </button>
+              </>
+            )}
 
             {/* PROFILE ICON */}
             <button
               className="icon-btn"
               title="My Account"
               onClick={() => {
-                if (!currentUser) {
-                  navigate("/login");
-                } else {
-                  setAccountOpen(true);
-                }
+                if (!currentUser) navigate("/login");
+                else setAccountOpen(true);
               }}
             >
               <FaUserCircle className="nav-icon" />
@@ -97,17 +97,18 @@ export default function Navbar() {
 
               {menuOpen && (
                 <div className="menu-box">
-                  <Link to="/"> Home</Link>
-                  <Link to="/Shop"> Shop</Link>
+                  <Link to="/">Home</Link>
+                  <Link to="/Shop">Shop</Link>
                   <Link to="/About">About Us</Link>
-                  <Link to="/Checkout">Checkout</Link>
                   <Link to="/PrivacyPolicy">Privacy Policy</Link>
                   <Link to="/Terms">Terms & Conditions</Link>
                   <Link to="/ReturnRefund">Return/Refund</Link>
-                  <Link to="/Orders">My Orders</Link>
 
-                  {/* ADMIN PANEL ONLY IF ADMIN */}
-                  {currentUser?.isAdmin === true && (
+                  {/* Only show My Orders if customer */}
+                  {isCustomer && <Link to="/Orders">My Orders</Link>}
+
+                  {/* Admin Panel only for admins */}
+                  {isAdmin && (
                     <button
                       className="admin-link"
                       onClick={() => navigate("/admin")}

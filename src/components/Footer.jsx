@@ -27,9 +27,9 @@ export default function Footer() {
         {/* Policies */}
         <div className="footer-links">
           <h3>Policies</h3>
-          <Link to="/privacy-policy">Privacy Policy</Link>
+          <Link to="/PrivacyPolicy">Privacy Policy</Link>
           <Link to="/terms">Terms & Conditions</Link>
-          <Link to="/return-refund">Return / Refund Policy</Link>
+          <Link to="/ReturnRefund">Return / Refund Policy</Link>
         </div>
 
         {/* Support */}

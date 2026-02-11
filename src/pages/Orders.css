@@ -88,3 +88,34 @@
   margin-top: 10px;
 }
 
+.progress-bar-container {
+  display: flex;
+  justify-content: space-between;
+  margin: 10px 0;
+}
+.progress-step {
+  width: 22%;
+  padding: 5px 0;
+  text-align: center;
+  border-radius: 8px;
+  background-color: #ddd;
+  font-weight: bold;
+  font-size: 12px;
+}
+.progress-step.active {
+  background-color: #D4AF37;
+  color: #fff;
+}
+
+.track-btn {
+  background-color: #D4AF37;
+  color: #fff;
+  border: none;
+  padding: 5px 10px;
+  margin-bottom: 10px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+.track-btn:hover {
+  background-color: #b8962f;
+}

@@ -1,4 +1,3 @@
-// ... keep all your imports same
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import "./ProductDetails.css";
@@ -70,12 +69,10 @@ export default function ProductDetails() {
     navigate("/cart");
   };
 
-  // ✅ ORDER NOW
   const handleOrderNow = () => {
     handleAddToCart();
   };
 
-  // ✅ TOGGLE WISHLIST
   const handleWishlistToggle = () => {
     const wishlist = JSON.parse(localStorage.getItem("dezaWishlist")) || [];
     const exists = wishlist.find(
@@ -97,7 +94,6 @@ export default function ProductDetails() {
     }
   };
 
-  // ✅ ADD REVIEW
   const handleAddReview = () => {
     if (!userName || !comment || stars === 0) {
       return alert("Please fill all fields and select a star rating!");
@@ -139,7 +135,6 @@ export default function ProductDetails() {
     alert("✅ Review added!");
   };
 
-  // ✅ DELETE REVIEW
   const handleDeleteReview = (reviewId) => {
     const stored = JSON.parse(localStorage.getItem("dezaProducts")) || [];
     const updatedProducts = stored.map((p) => {
@@ -147,11 +142,10 @@ export default function ProductDetails() {
         const updatedReviews = (p.reviews || []).filter(
           (r) => r.id !== reviewId,
         );
-        const avgRating =
-          updatedReviews.length > 0
-            ? updatedReviews.reduce((acc, r) => acc + r.stars, 0) /
-              updatedReviews.length
-            : 0;
+        const avgRating = updatedReviews.length
+          ? updatedReviews.reduce((acc, r) => acc + r.stars, 0) /
+            updatedReviews.length
+          : 0;
         return {
           ...p,
           reviews: updatedReviews,
@@ -236,15 +230,16 @@ export default function ProductDetails() {
           <p className="details-price">₹{product.price}</p>
           <p className="details-desc">{product.description}</p>
           <p className="details-cat">
-            Category:{" "}
-            <span>
-              {product.category === "deza-original"
-                ? "DEZA Original"
-                : "Recreational Perfume"}
-            </span>
+            Category: <span>{product.category}</span>
           </p>
 
-          {/* SIZE SELECT */}
+          <p className="details-fragrance">
+            <b>Fragrance Notes:</b> {product.fragranceNotes || "Not available"}
+          </p>
+          <p className="details-delivery">
+            <b>Estimated Delivery:</b> 7-10 days
+          </p>
+
           {product.sizes?.length > 0 && (
             <div className="size-box">
               <label>Select Size:</label>
@@ -261,7 +256,6 @@ export default function ProductDetails() {
             </div>
           )}
 
-          {/* BUTTONS */}
           <div className="details-btn-group">
             <button className="cart-btn" onClick={handleAddToCart}>
               <FaShoppingCart className="btn-icon" /> Add to Cart
@@ -275,115 +269,7 @@ export default function ProductDetails() {
             Back to Shop
           </button>
 
-          {/* ⭐ RATING SECTION */}
-          <div className="review-section" style={{ marginTop: "30px" }}>
-            <h3 style={{ color: "#d4af37" }}>Rate this Product</h3>
-            <div
-              style={{
-                display: "flex",
-                gap: "5px",
-                fontSize: "24px",
-                marginTop: "5px",
-              }}
-            >
-              {Array.from({ length: 5 }, (_, i) => (
-                <FaStar
-                  key={i}
-                  color={i < (hoverStars || stars) ? "#ffd369" : "#555"}
-                  style={{ cursor: "pointer", transition: "0.2s" }}
-                  onMouseEnter={() => setHoverStars(i + 1)}
-                  onMouseLeave={() => setHoverStars(0)}
-                  onClick={() => setStars(i + 1)}
-                />
-              ))}
-            </div>
-            <input
-              type="text"
-              placeholder="Your Name"
-              value={userName}
-              onChange={(e) => setUserName(e.target.value)}
-              style={{
-                marginTop: "10px",
-                padding: "10px",
-                borderRadius: "10px",
-                width: "100%",
-              }}
-            />
-            <textarea
-              placeholder="Write a review..."
-              value={comment}
-              onChange={(e) => setComment(e.target.value)}
-              style={{
-                marginTop: "10px",
-                padding: "10px",
-                borderRadius: "10px",
-                width: "100%",
-              }}
-            />
-            <button
-              onClick={handleAddReview}
-              style={{
-                marginTop: "10px",
-                padding: "12px",
-                borderRadius: "12px",
-                border: "none",
-                background: "#d4af37",
-                color: "#1a1a1a",
-                fontWeight: "bold",
-                cursor: "pointer",
-              }}
-            >
-              Submit Review
-            </button>
-          </div>
-
-          {/* SHOW REVIEWS */}
-          {product.reviews?.length > 0 && (
-            <div style={{ marginTop: "20px" }}>
-              <h3 style={{ color: "#d4af37" }}>Customer Reviews</h3>
-              {product.reviews.map((r) => (
-                <div
-                  key={r.id}
-                  style={{
-                    borderBottom: "1px solid #444",
-                    padding: "10px 0",
-                    position: "relative",
-                  }}
-                >
-                  <p style={{ color: "#f9f7f2", fontWeight: "600" }}>
-                    {r.name}
-                  </p>
-                  <div style={{ display: "flex", gap: "2px" }}>
-                    {Array.from({ length: 5 }, (_, i) => (
-                      <FaStar
-                        key={i}
-                        color={i < r.stars ? "#ffd369" : "#555"}
-                      />
-                    ))}
-                  </div>
-                  <p style={{ color: "#ddd", marginTop: "5px" }}>{r.comment}</p>
-                  <p style={{ fontSize: "12px", color: "#aaa" }}>{r.date}</p>
-                  <button
-                    onClick={() => handleDeleteReview(r.id)}
-                    style={{
-                      position: "absolute",
-                      right: "0",
-                      top: "10px",
-                      background: "red",
-                      border: "none",
-                      color: "white",
-                      padding: "5px 10px",
-                      borderRadius: "8px",
-                      cursor: "pointer",
-                      fontSize: "12px",
-                    }}
-                  >
-                    <FaTrash /> Delete
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
+          {/* ⭐ Review section (optional, keep your previous code) */}
         </div>
       </div>
     </div>

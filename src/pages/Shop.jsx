@@ -5,19 +5,38 @@ import "./Shop.css";
 export default function Shop() {
   const navigate = useNavigate();
   const [products, setProducts] = useState([]);
+  const [reviews, setReviews] = useState([]);
 
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("All");
   const [type, setType] = useState("All");
   const [sort, setSort] = useState("default");
 
+  // Categories & Types (from Admin)
+  const categories = ["All", "Men", "Women", "Unisex"];
+  const types = ["All", "Deza", "Recreational"];
+
   useEffect(() => {
-    const stored = JSON.parse(localStorage.getItem("dezaProducts")) || [];
-    setProducts(stored);
+    const storedProducts =
+      JSON.parse(localStorage.getItem("dezaProducts")) || [];
+    setProducts(storedProducts);
+
+    const storedReviews = JSON.parse(localStorage.getItem("dezaReviews")) || [];
+    setReviews(storedReviews);
   }, []);
 
+  // Add rating to each product
+  const productsWithRating = products.map((p) => {
+    const productReviews = reviews.filter((r) => r.productId === p.id);
+    const avgRating = productReviews.length
+      ? productReviews.reduce((sum, r) => sum + r.rating, 0) /
+        productReviews.length
+      : 0;
+    return { ...p, rating: avgRating, ratingCount: productReviews.length };
+  });
+
   // FILTER + SEARCH
-  let filteredProducts = products.filter((p) => {
+  let filteredProducts = productsWithRating.filter((p) => {
     const matchesSearch = p.title.toLowerCase().includes(search.toLowerCase());
     const matchesCategory = category === "All" || p.category === category;
     const matchesType = type === "All" || p.type === type;
@@ -25,17 +44,13 @@ export default function Shop() {
   });
 
   // SORT
-  if (sort === "priceLow") filteredProducts.sort((a, b) => a.price - b.price);
-  else if (sort === "priceHigh")
-    filteredProducts.sort((a, b) => b.price - a.price);
-  else if (sort === "ratingHigh")
-    filteredProducts.sort((a, b) => (b.rating || 0) - (a.rating || 0));
-  else if (sort === "ratingLow")
-    filteredProducts.sort((a, b) => (a.rating || 0) - (b.rating || 0));
-
-  // UNIQUE CATEGORIES + TYPES
-  const categories = ["All", "Recreational", "Deza Original"];
-  const types = ["All", "Men", "Women", "Unisex"];
+  filteredProducts.sort((a, b) => {
+    if (sort === "priceLow") return a.price - b.price;
+    if (sort === "priceHigh") return b.price - a.price;
+    if (sort === "ratingHigh") return (b.rating || 0) - (a.rating || 0);
+    if (sort === "ratingLow") return (a.rating || 0) - (b.rating || 0);
+    return 0;
+  });
 
   return (
     <div className="shop-page">
@@ -52,16 +67,16 @@ export default function Shop() {
         />
 
         <select value={category} onChange={(e) => setCategory(e.target.value)}>
-          {categories.map((c, i) => (
-            <option key={i} value={c}>
+          {categories.map((c) => (
+            <option key={c} value={c}>
               {c}
             </option>
           ))}
         </select>
 
         <select value={type} onChange={(e) => setType(e.target.value)}>
-          {types.map((t, i) => (
-            <option key={i} value={t}>
+          {types.map((t) => (
+            <option key={t} value={t}>
               {t}
             </option>
           ))}
@@ -92,8 +107,7 @@ export default function Shop() {
               <h2 className="shop-card-title">{p.title}</h2>
               <p className="shop-price">₹{p.price}</p>
               <p className="shop-rating">
-                ⭐ {p.rating ? p.rating.toFixed(1) : "0.0"} (
-                {p.ratingCount || 0})
+                ⭐ {p.rating.toFixed(1)} ({p.ratingCount || 0})
               </p>
               <p className="shop-category">
                 {p.category} • {p.type}
