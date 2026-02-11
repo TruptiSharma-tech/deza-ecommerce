@@ -22,16 +22,6 @@ export default function PaymentGateway() {
     if (!cart || cart.length === 0) navigate("/checkout");
   }, [cart, navigate]);
 
-  // Dynamically load Razorpay SDK
-  const loadRazorpayScript = () =>
-    new Promise((resolve) => {
-      const script = document.createElement("script");
-      script.src = "https://checkout.razorpay.com/v1/checkout.js";
-      script.onload = () => resolve(true);
-      script.onerror = () => resolve(false);
-      document.body.appendChild(script);
-    });
-
   const saveOrder = (paymentMethod, status, paymentId = "") => {
     const orders = JSON.parse(localStorage.getItem("dezaOrders")) || [];
     const newOrder = {
@@ -51,50 +41,57 @@ export default function PaymentGateway() {
     localStorage.removeItem("checkoutInfo");
   };
 
-  // Razorpay payment
-  const handleRazorpayPayment = async (method) => {
-    const isLoaded = await loadRazorpayScript();
-    if (!isLoaded) {
-      alert("Razorpay SDK failed to load. Check your internet connection!");
-      return;
-    }
+  // Mock payment for UPI (frontend-only)
+  const handleMockPayment = (method) => {
+    const fakeResponse = { razorpay_payment_id: "MOCK123456789" };
+    saveOrder(method, "Paid", fakeResponse.razorpay_payment_id);
+    setPaymentDone(true);
+    setTimeout(() => navigate("/checkout/success"), 2000);
+  };
 
-    const options = {
-      key: "rzp_test_1DP5mmOlF5G5ag", // Razorpay test key
-      amount: total * 100, // in paise
-      currency: "INR",
-      name: "DEZA Store",
-      description: `Order Payment via ${method}`,
-      handler: function (response) {
-        saveOrder(method, "Paid", response.razorpay_payment_id);
-        setPaymentDone(true);
-        setTimeout(() => navigate("/checkout/success"), 2000);
-      },
-      prefill: {
-        name,
-        contact: phone,
-        email: "test@example.com", // optional
-      },
-      theme: { color: "#D4AF37" },
-      modal: { ondismiss: () => alert("Payment cancelled") },
-      notes: { payment_type: method },
+  // Razorpay card payment (test mode)
+  const handleCardSubmit = async () => {
+    const { cardNumber, expiry, cvv, name: cardName } = cardDetails;
+    if (!cardNumber || !expiry || !cvv || !cardName)
+      return alert("⚠ Please fill all card details!");
+
+    // Load Razorpay SDK
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    document.body.appendChild(script);
+
+    script.onload = () => {
+      const options = {
+        key: "rzp_test_1DP5mmOlF5G5ag", // Test key
+        amount: total * 100,
+        currency: "INR",
+        name: "DEZA Store",
+        description: "Order Payment via Card",
+        handler: function (response) {
+          saveOrder("Card", "Paid", response.razorpay_payment_id);
+          setPaymentDone(true);
+          setTimeout(() => navigate("/checkout/success"), 2000);
+        },
+        prefill: {
+          name,
+          contact: phone,
+          email: "test@example.com",
+        },
+        theme: { color: "#D4AF37" },
+        modal: { ondismiss: () => alert("Payment cancelled") },
+      };
+
+      const rzp = new window.Razorpay(options);
+      rzp.open();
     };
 
-    const rzp = new window.Razorpay(options);
-    rzp.open();
+    script.onerror = () => alert("Razorpay SDK failed to load!");
   };
 
   const handleCOD = () => {
     saveOrder("Cash On Delivery", "Pending");
     setPaymentDone(true);
     setTimeout(() => navigate("/checkout/success"), 2000);
-  };
-
-  const handleCardSubmit = () => {
-    const { cardNumber, expiry, cvv, name: cardName } = cardDetails;
-    if (!cardNumber || !expiry || !cvv || !cardName)
-      return alert("⚠ Please fill all card details!");
-    handleRazorpayPayment("Card");
   };
 
   return (
@@ -132,7 +129,7 @@ export default function PaymentGateway() {
         </button>
       </div>
 
-      {/* UPI Options */}
+      {/* UPI Options (Mock) */}
       {paymentType === "UPI" && (
         <div className="upi-options">
           <h3>Select UPI App</h3>
@@ -141,7 +138,7 @@ export default function PaymentGateway() {
               <button
                 key={app}
                 className="upi-app-btn"
-                onClick={() => handleRazorpayPayment("UPI")}
+                onClick={() => handleMockPayment("UPI")}
               >
                 <img
                   src={`https://img.icons8.com/color/48/000000/${app}.png`}
@@ -151,6 +148,9 @@ export default function PaymentGateway() {
               </button>
             ))}
           </div>
+          <p style={{ color: "#ffcc00" }}>
+            ⚠ UPI payment is mocked for testing only.
+          </p>
         </div>
       )}
 
