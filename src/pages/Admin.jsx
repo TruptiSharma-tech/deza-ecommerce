@@ -245,7 +245,7 @@ export default function Admin() {
     return currCount < prevCount ? curr : prev;
   }, types[0]);
 
-  // --- RATINGS FIX ---
+  // --- RATINGS ---
   const productsWithAvgRating = products.map((p) => {
     const productReviews = reviews.filter((r) => r.productId === p.id);
     const avgRating = productReviews.length
@@ -254,7 +254,6 @@ export default function Admin() {
       : 0;
     return { ...p, avgRating };
   });
-
   const highestRatedProduct = productsWithAvgRating.reduce(
     (max, p) => (p.avgRating > max.avgRating ? p : max),
     { avgRating: 0, title: "No Products" },
@@ -273,7 +272,6 @@ export default function Admin() {
     ],
   };
 
-  // --- OTHER CHARTS ---
   const revenueChart = {
     labels: finalOrders.map((o) => new Date(o.date).toLocaleDateString()),
     datasets: [
@@ -315,7 +313,6 @@ export default function Admin() {
     ],
   };
 
-  // --- EXPORT REPORT ---
   const exportReport = () => {
     const doc = new jsPDF();
     doc.setFontSize(16);
@@ -341,7 +338,6 @@ export default function Admin() {
     navigate("/admin-login");
   };
 
-  // --- JSX ---
   return (
     <div className="admin-page">
       {/* SIDEBAR */}
@@ -384,6 +380,7 @@ export default function Admin() {
 
       {/* CONTENT */}
       <div className="admin-content">
+        {/* --- DASHBOARD --- */}
         {activeTab === "dashboard" && (
           <div className="admin-section">
             <h1>Welcome Admin 👑</h1>
@@ -430,7 +427,7 @@ export default function Admin() {
               </div>
             </div>
 
-            {/* Filters + Export buttons */}
+            {/* Filters + Export */}
             <div className="filters-export-container">
               <div className="filters">
                 <div className="filter-item">
@@ -505,6 +502,227 @@ export default function Admin() {
                 <Bar data={ratingsChart} />
               </div>
             </div>
+          </div>
+        )}
+
+        {/* --- ADD PRODUCT --- */}
+        {activeTab === "add" && (
+          <div className="admin-section add-product-section">
+            <h2>Add New Product</h2>
+            <form onSubmit={handleAddProduct} className="add-product-form">
+              <label>
+                Product Name
+                <input
+                  type="text"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                />
+              </label>
+              <label>
+                Price ₹
+                <input
+                  type="number"
+                  value={price}
+                  onChange={(e) => setPrice(e.target.value)}
+                />
+              </label>
+              <label>
+                Stock Quantity
+                <input
+                  type="number"
+                  value={stock}
+                  onChange={(e) => setStock(e.target.value)}
+                />
+              </label>
+              <label>
+                Category
+                <select
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                >
+                  {categories.map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Type
+                <select value={type} onChange={(e) => setType(e.target.value)}>
+                  {types.map((t) => (
+                    <option key={t} value={t}>
+                      {t}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Sizes (comma separated)
+                <input
+                  type="text"
+                  value={sizes.join(", ")}
+                  onChange={(e) =>
+                    setSizes(
+                      e.target.value
+                        .split(",")
+                        .map((s) => s.trim())
+                        .filter(Boolean),
+                    )
+                  }
+                />
+              </label>
+              <label>
+                Fragrance Notes
+                <input
+                  type="text"
+                  value={fragrance}
+                  onChange={(e) => setFragrance(e.target.value)}
+                />
+              </label>
+              <label>
+                Description
+                <textarea
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                />
+              </label>
+              <label>
+                Upload Images
+                <input
+                  type="file"
+                  multiple
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                />
+              </label>
+              {images.length > 0 && (
+                <div className="preview-images">
+                  {images.map((img, i) => (
+                    <img key={i} src={img} alt={`preview-${i}`} />
+                  ))}
+                </div>
+              )}
+              <button type="submit">Add Product</button>
+            </form>
+          </div>
+        )}
+
+        {/* --- PRODUCT LIST --- */}
+        {activeTab === "list" && (
+          <div className="admin-section">
+            <h2>Product List</h2>
+            <table className="product-table">
+              <thead>
+                <tr>
+                  <th>Image</th>
+                  <th>Name</th>
+                  <th>Category</th>
+                  <th>Type</th>
+                  <th>Stock</th>
+                  <th>Sold</th>
+                  <th>Rating</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {productsWithAvgRating.map((p) => (
+                  <tr key={p.id}>
+                    <td>
+                      <img src={p.image} alt={p.title} width={50} />
+                    </td>
+                    <td>{p.title}</td>
+                    <td>{p.category}</td>
+                    <td>{p.type}</td>
+                    <td>{p.stock}</td>
+                    <td>{p.sold}</td>
+                    <td>{p.avgRating.toFixed(1)}</td>
+                    <td>
+                      <button onClick={() => handleDeleteProduct(p.id)}>
+                        Delete
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* --- ORDERS --- */}
+        {activeTab === "orders" && (
+          <div className="admin-section">
+            <h2>Orders</h2>
+            <table className="orders-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Date</th>
+                  <th>Total</th>
+                  <th>Status</th>
+                  <th>Update</th>
+                </tr>
+              </thead>
+              <tbody>
+                {finalOrders.map((o) => (
+                  <tr key={o.id}>
+                    <td>{o.id}</td>
+                    <td>{o.date}</td>
+                    <td>₹{o.totalPrice}</td>
+                    <td>{o.status}</td>
+                    <td>
+                      <select
+                        value={o.status}
+                        onChange={(e) =>
+                          updateOrderStatus(o.id, e.target.value)
+                        }
+                      >
+                        <option value="Pending">Pending</option>
+                        <option value="Shipped">Shipped</option>
+                        <option value="Delivered">Delivered</option>
+                      </select>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* --- SUPPORT --- */}
+        {activeTab === "support" && (
+          <div className="admin-section">
+            <h2>Customer Queries</h2>
+            <table className="queries-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Query</th>
+                  <th>Resolved</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {queries.map((q) => (
+                  <tr key={q.id}>
+                    <td>{q.id}</td>
+                    <td>{q.name}</td>
+                    <td>{q.email}</td>
+                    <td>{q.message}</td>
+                    <td>{q.resolved ? "Yes" : "No"}</td>
+                    <td>
+                      {!q.resolved && (
+                        <button onClick={() => resolveQuery(q.id)}>
+                          Resolve
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
       </div>
