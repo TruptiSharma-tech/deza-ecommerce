@@ -1,0 +1,141 @@
+.home {
+  background: #0b0b0b;
+  min-height: 100vh;
+  color: white;
+  padding: 40px 60px;
+  font-family: "Poppins", sans-serif;
+}
+
+.hero {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 50px;
+  padding: 50px 0;
+  background: radial-gradient(circle at top, rgba(212, 175, 55, 0.15), transparent 70%);
+}
+
+.hero-content {
+  max-width: 520px;
+}
+
+.hero-content h1 {
+  font-size: 52px;
+  font-weight: 700;
+  font-family: "Playfair Display", serif;
+  margin-bottom: 18px;
+}
+
+.hero-content p {
+  font-size: 17px;
+  color: rgba(255, 255, 255, 0.75);
+  margin-bottom: 30px;
+  line-height: 1.6;
+}
+
+.hero-buttons {
+  display: flex;
+  gap: 15px;
+}
+
+.btn-primary {
+  padding: 12px 26px;
+  border: none;
+  border-radius: 12px;
+  background: #D4AF37;
+  color: #1A1A1A;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.btn-primary:hover {
+  transform: translateY(-3px);
+  box-shadow: 0px 0px 25px rgba(212, 175, 55, 0.5);
+}
+
+.btn-secondary {
+  padding: 12px 26px;
+  border: 1px solid #D4AF37;
+  border-radius: 12px;
+  background: transparent;
+  color: #D4AF37;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.btn-secondary:hover {
+  background: #D4AF37;
+  color: #1A1A1A;
+}
+
+.hero-image img {
+  width: 500px;
+  max-width: 100%;
+  border-radius: 20px;
+  box-shadow: 0px 0px 50px rgba(212, 175, 55, 0.15);
+  transition: 0.3s;
+}
+
+.hero-image img:hover {
+  transform: scale(1.02);
+}
+
+.featured {
+  padding: 60px 0;
+  text-align: center;
+}
+
+.featured h2 {
+  font-size: 36px;
+  font-family: "Playfair Display", serif;
+  margin-bottom: 40px;
+  color: #D4AF37;
+}
+
+.product-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 25px;
+}
+
+.product-card {
+  background: rgba(255, 255, 255, 0.03);
+  padding: 25px;
+  border-radius: 18px;
+  border: 1px solid rgba(212, 175, 55, 0.2);
+  transition: 0.3s;
+}
+
+.product-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0px 0px 30px rgba(212, 175, 55, 0.15);
+}
+
+.product-card h3 {
+  font-size: 20px;
+  margin-bottom: 10px;
+  color: white;
+}
+
+.product-card p {
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 18px;
+}
+
+.product-card button {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 10px;
+  background: #D4AF37;
+  color: #1A1A1A;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.product-card button:hover {
+  background: white;
+  transform: scale(1.05);
+}

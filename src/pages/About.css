@@ -1,0 +1,240 @@
+.about {
+  font-family: 'Times New Roman', Times, serif ;
+  background:  #1A1A1A;
+  color:#F9F7F2  /* Soft Alabaster */
+}
+
+/* HERO */
+.about-hero {
+  position: relative;
+  height: 50vh;
+  background: url("../assets/about-bg.jpg");
+  background-size: cover;
+  background-position: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.about-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(26, 26, 26, 0.72); /* Onyx Black overlay */
+  background: rgba(212, 175, 55, 0.12);
+  filter: blur(160px);
+  border-radius: 50%;
+  
+}
+
+.about-hero-content {
+  position: relative;
+  text-align: center;
+  color: #F9F7F2; /* Alabaster */
+  z-index: 2;
+  
+  max-width: 900px;
+  padding: 20px;
+}
+
+.about-hero-content h1 {
+  font-size: 64px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  margin-bottom: 15px;
+  text-transform: uppercase;
+  color: #D4AF37; /* Champagne Gold */
+}
+
+.about-hero-content p {
+  font-size: 20px;
+  font-weight: 300;
+  letter-spacing: 1px;
+  color: #F9F7F2; /* Alabaster */
+}
+
+/* INTRO SECTION */
+.about-intro {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 100px 10%;
+  
+  gap: 60px;
+  background: #F9F7F2; /* Soft Alabaster */
+}
+
+.about-intro-text {
+  flex: 1;
+}
+
+.about-intro-text h2 {
+  font-size: 42px;
+  font-weight: 600;
+  margin-bottom: 25px;
+  line-height: 1.2;
+
+  color: #1A1A1A; /* Onyx */
+}
+
+.about-intro-text p {
+  font-size: 17px;
+  line-height: 1.8;
+  margin-bottom: 18px;
+  color: #7d492b; /* Taupe Accent */
+  font-style: italic;
+}
+
+.about-intro-img {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+}
+
+.about-intro-img img {
+  width: 100%;
+  max-width: 420px;
+  border-radius: 18px;
+  box-shadow: 20px 20px 50pxrgba(212, 175, 55, 0.35);
+  
+  transition: 0.3s ease;
+}
+
+/* QUOTE */
+.about-quote {
+  padding: 80px 15%;
+  background: #1A1A1A  rgba(212, 175, 55, 0.35) ; /* Onyx Black */
+  
+  color: #F9F7F2; /* Alabaster */
+  text-align: center;
+  
+}
+
+.about-quote h2 {
+  font-size: 32px;
+  font-weight: 400;
+  font-style: italic;
+  line-height: 1.5;
+  color: #D4AF37; /* Champagne Gold */
+}
+
+/* DETAILS */
+.about-details {
+  padding: 100px 10%;
+  text-align: center;
+  background: #F9F7F2; /* Alabaster */
+}
+
+.about-details h2 {
+  font-size: 42px;
+  font-weight: 600;
+  margin-bottom: 18px;
+  color: #1A1A1A; /* Onyx */
+}
+
+.about-details p {
+  font-size: 17px;
+  line-height: 1.7;
+  color: #7d492b; /* Taupe */
+  max-width: 850px;
+  font-style: italic;
+  margin: 0 auto 60px;
+}
+
+.about-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 25px;
+  
+  
+}
+
+.detail-box {
+  background: #F9F7F2;
+  padding: 40px 35px;
+  border-radius: 18px;
+  box-shadow: 9px 15px 15px rgba(212, 175, 55, 0.6);
+  transition: 0.3s ease;
+  border: 5px solid rgba(212, 175, 55, 0.25);
+}
+
+
+.detail-box:hover {
+  transform: translateY(-8px);
+  border: 1px solid rgba(212, 175, 55, 0.6);
+  box-shadow: 0px 18px 45px rgba(26, 26, 26, 0.18);
+}
+
+.detail-box h3 {
+  font-size: 21px;
+  font-weight:800;
+  font-family: 'Times New Roman', Times, serif;
+  margin-bottom: 10px;
+  color: #1A1A1A; /* Onyx */
+}
+
+.detail-box p {
+  font-size: 16px;
+  color: #7d492b; /* Taupe */
+}
+
+/* ENDING */
+.about-ending {
+  padding: 100px 12%;
+  text-align: center;
+  background: linear-gradient(to right, #F9F7F2, #f3efe6); /* Alabaster gradient */
+}
+
+.about-ending h2 {
+  font-size: 46px;
+  font-weight: 700;
+  margin-bottom: 25px;
+  text-transform: uppercase;
+
+  letter-spacing: 2px;
+  color: #1A1A1A; /* Onyx */
+}
+
+.about-ending p {
+  font-size: 17px;
+  line-height: 1.8;
+  max-width: 900px;
+  font-weight: 540;
+  margin: 0 auto 20px;
+  font-style: italic;
+  color:#7d492b; /* Taupe */
+}
+
+.about-btn {
+  margin-top: 30px;
+  padding: 14px 38px;
+  font-size: 16px;
+  border: none;
+  border-radius: 30px;
+  background: #1A1A1A; /* Onyx */
+  color: #F9F7F2; /* Alabaster */
+  cursor: pointer;
+  transition: 0.3s;
+  font-weight: 500;
+  letter-spacing: 1px;
+}
+
+.about-btn:hover {
+  background: #e2b520; /* Gold */
+  color: #1A1A1A; /* Onyx */
+}
+
+/* RESPONSIVE */
+@media (max-width: 900px) {
+  .about-intro {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .about-detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .about-hero-content h1 {
+    font-size: 42px;
+  }
+}

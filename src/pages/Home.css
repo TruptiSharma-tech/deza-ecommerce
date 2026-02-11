@@ -1,0 +1,230 @@
+/* ===========================
+   DEZA HOME PAGE (Luxury Theme)
+   Colors:
+   Onyx: #1A1A1A
+   Gold: #D4AF37
+   Alabaster: #F9F7F2
+   Taupe: #9B8477
+=========================== */
+
+.home {
+  background: #1a1a1a;
+  color: #f9f7f2;
+  min-height: 100vh;
+  font-family: "Poppins", sans-serif;
+}
+
+/* HERO SECTION */
+.hero {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 90px 110px;
+  gap: 70px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Background Glow */
+.hero::before {
+  content: "";
+  position: absolute;
+  top: -200px;
+  left: -200px;
+  width: 600px;
+  height: 600px;
+  background: rgba(212, 175, 55, 0.12);
+  filter: blur(160px);
+  border-radius: 50%;
+  z-index: 0;
+}
+
+.hero-content {
+  flex: 1;
+  max-width: 560px;
+  z-index: 2;
+}
+
+.hero-content h1 {
+  font-family: "Georgia", serif;
+  font-size: 70px;
+  font-weight: 700;
+  line-height: 1.05;
+  margin-bottom: 25px;
+  color: #f9f7f2;
+  letter-spacing: 1px;
+}
+
+.hero-content p {
+  font-size: 17px;
+  line-height: 1.7;
+  color: #d3c0b4;
+  max-width: 450px;
+}
+
+/* BUTTONS */
+.hero-buttons {
+  display: flex;
+  gap: 18px;
+  margin-top: 35px;
+}
+
+.btn-primary {
+  background: #d4af37;
+  color: #1a1a1a;
+  padding: 14px 30px;
+  border-radius: 40px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  font-size: 15px;
+  transition: 0.3s ease;
+  box-shadow: 0px 8px 20px rgba(212, 175, 55, 0.25);
+}
+
+.btn-primary:hover {
+  background: #f9f7f2;
+  transform: translateY(-3px);
+}
+
+.btn-secondary {
+  background: transparent;
+  color: #d4af37;
+  padding: 14px 30px;
+  border-radius: 40px;
+  border: 1px solid rgba(212, 175, 55, 0.6);
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 600;
+  transition: 0.3s ease;
+}
+
+.btn-secondary:hover {
+  background: rgba(212, 175, 55, 0.12);
+  transform: translateY(-3px);
+}
+
+/* HERO IMAGE */
+.hero-image {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2;
+}
+
+.hero-image img {
+  width: 100%;
+  max-width: 10000px;
+  height: auto;
+  object-fit: contain;
+  border-radius: 25px;
+  box-shadow: 5px 5px 6px rgba(212, 175, 55, 0.6);
+  transition: 0.3s ease;
+}
+
+.hero-image img:hover {
+  transform: scale(1.03);
+}
+
+/* FEATURED SECTION */
+.featured {
+  padding: 80px 110px;
+  text-align: center;
+}
+
+.featured h2 {
+  font-family: "Georgia", serif;
+  font-size: 50px;
+  font-weight: 700;
+  color: #d4af37;
+  margin-bottom: 60px;
+}
+
+/* PRODUCT GRID */
+.product-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 40px;
+}
+
+.product-card {
+  background:#F9F7F2 ;
+  border: 1px solid rgba(212, 175, 55, 0.2);
+  padding: 40px 25px;
+  border-radius: 30px;
+  text-align: center;
+  transition: 0.3s ease;
+  box-shadow: 0px 15px 35px rgba(0, 0, 0, 0.6);
+}
+
+.product-card:hover {
+  transform: translateY(-10px);
+  border: 1px solid rgba(212, 175, 55, 0.6);
+}
+
+.product-card h3 {
+  font-family: "Georgia", serif;
+  font-size: 26px;
+  font-weight:700;
+  margin-bottom: 12px;
+  color:  #1A1A1A ;
+}
+
+.product-card p {
+  color:#9B8477;
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 20px;
+  font-style: oblique;
+}
+
+.product-card button {
+  background: transparent;
+  border: 3px solid rgba(212, 175, 55, 0.6);
+  color: #d4af37;
+  padding: 12px 25px;
+  border-radius: 40px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: 0.3s ease;
+}
+
+.product-card button:hover {
+  background: #d4af37;
+  color: #1a1a1a;
+}
+
+/* RESPONSIVE */
+@media (max-width: 1000px) {
+  .hero {
+    flex-direction: column;
+    padding: 70px 25px;
+    text-align: center;
+  }
+
+  .hero-content h1 {
+    font-size: 55px;
+  }
+
+  .hero-content p {
+    margin: auto;
+  }
+
+  .hero-buttons {
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .featured {
+    padding: 60px 25px;
+  }
+
+  .product-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .hero-image img {
+    max-width: 380px;
+  }
+}

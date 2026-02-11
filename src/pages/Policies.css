@@ -1,0 +1,31 @@
+.policy-page {
+  min-height: 100vh;
+  background: #1a1a1a;
+  color: #f9f7f2;
+  padding: 80px 10%;
+  font-family: "Poppins", sans-serif;
+}
+
+.policy-page h1 {
+  font-size: 2.5rem;
+  color: #d4af37;
+  margin-bottom: 20px;
+}
+
+.policy-page h2 {
+  margin-top: 25px;
+  font-size: 1.4rem;
+  color: #d4af37;
+}
+
+.policy-page p,
+.policy-page li {
+  font-size: 1rem;
+  line-height: 1.7;
+  color: #f9f7f2;
+}
+
+.policy-page ul {
+  margin-top: 10px;
+  padding-left: 20px;
+}

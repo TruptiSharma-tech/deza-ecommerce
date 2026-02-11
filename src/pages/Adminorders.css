@@ -1,0 +1,38 @@
+.admin-orders {
+  padding: 40px;
+  font-family: "Poppins", sans-serif;
+  background: #1a1a1a;
+  color: #f9f7f2;
+  min-height: 100vh;
+}
+
+.admin-orders h1 {
+  text-align: center;
+  color: #d4af37;
+  font-size: 32px;
+}
+
+.admin-order-card {
+  background: #2a2a2a;
+  padding: 20px;
+  margin: 20px auto;
+  border-radius: 12px;
+  max-width: 800px;
+}
+
+.admin-order-card h2 {
+  color: #d4af37;
+}
+
+.admin-order-card select {
+  padding: 8px;
+  border-radius: 8px;
+  border: none;
+  margin-top: 10px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.admin-order-card select:hover {
+  background: #444;
+}

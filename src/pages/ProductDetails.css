@@ -1,0 +1,267 @@
+.details-page {
+  min-height: 100vh;
+  background: #1a1a1a;
+  padding: 120px 8%;
+  color: #f9f7f2;
+  font-family: "Poppins", sans-serif;
+}
+
+.details-container {
+  display: flex;
+  gap: 60px;
+  align-items: flex-start;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.03);
+  padding: 50px;
+  border-radius: 22px;
+  border: 1px solid rgba(212, 175, 55, 0.25);
+  box-shadow: 0px 10px 35px rgba(0, 0, 0, 0.55);
+}
+
+/* LEFT SIDE */
+.details-left {
+  width: 45%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.details-main-img {
+  width: 100%;
+  max-width: 420px;
+  height: 500px;
+  object-fit: cover;
+  border-radius: 18px;
+  border: 2px solid rgba(212, 175, 55, 0.4);
+  box-shadow: 0px 8px 25px rgba(0, 0, 0, 0.5);
+}
+
+.details-thumbnails {
+  margin-top: 18px;
+  display: flex;
+  gap: 14px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.thumb-img {
+  width: 75px;
+  height: 75px;
+  border-radius: 12px;
+  object-fit: cover;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: 0.3s ease;
+  opacity: 0.75;
+}
+
+.thumb-img:hover {
+  opacity: 1;
+  transform: scale(1.05);
+  border: 2px solid rgba(212, 175, 55, 0.6);
+}
+
+.active-thumb {
+  border: 2px solid #d4af37;
+  opacity: 1;
+}
+
+/* RIGHT SIDE */
+.details-right {
+  width: 55%;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.details-title {
+  font-size: 38px;
+  color: #d4af37;
+  font-weight: 700;
+}
+
+.details-price {
+  font-size: 26px;
+  font-weight: 600;
+  color: #f9f7f2;
+}
+
+.details-desc {
+  font-size: 16px;
+  line-height: 1.7;
+  color: rgba(249, 247, 242, 0.85);
+}
+
+.details-cat,
+.details-stock {
+  font-size: 15px;
+  color: rgba(249, 247, 242, 0.9);
+}
+
+.details-cat span,
+.details-stock span {
+  color: #d4af37;
+  font-weight: 600;
+}
+
+.in-stock {
+  color: #3cff84;
+  font-weight: 600;
+}
+
+.out-stock {
+  color: #ff5b5b;
+  font-weight: 600;
+}
+
+/* BUTTON GROUP */
+.details-btn-group {
+  display: flex;
+  gap: 15px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+
+.cart-btn,
+.wish-btn,
+.order-btn {
+  padding: 14px 22px;
+  border-radius: 12px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: 0.3s ease;
+  font-size: 14px;
+}
+
+/* Add to cart */
+.cart-btn {
+  background: #d4af37;
+  color: #1a1a1a;
+}
+
+.cart-btn:hover {
+  background: #f1d57a;
+  transform: translateY(-3px);
+}
+
+/* Wishlist */
+.wish-btn {
+  background: transparent;
+  border: 1px solid rgba(212, 175, 55, 0.6);
+  color: #d4af37;
+}
+
+.wish-btn:hover {
+  background: rgba(212, 175, 55, 0.12);
+  transform: translateY(-3px);
+}
+
+/* Order Now */
+.order-btn {
+  background: #f9f7f2;
+  color: #1a1a1a;
+}
+
+.order-btn:hover {
+  background: #ffffff;
+  transform: translateY(-3px);
+}
+
+/* BACK BUTTON */
+.back-btn {
+  margin-top: 18px;
+  width: fit-content;
+  padding: 12px 20px;
+  border-radius: 12px;
+  border: 1px solid rgba(212, 175, 55, 0.5);
+  background: transparent;
+  color: #f9f7f2;
+  cursor: pointer;
+  transition: 0.3s ease;
+}
+
+.back-btn:hover {
+  background: rgba(212, 175, 55, 0.12);
+  transform: translateY(-2px);
+}
+
+/* RESPONSIVE */
+@media (max-width: 1000px) {
+  .details-container {
+    flex-direction: column;
+    gap: 40px;
+    padding: 35px;
+  }
+
+  .details-left,
+  .details-right {
+    width: 100%;
+  }
+
+  .details-main-img {
+    max-width: 100%;
+    height: 380px;
+  }
+}
+.title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.wishlist-icon-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 24px;
+  transition: 0.3s ease;
+}
+
+.heart-icon {
+  color: rgba(249, 247, 242, 0.8);
+  font-size: 26px;
+}
+
+.heart-icon:hover {
+  color: #d4af37;
+  transform: scale(1.1);
+}
+
+.heart-icon.filled {
+  color: #ff4d6d;
+}
+
+.size-box {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.size-box label {
+  font-size: 14px;
+  color: #d4af37;
+  font-weight: 600;
+}
+
+.size-box select {
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(212, 175, 55, 0.5);
+  background: rgba(255, 255, 255, 0.05);
+  color: #f9f7f2;
+  outline: none;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.size-box select option {
+  background: #1a1a1a;
+  color: white;
+}
+
+.btn-icon {
+  margin-right: 8px;
+  font-size: 16px;
+}
