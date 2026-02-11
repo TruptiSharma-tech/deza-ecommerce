@@ -22,6 +22,17 @@ export default function PaymentGateway() {
     if (!cart || cart.length === 0) navigate("/checkout");
   }, [cart, navigate]);
 
+  // Dynamically load Razorpay SDK
+  const loadRazorpayScript = () =>
+    new Promise((resolve) => {
+      const script = document.createElement("script");
+      script.src = "https://checkout.razorpay.com/v1/checkout.js";
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
+    });
+
+  // Save order in localStorage
   const saveOrder = (paymentMethod, status, paymentId = "") => {
     const orders = JSON.parse(localStorage.getItem("dezaOrders")) || [];
     const newOrder = {
@@ -41,57 +52,56 @@ export default function PaymentGateway() {
     localStorage.removeItem("checkoutInfo");
   };
 
-  // Mock payment for UPI (frontend-only)
-  const handleMockPayment = (method) => {
-    const fakeResponse = { razorpay_payment_id: "MOCK123456789" };
-    saveOrder(method, "Paid", fakeResponse.razorpay_payment_id);
-    setPaymentDone(true);
-    setTimeout(() => navigate("/checkout/success"), 2000);
-  };
+  // Razorpay payment handler
+  const handleRazorpayPayment = async (method) => {
+    if (!total || isNaN(total)) return alert("Invalid total amount!");
 
-  // Razorpay card payment (test mode)
-  const handleCardSubmit = async () => {
-    const { cardNumber, expiry, cvv, name: cardName } = cardDetails;
-    if (!cardNumber || !expiry || !cvv || !cardName)
-      return alert("⚠ Please fill all card details!");
+    const isLoaded = await loadRazorpayScript();
+    if (!isLoaded) return alert("Razorpay SDK failed to load!");
 
-    // Load Razorpay SDK
-    const script = document.createElement("script");
-    script.src = "https://checkout.razorpay.com/v1/checkout.js";
-    document.body.appendChild(script);
-
-    script.onload = () => {
+    try {
       const options = {
-        key: "rzp_test_1DP5mmOlF5G5ag", // Test key
+        key: "rzp_test_1DP5mmOlF5G5ag",
         amount: total * 100,
         currency: "INR",
         name: "DEZA Store",
-        description: "Order Payment via Card",
+        description: `Order Payment via ${method}`,
         handler: function (response) {
-          saveOrder("Card", "Paid", response.razorpay_payment_id);
+          if (!response || !response.razorpay_payment_id) {
+            alert("Payment failed or cancelled!");
+            return;
+          }
+          saveOrder(method, "Paid", response.razorpay_payment_id);
           setPaymentDone(true);
           setTimeout(() => navigate("/checkout/success"), 2000);
         },
-        prefill: {
-          name,
-          contact: phone,
-          email: "test@example.com",
-        },
+        prefill: { name, contact: phone, email: "test@example.com" },
         theme: { color: "#D4AF37" },
         modal: { ondismiss: () => alert("Payment cancelled") },
+        notes: { payment_type: method },
       };
 
       const rzp = new window.Razorpay(options);
       rzp.open();
-    };
-
-    script.onerror = () => alert("Razorpay SDK failed to load!");
+    } catch (err) {
+      console.error("Razorpay error:", err);
+      alert("Something went wrong while opening payment gateway!");
+    }
   };
 
+  // Cash on delivery
   const handleCOD = () => {
     saveOrder("Cash On Delivery", "Pending");
     setPaymentDone(true);
     setTimeout(() => navigate("/checkout/success"), 2000);
+  };
+
+  // Card form submit
+  const handleCardSubmit = () => {
+    const { cardNumber, expiry, cvv, name: cardName } = cardDetails;
+    if (!cardNumber || !expiry || !cvv || !cardName)
+      return alert("⚠ Please fill all card details!");
+    handleRazorpayPayment("Card");
   };
 
   return (
@@ -129,28 +139,38 @@ export default function PaymentGateway() {
         </button>
       </div>
 
-      {/* UPI Options (Mock) */}
+      {/* UPI Options */}
       {paymentType === "UPI" && (
         <div className="upi-options">
           <h3>Select UPI App</h3>
           <div className="upi-btns">
-            {["gpay", "phonepe", "bhim"].map((app) => (
+            {[
+              {
+                id: "gpay",
+                name: "Google Pay",
+                icon: "https://img.icons8.com/color/48/000000/google-pay-india.png",
+              },
+              {
+                id: "phonepe",
+                name: "PhonePe",
+                icon: "https://img.icons8.com/color/48/000000/phonepe.png",
+              },
+              {
+                id: "bhim",
+                name: "BHIM",
+                icon: "https://img.icons8.com/color/48/000000/bhim.png",
+              },
+            ].map((app) => (
               <button
-                key={app}
+                key={app.id}
                 className="upi-app-btn"
-                onClick={() => handleMockPayment("UPI")}
+                onClick={() => handleRazorpayPayment("UPI")}
               >
-                <img
-                  src={`https://img.icons8.com/color/48/000000/${app}.png`}
-                  alt={app}
-                />
-                {app.toUpperCase()}
+                <img src={app.icon} alt={app.name} />
+                {app.name}
               </button>
             ))}
           </div>
-          <p style={{ color: "#ffcc00" }}>
-            ⚠ UPI payment is mocked for testing only.
-          </p>
         </div>
       )}
 
@@ -200,7 +220,7 @@ export default function PaymentGateway() {
             }
           />
           <button className="checkout-btn" onClick={handleCardSubmit}>
-            Pay ₹{total}
+            Pay ₹{total || 0}
           </button>
         </div>
       )}
@@ -218,21 +238,25 @@ export default function PaymentGateway() {
           <b>Address:</b> {address}
         </p>
         <p>
-          <b>Total Amount:</b> ₹{total}
+          <b>Total Amount:</b> ₹{total || 0}
         </p>
 
         <h3>Products:</h3>
-        {cart.map((item) => (
-          <div key={`${item.id}-${item.selectedSize}`} className="summary-item">
-            <img src={item.image} alt={item.name} />
-            <div>
-              <p>{item.name}</p>
-              <p>Size: {item.selectedSize}</p>
-              <p>Qty: {item.qty}</p>
-              <p>₹{item.price * item.qty}</p>
+        {cart &&
+          cart.map((item) => (
+            <div
+              key={`${item.id}-${item.selectedSize}`}
+              className="summary-item"
+            >
+              <img src={item.image} alt={item.name} />
+              <div>
+                <p>{item.name}</p>
+                <p>Size: {item.selectedSize}</p>
+                <p>Qty: {item.qty}</p>
+                <p>₹{item.price * item.qty}</p>
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
       </div>
     </div>
   );
