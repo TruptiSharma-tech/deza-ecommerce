@@ -1,0 +1,45 @@
+.payment-success-page {
+  min-height: 100vh;
+  background: #121212;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: #f9f7f2;
+  font-family: "Poppins", sans-serif;
+}
+
+.success-box {
+  background: rgba(255, 255, 255, 0.05);
+  padding: 40px;
+  border-radius: 18px;
+  text-align: center;
+  border: 1px solid rgba(212, 175, 55, 0.4);
+  box-shadow: 0 0 20px rgba(212, 175, 55, 0.15);
+}
+
+.success-box h1 {
+  color: #d4af37;
+  font-size: 32px;
+  margin-bottom: 10px;
+}
+
+.success-box p {
+  margin-bottom: 25px;
+  font-size: 16px;
+}
+
+.success-box button {
+  margin: 8px;
+  padding: 12px 22px;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  font-weight: 600;
+  background: #d4af37;
+  color: #121212;
+  transition: 0.3s;
+}
+
+.success-box button:hover {
+  background: #f9f7f2;
+}

@@ -1,0 +1,77 @@
+.support-page {
+  min-height: 100vh;
+  padding: 100px 20px;
+  background: radial-gradient(circle at top, #2b2b2b, #0f0f0f);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: #f9f7f2;
+}
+
+.support-card {
+  width: 100%;
+  max-width: 600px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 20px;
+  padding: 35px;
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  box-shadow: 0px 0px 20px rgba(0, 0, 0, 0.6);
+}
+
+.support-title {
+  font-size: 2rem;
+  text-align: center;
+  margin-bottom: 10px;
+  color: #d4af37;
+}
+
+.support-subtitle {
+  text-align: center;
+  margin-bottom: 25px;
+  color: #f9f7f2;
+  opacity: 0.85;
+}
+
+.support-form label {
+  display: block;
+  margin-bottom: 15px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.support-form input,
+.support-form textarea {
+  width: 100%;
+  padding: 12px;
+  margin-top: 6px;
+  border-radius: 12px;
+  border: 1px solid rgba(212, 175, 55, 0.4);
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  font-size: 14px;
+  outline: none;
+}
+
+.support-form textarea {
+  min-height: 120px;
+  resize: none;
+}
+
+.support-btn {
+  width: 100%;
+  padding: 14px;
+  margin-top: 10px;
+  border-radius: 14px;
+  border: none;
+  background: #d4af37;
+  color: #121212;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.3s ease;
+}
+
+.support-btn:hover {
+  background: #f9f7f2;
+  transform: scale(1.02);
+}

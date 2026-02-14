@@ -17,6 +17,10 @@ import PaymentGateway from "./pages/PaymentGateway";
 import OrderSuccess from "./pages/OrderSuccess";
 import Orders from "./pages/Orders";
 import ProductDetails from "./pages/ProductDetails";
+import OrderTracking from "./pages/TrackOrder";
+
+// CONTACT PAGE ✅
+import Contact from "./pages/Contact";
 
 // POLICIES
 import Terms from "./pages/Terms";
@@ -38,11 +42,18 @@ export default function App() {
         <Route path="/" element={<Home />} />
         <Route path="/shop" element={<Shop />} />
         <Route path="/about" element={<About />} />
+        <Route path="/contact" element={<Contact />} />
+
+        {/* PRODUCT */}
+        <Route path="/product/:id" element={<ProductDetails />} />
+
+        {/* CART & WISHLIST */}
         <Route path="/cart" element={<Cart />} />
         <Route path="/wishlist" element={<Wishlist />} />
+
+        {/* AUTH */}
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
-        <Route path="/product/:id" element={<ProductDetails />} />
 
         {/* CHECKOUT FLOW */}
         <Route path="/checkout" element={<Checkout />} />
@@ -51,11 +62,12 @@ export default function App() {
 
         {/* ORDERS */}
         <Route path="/orders" element={<Orders />} />
+        <Route path="/track-order/:orderId" element={<OrderTracking />} />
 
         {/* POLICIES */}
         <Route path="/terms" element={<Terms />} />
-        <Route path="/PrivacyPolicy" element={<PrivacyPolicy />} />
-        <Route path="/ReturnRefund" element={<ReturnRefund />} />
+        <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+        <Route path="/return-refund" element={<ReturnRefund />} />
 
         {/* ADMIN */}
         <Route path="/admin-login" element={<AdminLogin />} />

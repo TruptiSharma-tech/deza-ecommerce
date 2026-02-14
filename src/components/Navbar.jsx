@@ -19,30 +19,24 @@ export default function Navbar() {
   }, []);
 
   const isAdmin = currentUser?.isAdmin === true;
-  const isCustomer = currentUser && !isAdmin;
 
   return (
     <>
       <nav className="navbar">
         <div className="navbar-container">
-          {/* LEFT LOGO */}
+          {/* LOGO */}
           <Link to="/" className="navbar-logo">
             DEZA
           </Link>
 
-          {/* CENTER LINKS */}
+          {/* LINKS */}
           <div className="navbar-links">
             <Link to="/">Home</Link>
-            <Link to="/Shop">Shop</Link>
-            <Link to="/About">About</Link>
+            <Link to="/shop">Shop</Link>
+            <Link to="/about">About</Link>
 
-            {/* ADMIN PANEL BUTTON ONLY FOR ADMINS */}
             {isAdmin && (
-              <button
-                className="admin-btn"
-                title="Admin Panel"
-                onClick={() => navigate("/admin")}
-              >
+              <button className="admin-btn" onClick={() => navigate("/admin")}>
                 🛠 Admin Panel
               </button>
             )}
@@ -50,9 +44,10 @@ export default function Navbar() {
 
           {/* RIGHT ICONS */}
           <div className="navbar-right">
-            {/* Show wishlist, cart only for regular customers */}
-            {isCustomer && (
+            {/* ❌ ADMIN ke liye Wishlist + Cart hide */}
+            {!isAdmin && (
               <>
+                {/* WISHLIST */}
                 <button
                   className="icon-btn"
                   onClick={() => navigate("/wishlist")}
@@ -60,6 +55,8 @@ export default function Navbar() {
                 >
                   <FaHeart className="nav-icon" />
                 </button>
+
+                {/* CART */}
                 <button
                   className="icon-btn"
                   onClick={() => navigate("/cart")}
@@ -70,7 +67,7 @@ export default function Navbar() {
               </>
             )}
 
-            {/* PROFILE ICON */}
+            {/* ✅ PROFILE ICON ALWAYS SHOW */}
             <button
               className="icon-btn"
               title="My Account"
@@ -82,11 +79,12 @@ export default function Navbar() {
               <FaUserCircle className="nav-icon" />
             </button>
 
-            {/* HAMBURGER MENU */}
+            {/* MENU */}
             <div className="menu-dropdown">
               <button
                 className="icon-btn"
                 onClick={() => setMenuOpen(!menuOpen)}
+                title="Menu"
               >
                 <div className="hamburger">
                   <span></span>
@@ -97,21 +95,48 @@ export default function Navbar() {
 
               {menuOpen && (
                 <div className="menu-box">
-                  <Link to="/">Home</Link>
-                  <Link to="/Shop">Shop</Link>
-                  <Link to="/About">About Us</Link>
-                  <Link to="/PrivacyPolicy">Privacy Policy</Link>
-                  <Link to="/Terms">Terms & Conditions</Link>
-                  <Link to="/ReturnRefund">Return/Refund</Link>
+                  <Link to="/" onClick={() => setMenuOpen(false)}>
+                    Home
+                  </Link>
 
-                  {/* Only show My Orders if customer */}
-                  {isCustomer && <Link to="/Orders">My Orders</Link>}
+                  <Link to="/shop" onClick={() => setMenuOpen(false)}>
+                    Shop
+                  </Link>
 
-                  {/* Admin Panel only for admins */}
+                  <Link to="/about" onClick={() => setMenuOpen(false)}>
+                    About Us
+                  </Link>
+
+                  <Link to="/contact" onClick={() => setMenuOpen(false)}>
+                    Support
+                  </Link>
+
+                  {/* ❌ Admin ke liye My Orders hide */}
+                  {!isAdmin && (
+                    <Link to="/orders" onClick={() => setMenuOpen(false)}>
+                      My Orders
+                    </Link>
+                  )}
+
+                  <Link to="/privacy-policy" onClick={() => setMenuOpen(false)}>
+                    Privacy Policy
+                  </Link>
+
+                  <Link to="/terms" onClick={() => setMenuOpen(false)}>
+                    Terms & Conditions
+                  </Link>
+
+                  <Link to="/return-refund" onClick={() => setMenuOpen(false)}>
+                    Return/Refund
+                  </Link>
+
                   {isAdmin && (
                     <button
                       className="admin-link"
-                      onClick={() => navigate("/admin")}
+                      onClick={() => {
+                        setMenuOpen(false);
+                        navigate("/admin");
+                      }}
                     >
                       🛠 Admin Panel
                     </button>
