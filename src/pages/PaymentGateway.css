@@ -1,122 +1,271 @@
+/* =========================================
+   DEZA MOBILE-PERFECT LUXURY PAYMENT
+   ========================================= */
+
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600&family=Poppins:wght@300;400;500;600&display=swap');
+
+:root {
+  --gold: #D4AF37;
+  --bg-dark: #080808;
+  --card-bg: rgba(20, 20, 20, 0.7);
+  --border-gold: rgba(212, 175, 55, 0.2);
+  --text-white: #F9F7F2;
+}
+
 .payment-page {
+  padding: 40px 15px;
+  background: var(--bg-dark);
   min-height: 100vh;
-  padding: 60px 15px;
-  background: radial-gradient(circle at top, #2b2b2b, #0f0f0f);
-  color: #f9f7f2;
-  animation: fadeIn 0.7s ease;
+  color: var(--text-white);
+  font-family: 'Poppins', sans-serif;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow-x: hidden;
 }
 
 .payment-title {
   text-align: center;
-  font-size: 2.3rem;
-  color: #d4af37;
+  font-family: 'Playfair Display', serif;
+  color: var(--gold);
+  font-size: 28px;
   margin-bottom: 30px;
+  text-transform: uppercase;
+  letter-spacing: 4px;
 }
 
+.payment-title span {
+  color: #fff;
+  font-weight: 300;
+}
+
+/* PAYMENT OPTIONS - Grid for better reliability */
 .payment-options {
-  max-width: 900px;
-  margin: auto;
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 15px;
-  justify-content: center;
-  flex-wrap: wrap;
-  margin-bottom: 35px;
+  width: 100%;
+  max-width: 1000px;
+  margin-bottom: 40px;
 }
 
 .payment-btn {
+  background: var(--card-bg);
+  border: 1px solid var(--border-gold);
+  padding: 25px 20px;
+  border-radius: 20px;
+  color: #fff;
+  cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 14px 18px;
-  border-radius: 14px;
-  border: none;
-  cursor: pointer;
-  font-size: 1rem;
-  font-weight: bold;
-  transition: 0.35s ease;
-  min-width: 250px;
+  gap: 20px;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+  text-align: left;
+  width: 100%;
+}
+
+.payment-btn:hover,
+.payment-btn:active {
+  background: rgba(212, 175, 55, 0.1);
+  border-color: var(--gold);
+  transform: translateY(-5px);
+}
+
+.icon-stack {
+  display: flex;
+  align-items: center;
   justify-content: center;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 12px;
+  border-radius: 15px;
+  min-width: 60px;
 }
 
-.payment-btn:hover {
-  transform: translateY(-3px);
-  box-shadow: 0px 0px 18px rgba(212, 175, 55, 0.25);
+.icon-stack img {
+  width: 35px;
+  height: 35px;
+  object-fit: contain;
 }
 
-.upi-btn {
-  background: #d4af37;
-  color: #111;
+.mini-icons {
+  display: none;
+  /* Keep it clean on mobile */
 }
 
-.card-btn {
-  background: white;
-  color: #111;
+.btn-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
-.cod-btn {
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(212, 175, 55, 0.25);
-  color: #fff;
+.btn-label {
+  font-size: 16px;
+  font-weight: 600;
 }
 
+.btn-sub {
+  font-size: 11px;
+  opacity: 0.5;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* ORDER SUMMARY */
 .order-summary {
-  max-width: 900px;
-  margin: auto;
-  background: rgba(20, 20, 20, 0.75);
-  border-radius: 18px;
-  padding: 22px;
-  border: 1px solid rgba(212, 175, 55, 0.2);
+  width: 100%;
+  max-width: 1000px;
+  background: var(--card-bg);
+  padding: 25px;
+  border-radius: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .order-summary h2 {
-  color: #d4af37;
-  margin-bottom: 12px;
+  font-family: 'Playfair Display', serif;
+  color: var(--gold);
+  font-size: 22px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid rgba(212, 175, 55, 0.1);
+  padding-bottom: 10px;
 }
 
-.order-summary h3 {
-  margin-top: 20px;
-  color: #d4af37;
+.summary-details {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  margin-bottom: 30px;
 }
 
-.total {
-  font-size: 1.2rem;
-  margin-top: 10px;
+.customer-info p {
+  margin-bottom: 8px;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.customer-info b {
+  color: var(--gold);
+  margin-right: 5px;
+  font-size: 12px;
+  text-transform: uppercase;
+}
+
+.price-info {
+  background: rgba(212, 175, 55, 0.05);
+  padding: 20px;
+  border-radius: 15px;
+  text-align: center;
+  border: 1px dashed var(--border-gold);
+}
+
+.total-label {
+  font-size: 12px;
+  text-transform: uppercase;
+  opacity: 0.6;
+}
+
+.total-amount {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--gold);
+  font-family: 'Playfair Display', serif;
+}
+
+/* SUMMARY ITEMS */
+.summary-items {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
 }
 
 .summary-item {
   display: flex;
-  gap: 12px;
+  gap: 15px;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.02);
   padding: 12px;
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.04);
-  margin-top: 12px;
+  border-radius: 15px;
 }
 
 .summary-item img {
-  width: 80px;
-  height: 80px;
-  object-fit: contain;
+  width: 70px;
+  height: 70px;
+  object-fit: cover;
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.04);
-  padding: 8px;
 }
 
-.pname {
-  font-weight: bold;
-  color: #d4af37;
+.item-text {
+  flex: 1;
 }
 
-.pprice {
-  font-weight: bold;
+.item-name {
+  font-size: 15px;
+  font-weight: 500;
+  margin-bottom: 2px;
 }
 
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(14px);
+.item-meta {
+  font-size: 12px;
+  opacity: 0.5;
+}
+
+.item-price {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--gold);
+  margin-top: 5px;
+}
+
+/* DESKTOP REFINEMENTS (768px+) */
+@media (min-width: 768px) {
+  .payment-page {
+    padding: 80px 40px;
   }
-  to {
-    opacity: 1;
-    transform: translateY(0px);
+
+  .payment-title {
+    font-size: 42px;
+    margin-bottom: 60px;
+  }
+
+  .payment-options {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 30px;
+  }
+
+  .payment-btn {
+    flex-direction: column;
+    text-align: center;
+    padding: 40px 20px;
+  }
+
+  .icon-stack {
+    width: 80px;
+    height: 80px;
+    margin-bottom: 10px;
+  }
+
+  .mini-icons {
+    display: flex;
+    justify-content: center;
+    gap: 5px;
+    margin-top: 10px;
+  }
+
+  .mini-icons img {
+    width: 20px;
+    height: 20px;
+  }
+
+  .summary-details {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .price-info {
+    text-align: right;
+    background: transparent;
+    border: none;
+    padding: 0;
   }
 }

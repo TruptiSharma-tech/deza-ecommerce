@@ -36,22 +36,22 @@ export default function Home() {
         <h2>Featured Collection</h2>
 
         <div className="product-grid">
-          <div className="product-card">
+          <div className="product-card" onClick={() => navigate("/shop")}>
             <h3>DEZA Noir</h3>
             <p>Bold. Dark. Magnetic.</p>
-            <button>Add to Cart</button>
+            <button onClick={() => navigate("/shop")}>Explore Now</button>
           </div>
 
-          <div className="product-card">
+          <div className="product-card" onClick={() => navigate("/shop")}>
             <h3>DEZA Blossom</h3>
             <p>Soft floral luxury.</p>
-            <button>Add to Cart</button>
+            <button onClick={() => navigate("/shop")}>Explore Now</button>
           </div>
 
-          <div className="product-card">
+          <div className="product-card" onClick={() => navigate("/shop")}>
             <h3>DEZA Oud Royale</h3>
             <p>Royal. Rich. Timeless.</p>
-            <button>Add to Cart</button>
+            <button onClick={() => navigate("/shop")}>Explore Now</button>
           </div>
         </div>
       </section>

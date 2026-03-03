@@ -12,6 +12,8 @@ import Cart from "./pages/Cart";
 import Wishlist from "./pages/Wishlist";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 import Checkout from "./pages/Checkout";
 import PaymentGateway from "./pages/PaymentGateway";
 import OrderSuccess from "./pages/OrderSuccess";
@@ -54,6 +56,8 @@ export default function App() {
         {/* AUTH */}
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
 
         {/* CHECKOUT FLOW */}
         <Route path="/checkout" element={<Checkout />} />

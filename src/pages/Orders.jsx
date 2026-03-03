@@ -80,15 +80,15 @@ export default function Orders() {
     const updatedOrders = orders.map((o) =>
       o.id === selectedOrder.id
         ? {
-            ...o,
-            returnStatus: "Return Requested",
-            returnRequest: {
-              type: returnType,
-              reason: returnReason,
-              message: returnMessage,
-              date: new Date().toLocaleString(),
-            },
-          }
+          ...o,
+          returnStatus: "Return Requested",
+          returnRequest: {
+            type: returnType,
+            reason: returnReason,
+            message: returnMessage,
+            date: new Date().toLocaleString(),
+          },
+        }
         : o,
     );
 
@@ -127,10 +127,10 @@ export default function Orders() {
     const updatedOrders = orders.map((o) =>
       o.id === id
         ? {
-            ...o,
-            refundStatus: "Refund Requested",
-            refundRequestDate: new Date().toLocaleString(),
-          }
+          ...o,
+          refundStatus: "Refund Requested",
+          refundRequestDate: new Date().toLocaleString(),
+        }
         : o,
     );
 
@@ -157,7 +157,7 @@ export default function Orders() {
                 <b>Date:</b> {o.date || "N/A"}
               </p>
               <p>
-                <b>Total:</b> ₹{o.total || 0}
+                <b>Total:</b> ₹{o.totalPrice || o.total || 0}
               </p>
               <p>
                 <b>Payment:</b> {o.paymentMethod || "N/A"}
@@ -189,9 +189,8 @@ export default function Orders() {
                 ].map((step, index) => (
                   <div
                     key={step}
-                    className={`progress-step ${
-                      index < getProgressStep(o.status) ? "active" : ""
-                    }`}
+                    className={`progress-step ${index < getProgressStep(o.status) ? "active" : ""
+                      }`}
                   >
                     {step}
                   </div>

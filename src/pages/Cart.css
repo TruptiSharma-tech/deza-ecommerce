@@ -177,6 +177,7 @@
     opacity: 0;
     transform: translateY(15px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0px);
@@ -188,6 +189,7 @@
     grid-template-columns: 1fr;
   }
 }
+
 .whatsapp-btn {
   width: 100%;
   padding: 14px;

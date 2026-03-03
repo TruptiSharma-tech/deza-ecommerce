@@ -6,16 +6,17 @@ export default function Wishlist() {
   const [wishlist, setWishlist] = useState([]);
   const navigate = useNavigate();
 
+  const STORAGE_KEY = "deza_wishlist";
+
   useEffect(() => {
-    const storedWishlist =
-      JSON.parse(localStorage.getItem("dezaWishlist")) || [];
+    const storedWishlist = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
     setWishlist(storedWishlist);
   }, []);
 
   const handleRemove = (id) => {
     const updated = wishlist.filter((item) => item.id !== id);
     setWishlist(updated);
-    localStorage.setItem("dezaWishlist", JSON.stringify(updated));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
   };
 
   return (
@@ -26,30 +27,43 @@ export default function Wishlist() {
         <p className="empty-wishlist">No items in wishlist 😢</p>
       ) : (
         <div className="wishlist-grid">
-          {wishlist.map((item) => (
-            <div className="wishlist-card" key={item.id}>
-              <img src={item.image} alt={item.title} />
+          {wishlist.map((item) => {
+            // 👇 SAME PRICE LOGIC AS SHOP
+            const minPrice =
+              item.sizePrices && item.sizePrices.length > 0
+                ? Math.min(...item.sizePrices.map((s) => Number(s.price)))
+                : null;
 
-              <h3>{item.title}</h3>
-              <p className="wishlist-price">₹{item.price}</p>
+            return (
+              <div className="wishlist-card" key={item.id}>
+                <img src={item.image} alt={item.title} />
 
-              <div className="wishlist-btns">
-                <button
-                  className="view-btn"
-                  onClick={() => navigate(`/product/${item.id}`)}
-                >
-                  View
-                </button>
+                <h3>{item.title}</h3>
 
-                <button
-                  className="remove-btn"
-                  onClick={() => handleRemove(item.id)}
-                >
-                  Remove
-                </button>
+                <p className="wishlist-price">
+                  {minPrice
+                    ? `₹ ${minPrice.toLocaleString("en-IN")}`
+                    : "Price Not Available"}
+                </p>
+
+                <div className="wishlist-btns">
+                  <button
+                    className="view-btn"
+                    onClick={() => navigate(`/product/${item.id}`)}
+                  >
+                    View Product
+                  </button>
+
+                  <button
+                    className="remove-btn"
+                    onClick={() => handleRemove(item.id)}
+                  >
+                    Remove
+                  </button>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

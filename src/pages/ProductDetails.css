@@ -1,279 +1,298 @@
-.pd-page {
-  min-height: 80vh;
-  background: radial-gradient(circle at top, #2b2b2b, #0f0f0f);
-  padding: 60px 15px;
-  color: #f9f7f2;
-  animation: fadeIn 0.7s ease-in-out;
+/* ===============================
+   DEZA PRODUCT DETAILS – LUXURY
+================================ */
 
-  /* ✅ FIXED layout */
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+:root {
+  --onyx: #0f0f0f;
+  --onyx2: #1a1a1a;
+  --gold: #d4af37;
+  --gold-dark: #b8912f;
+  --alabaster: #f9f7f2;
+  --border: rgba(212, 175, 55, 0.25);
 }
 
-/* ✅ Product Name Top */
+/* PAGE */
+.pd-page {
+  background: radial-gradient(circle at top, #1c1c1c, #0e0e0e);
+  min-height: 100vh;
+  padding: 60px 8%;
+  color: var(--alabaster);
+  font-family: "Poppins", sans-serif;
+}
+
 .pd-top-title {
   text-align: center;
   font-size: 38px;
   font-weight: 900;
-  color: #d4af37;
-  margin-bottom: 30px;
+  color: var(--gold);
+  margin-bottom: 40px;
   letter-spacing: 2px;
-  text-transform: uppercase;
-  text-shadow: 0px 0px 15px rgba(212, 175, 55, 0.35);
 }
 
+/* CARD */
 .pd-card {
-  max-width: 1200px;
-  width: 100%;
-  display: grid;
-  grid-template-columns: 1fr 1.2fr;
-  gap: 35px;
-  background: rgba(20, 20, 20, 0.75);
-  border-radius: 18px;
-  border: 1px solid rgba(212, 175, 55, 0.25);
-  padding: 25px;
-  box-shadow: 0px 0px 25px rgba(0, 0, 0, 0.6);
+  display: flex;
+  gap: 50px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border);
+  border-radius: 25px;
+  padding: 40px;
   backdrop-filter: blur(12px);
-  margin: auto;
 }
 
-.pd-img img {
-  width: 95%;
-  height: 600px;
-  object-fit: contain;
-  border-radius: 15px;
-  background: rgba(255, 255, 255, 0.04);
-  padding: 15px;
-  border: 1px solid rgba(212, 175, 55, 0.2);
+/* IMAGE */
+.pd-img {
+  flex: 1;
+}
+
+.main-image {
+  width: 100%;
+  border-radius: 20px;
   transition: 0.4s ease;
 }
 
-.pd-img img:hover {
-  transform: scale(1.04);
-}
-
-/* ✅ Thumbnail images row */
-.thumbnail-images {
-  display: flex;
-  gap: 10px;
-  margin-top: 12px;
-  flex-wrap: wrap;
-}
-
-.thumbnail-images img {
-  width: 65px;
-  height: 65px;
-  object-fit: cover;
-  border-radius: 8px;
-  cursor: pointer;
-  border: 1px solid rgba(212, 175, 55, 0.3);
-  transition: 0.3s ease;
-}
-
-.thumbnail-images img:hover {
+.main-image:hover {
   transform: scale(1.05);
-  border: 2px solid #d4af37;
 }
 
-.pd-info h1 {
-  font-size: 3rem;
-  color: #d4af37;
-  margin-bottom: 6px;
+/* INFO */
+.pd-info {
+  flex: 1;
 }
 
 .pd-brand {
-  font-size: 1rem;
-  opacity: 0.8;
-  margin-bottom: 15px;
+  font-size: 14px;
+  opacity: 0.7;
+  margin-bottom: 10px;
 }
 
 .pd-price {
-  font-size: 1.8rem;
-  font-weight: bold;
-  margin-bottom: 12px;
-  color: #fff;
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--gold);
+  margin: 15px 0;
 }
 
-.pd-desc {
-  font-size: 1rem;
-  line-height: 1.7;
-  opacity: 0.9;
-  margin-bottom: 20px;
-}
-
-.pd-sizes h4,
-.pd-qty h4 {
+/* SIZE */
+.pd-sizes h4 {
   margin-bottom: 10px;
-  color: #d4af37;
 }
 
 .size-buttons {
   display: flex;
-  flex-wrap: wrap;
   gap: 10px;
-  margin-bottom: 20px;
 }
 
 .size-buttons button {
-  padding: 10px 15px;
-  border-radius: 12px;
-  border: 1px solid rgba(212, 175, 55, 0.35);
-  background: rgba(255, 255, 255, 0.03);
-  color: #fff;
+  padding: 8px 16px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--alabaster);
   cursor: pointer;
   transition: 0.3s ease;
 }
 
-.size-buttons button.active {
-  background: #d4af37;
+.size-buttons button.active,
+.size-buttons button:hover {
+  background: linear-gradient(135deg, var(--gold), var(--gold-dark));
   color: #111;
-  font-weight: bold;
+  border: none;
 }
 
-.size-buttons button:hover {
-  transform: translateY(-2px);
+/* QTY */
+.pd-qty {
+  margin-top: 20px;
 }
 
 .qty-box {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 20px;
+  gap: 15px;
 }
 
 .qty-box button {
-  width: 38px;
-  height: 38px;
+  width: 35px;
+  height: 35px;
   border-radius: 50%;
   border: none;
-  background: #d4af37;
+  background: var(--gold);
   color: #111;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+/* ACTION BUTTONS */
+.pd-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin-top: 25px;
+}
+
+/* Top Buttons Row */
+.cart-btn,
+.buy-btn {
+  padding: 12px 18px;
+  border-radius: 12px;
+  border: none;
+  font-weight: 700;
+  cursor: pointer;
+  transition: 0.3s ease;
+  width: 100%;
+}
+
+.cart-btn {
+  background: linear-gradient(135deg, #d4af37, #b8912f);
+  color: #111;
+}
+
+.buy-btn {
+  background: white;
+  color: #111;
+}
+
+/* Wishlist + WhatsApp Row */
+.wish-whatsapp {
+  display: flex;
+  gap: 10px;
+}
+
+/* Wishlist */
+.wish-btn {
+  flex: 1;
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  background: transparent;
+  color: white;
+  cursor: pointer;
+  transition: 0.3s ease;
+}
+
+
+
+/* Hover Effects */
+.cart-btn:hover,
+.buy-btn:hover,
+.wish-btn:hover,
+.whatsapp-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 0 15px rgba(212, 175, 55, 0.4);
+}
+
+/* WhatsApp Button Premium */
+.whatsapp-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
+  padding: 10px 14px;
+  border-radius: 30px;
+
+  background: linear-gradient(135deg, #25d366, #1ebe5b);
+  border: none;
+
+  color: white;
+  font-weight: 600;
+  font-size: 14px;
+
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+/* WhatsApp Icon */
+.wa-icon {
+  font-size: 18px;
+}
+
+/* Hover Effect */
+.whatsapp-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 0 20px rgba(37, 211, 102, 0.6);
+  background: linear-gradient(135deg, #1ebe5b, #17a84e);
+}
+
+/* Click Effect */
+.whatsapp-btn:active {
+  transform: scale(0.95);
+}
+
+/* ===============================
+   REVIEW SECTION
+================================ */
+
+.pd-review-section {
+  margin-top: 50px;
+  padding: 25px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border);
+}
+
+.pd-review-section h3 {
+  margin-bottom: 15px;
+  color: var(--gold);
+}
+
+.pd-review-section textarea {
+  width: 100%;
+  min-height: 90px;
+  background: #111;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px;
+  color: white;
+  margin-top: 10px;
+  margin-bottom: 10px;
+  resize: none;
+}
+
+.pd-review-section input[type="file"] {
+  margin-top: 5px;
+  color: white;
+}
+
+.pd-review-section button {
+  margin-top: 10px;
+  padding: 10px 18px;
+  background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+  border: none;
+  border-radius: 10px;
   font-weight: bold;
   cursor: pointer;
   transition: 0.3s ease;
 }
 
-.qty-box button:hover {
-  transform: scale(1.1);
-}
-
-.qty-box span {
-  font-size: 1.2rem;
-  font-weight: bold;
-}
-
-.pd-actions {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 14px;
-  margin-top: 10px;
-}
-
-.pd-actions button {
-  padding: 13px;
-  border-radius: 14px;
-  border: none;
-  cursor: pointer;
-  font-size: 1rem;
-  font-weight: bold;
-  transition: 0.35s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-}
-
-.cart-btn {
-  background: #d4af37;
-  color: #111;
-}
-
-.buy-btn {
-  background: #ffffff;
-  color: #111;
-}
-
-.wish-btn {
-  background: rgba(255, 255, 255, 0.08);
-  color: #fff;
-  border: 1px solid rgba(212, 175, 55, 0.3) !important;
-}
-
-.pd-actions button:hover {
+.pd-review-section button:hover {
   transform: translateY(-3px);
-  box-shadow: 0px 0px 18px rgba(212, 175, 55, 0.25);
+  box-shadow: 0 0 15px rgba(212, 175, 55, 0.4);
 }
 
-.pd-extra {
+/* REVIEW LIST */
+.pd-review-section>div>div {
   margin-top: 20px;
-  font-size: 0.95rem;
-  opacity: 0.85;
-  line-height: 1.8;
-}
-
-/* ✅ WhatsApp Button */
-.whatsapp-btn {
-  width: 100%;
-  margin-top: 12px;
-  padding: 12px;
+  padding: 15px;
   border-radius: 12px;
-  border: none;
-  font-weight: bold;
-  font-size: 15px;
-  cursor: pointer;
-  background: #25d366;
-  color: white;
-  transition: 0.3s;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-.whatsapp-btn:hover {
-  transform: scale(1.02);
-  background: #1ebe5d;
+.pd-review-section strong {
+  color: var(--gold);
 }
 
-/* ❌ Product Not Found */
-.product-not-found {
-  min-height: 80vh;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  color: #d4af37;
-  font-size: 1.4rem;
+.pd-review-section img {
+  margin-top: 8px;
+  border-radius: 10px;
 }
 
-.product-not-found button {
-  margin-top: 15px;
-  padding: 12px 18px;
-  border-radius: 12px;
-  background: #d4af37;
-  color: #111;
-  border: none;
-  cursor: pointer;
-  font-weight: bold;
-}
-
-/* ⭐ Animation */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(18px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0px);
-  }
-}
-
-/* 📱 Responsive */
+/* RESPONSIVE */
 @media (max-width: 900px) {
   .pd-card {
-    grid-template-columns: 1fr;
-  }
-
-  .pd-img img {
-    height: 330px;
+    flex-direction: column;
   }
 
   .pd-top-title {

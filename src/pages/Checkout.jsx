@@ -4,21 +4,37 @@ import "./Checkout.css";
 
 export default function Checkout() {
   const navigate = useNavigate();
+
+  // Get cart safely
   const cart = JSON.parse(localStorage.getItem("deza_cart")) || [];
 
+  // Get previous checkout info
   const prevInfo = JSON.parse(localStorage.getItem("checkoutInfo")) || {};
 
   const [name, setName] = useState(prevInfo.name || "");
   const [phone, setPhone] = useState(
     prevInfo.phone ? prevInfo.phone.replace("+91", "") : "",
   );
-  const [address, setAddress] = useState(prevInfo.address || "");
 
+  // ✅ Professional Address Object
+  const [address, setAddress] = useState(
+    prevInfo.address || {
+      street: "",
+      area: "",
+      city: "",
+      state: "",
+      pincode: "",
+      country: "India",
+    },
+  );
+
+  // Calculate total
   const totalAmount = cart.reduce(
     (sum, item) => sum + item.price * item.qty,
     0,
   );
 
+  // Validation
   const validateForm = () => {
     if (!name || !/^[a-zA-Z\s]+$/.test(name)) {
       alert("⚠ Enter valid name!");
@@ -30,13 +46,23 @@ export default function Checkout() {
       return false;
     }
 
-    if (!address || address.trim().length < 10) {
-      alert("⚠ Enter full address!");
+    if (
+      !address.street ||
+      !address.city ||
+      !address.state ||
+      !address.pincode
+    ) {
+      alert("⚠ Please fill complete address!");
+      return false;
+    }
+
+    if (!/^\d{6}$/.test(address.pincode)) {
+      alert("⚠ Enter valid 6-digit pincode!");
       return false;
     }
 
     if (cart.length === 0) {
-      alert("⚠ Cart empty!");
+      alert("⚠ Cart is empty!");
       return false;
     }
 
@@ -46,17 +72,15 @@ export default function Checkout() {
   const handleProceedPayment = () => {
     if (!validateForm()) return;
 
-    localStorage.setItem(
-      "checkoutInfo",
-      JSON.stringify({
-        name,
-        phone: "+91" + phone,
-        address,
-        cart,
-        total: totalAmount,
-      }),
-    );
+    const checkoutData = {
+      name,
+      phone: "+91" + phone,
+      address,
+      cart,
+      total: totalAmount,
+    };
 
+    localStorage.setItem("checkoutInfo", JSON.stringify(checkoutData));
     navigate("/payment");
   };
 
@@ -65,6 +89,7 @@ export default function Checkout() {
       <h1 className="checkout-title">Checkout</h1>
 
       <div className="checkout-wrap">
+        {/* LEFT SIDE */}
         <div className="checkout-form">
           <h2>Customer Details</h2>
 
@@ -88,13 +113,66 @@ export default function Checkout() {
             />
           </div>
 
-          <textarea
-            placeholder="Full Address"
-            value={address}
-            onChange={(e) => setAddress(e.target.value)}
+          <h2>Shipping Address</h2>
+
+          <input
+            type="text"
+            placeholder="House No / Building"
+            value={address.street}
+            onChange={(e) => setAddress({ ...address, street: e.target.value })}
           />
+
+          <input
+            type="text"
+            placeholder="Area / Locality"
+            value={address.area}
+            onChange={(e) => setAddress({ ...address, area: e.target.value })}
+          />
+
+          <div className="row">
+            <input
+              type="text"
+              placeholder="City"
+              value={address.city}
+              onChange={(e) => setAddress({ ...address, city: e.target.value })}
+            />
+
+            <input
+              type="text"
+              placeholder="State"
+              value={address.state}
+              onChange={(e) =>
+                setAddress({ ...address, state: e.target.value })
+              }
+            />
+          </div>
+
+          <div className="row">
+            <input
+              type="text"
+              placeholder="Pincode"
+              maxLength={6}
+              value={address.pincode}
+              onChange={(e) =>
+                setAddress({
+                  ...address,
+                  pincode: e.target.value.replace(/\D/g, ""),
+                })
+              }
+            />
+
+            <input
+              type="text"
+              placeholder="Country"
+              value={address.country}
+              onChange={(e) =>
+                setAddress({ ...address, country: e.target.value })
+              }
+            />
+          </div>
         </div>
 
+        {/* RIGHT SIDE */}
         <div className="checkout-summary">
           <h2>Order Summary</h2>
 
@@ -108,6 +186,7 @@ export default function Checkout() {
                   key={`${item.id}-${item.selectedSize}`}
                 >
                   <img src={item.image} alt={item.name} />
+
                   <div>
                     <p className="item-name">{item.name}</p>
                     <p>Size: {item.selectedSize}</p>

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import "./Admin.css";
+import { Filler } from "chart.js";
 import { useNavigate } from "react-router-dom";
 import { Line, Pie, Bar } from "react-chartjs-2";
 import {
@@ -29,6 +30,7 @@ ChartJS.register(
   Title,
   Tooltip,
   Legend,
+  Filler,
 );
 
 // ❌ REMOVE THESE (these were making everything black)
@@ -50,6 +52,9 @@ export default function Admin() {
   // Orders & Queries
   const [orders, setOrders] = useState([]);
   const [queries, setQueries] = useState([]);
+
+  // Support Reply State
+  const [replyInputs, setReplyInputs] = useState({});
 
   // Filters
   const [reportPeriod, setReportPeriod] = useState("monthly");
@@ -266,11 +271,11 @@ export default function Admin() {
       product.sizePrices?.length
         ? product.sizePrices
         : [
-            { size: "25ml", price: "" },
-            { size: "30ml", price: "" },
-            { size: "50ml", price: "" },
-            { size: "100ml", price: "" },
-          ],
+          { size: "25ml", price: "" },
+          { size: "30ml", price: "" },
+          { size: "50ml", price: "" },
+          { size: "100ml", price: "" },
+        ],
     );
 
     setActiveTab("add");
@@ -322,6 +327,47 @@ export default function Admin() {
     );
   };
 
+  // UPDATE QUERY FIELD (priority / status)
+  const updateQueryField = (id, field, value) => {
+    const updated = queries.map((q) =>
+      q.id === id ? { ...q, [field]: value } : q,
+    );
+
+    setQueries(updated);
+    localStorage.setItem("dezaQueries", JSON.stringify(updated));
+  };
+
+  // SEND ADMIN REPLY
+  const sendAdminReply = (id) => {
+    const replyText = replyInputs[id];
+
+    if (!replyText) {
+      alert("⚠ Please write a reply first!");
+      return;
+    }
+
+    const updated = queries.map((q) =>
+      q.id === id
+        ? {
+          ...q,
+          adminReply: replyText,
+          repliedAt: new Date().toLocaleString(),
+          status: "Resolved",
+        }
+        : q,
+    );
+
+    setQueries(updated);
+    localStorage.setItem("dezaQueries", JSON.stringify(updated));
+
+    setReplyInputs({
+      ...replyInputs,
+      [id]: "",
+    });
+
+    alert("✅ Reply sent successfully!");
+  };
+
   // Filter Orders
   const filteredOrders = orders.filter((o) => {
     const orderDate = new Date(o.date);
@@ -339,7 +385,7 @@ export default function Admin() {
     if (reportPeriod === "quarterly")
       return (
         Math.floor(orderDate.getMonth() / 3) ===
-          Math.floor(now.getMonth() / 3) &&
+        Math.floor(now.getMonth() / 3) &&
         orderDate.getFullYear() === now.getFullYear()
       );
 
@@ -395,7 +441,7 @@ export default function Admin() {
     const productReviews = reviews.filter((r) => r.productId === p.id);
     const avgRating = productReviews.length
       ? productReviews.reduce((sum, r) => sum + r.rating, 0) /
-        productReviews.length
+      productReviews.length
       : 0;
     return { ...p, avgRating };
   });
@@ -406,12 +452,24 @@ export default function Admin() {
   );
 
   // Charts
+  // ✅ Aggregated Revenue Data (Grouped by Date)
+  const revenueByDate = finalOrders.reduce((acc, o) => {
+    const dateStr = new Date(o.date).toLocaleDateString();
+    acc[dateStr] = (acc[dateStr] || 0) + (o.totalPrice || 0);
+    return acc;
+  }, {});
+
+  const revenueLabels = Object.keys(revenueByDate).sort(
+    (a, b) => new Date(a) - new Date(b),
+  );
+  const revenueValues = revenueLabels.map((label) => revenueByDate[label]);
+
   const revenueChart = {
-    labels: finalOrders.map((o) => new Date(o.date).toLocaleDateString()),
+    labels: revenueLabels,
     datasets: [
       {
-        label: "Revenue",
-        data: finalOrders.map((o) => o.totalPrice || 0),
+        label: "Daily Revenue",
+        data: revenueValues,
         borderColor: "#D4AF37",
         backgroundColor: "rgba(212,175,55,0.15)",
         borderWidth: 3,
@@ -991,6 +1049,9 @@ export default function Admin() {
                   <tr>
                     <th>ID</th>
                     <th>Date</th>
+                    <th>Customer</th>
+                    <th>Address</th>
+                    <th>Items</th>
                     <th>Total</th>
                     <th>Status</th>
                     <th>Update</th>
@@ -1002,6 +1063,48 @@ export default function Admin() {
                     <tr key={o.id}>
                       <td>{o.id}</td>
                       <td>{o.date}</td>
+
+                      <td>
+                        <strong>{o.customerName || "N/A"}</strong>
+                        <br />
+                        {o.customerEmail || ""}
+                      </td>
+
+                      <td>
+                        {o.address ? (
+                          typeof o.address === "string" ? (
+                            <>{o.address}</>
+                          ) : (
+                            <>
+                              <strong>{o.customerName}</strong> <br />
+                              {o.customerPhone} <br />
+                              {o.address.street}, {o.address.area} <br />
+                              {o.address.city}, {o.address.state} -{" "}
+                              {o.address.pincode} <br />
+                              {o.address.country}
+                            </>
+                          )
+                        ) : (
+                          "N/A"
+                        )}
+                      </td>
+                      <td>
+                        {(o.items || []).map((item) => (
+                          <div key={item.id} style={{ marginBottom: "10px" }}>
+                            <img
+                              src={item.image}
+                              alt={item.name}
+                              style={{ width: "40px", marginRight: "5px" }}
+                            />
+                            <div>
+                              {item.name} <br />
+                              Size: {item.selectedSize} <br />
+                              Qty: {item.qty}
+                            </div>
+                          </div>
+                        ))}
+                      </td>
+
                       <td>₹{o.totalPrice}</td>
                       <td>{o.status}</td>
                       <td>
@@ -1038,37 +1141,97 @@ export default function Admin() {
         {/* SUPPORT */}
         {activeTab === "support" && (
           <div className="admin-section">
-            <h2>Customer Queries 💬</h2>
+            <h2>Customer Support Tickets 🎫</h2>
 
             <div className="table-wrapper">
               <table className="queries-table">
                 <thead>
                   <tr>
-                    <th>ID</th>
+                    <th>Ticket</th>
                     <th>Name</th>
                     <th>Email</th>
-                    <th>Query</th>
-                    <th>Resolved</th>
-                    <th>Action</th>
+                    <th>Message</th>
+                    <th>Image</th>
+                    <th>Priority</th>
+                    <th>Status</th>
+                    <th>Reply</th>
                   </tr>
                 </thead>
 
                 <tbody>
                   {queries.map((q) => (
                     <tr key={q.id}>
-                      <td>{q.id}</td>
+                      <td>{q.ticketId || "DZ-" + q.id}</td>
                       <td>{q.name}</td>
                       <td>{q.email}</td>
                       <td>{q.message}</td>
-                      <td>{q.resolved ? "Yes" : "No"}</td>
+
                       <td>
-                        {!q.resolved && (
-                          <button
-                            className="small-btn edit-btn"
-                            onClick={() => resolveQuery(q.id)}
-                          >
-                            Resolve
-                          </button>
+                        {q.image && (
+                          <img
+                            src={q.image}
+                            alt="proof"
+                            style={{
+                              width: "60px",
+                              borderRadius: "6px",
+                            }}
+                          />
+                        )}
+                      </td>
+
+                      <td>
+                        <select
+                          value={q.priority || "Medium"}
+                          onChange={(e) =>
+                            updateQueryField(q.id, "priority", e.target.value)
+                          }
+                        >
+                          <option value="Low">Low</option>
+                          <option value="Medium">Medium</option>
+                          <option value="High">High</option>
+                        </select>
+                      </td>
+
+                      <td>
+                        <select
+                          value={q.status || "Pending"}
+                          onChange={(e) =>
+                            updateQueryField(q.id, "status", e.target.value)
+                          }
+                        >
+                          <option value="Pending">Pending</option>
+                          <option value="In Review">In Review</option>
+                          <option value="Resolved">Resolved</option>
+                        </select>
+                      </td>
+
+                      <td>
+                        {q.adminReply ? (
+                          <div style={{ color: "#4CAF50" }}>
+                            <strong>Reply:</strong>
+                            <p>{q.adminReply}</p>
+                            <small>{q.repliedAt}</small>
+                          </div>
+                        ) : (
+                          <>
+                            <textarea
+                              placeholder="Write reply..."
+                              value={replyInputs[q.id] || ""}
+                              onChange={(e) =>
+                                setReplyInputs({
+                                  ...replyInputs,
+                                  [q.id]: e.target.value,
+                                })
+                              }
+                              style={{ width: "100%" }}
+                            />
+                            <button
+                              className="small-btn edit-btn"
+                              onClick={() => sendAdminReply(q.id)}
+                            >
+                              Send Reply
+                            </button>
+                          </>
                         )}
                       </td>
                     </tr>
@@ -1076,11 +1239,8 @@ export default function Admin() {
 
                   {queries.length === 0 && (
                     <tr>
-                      <td
-                        colSpan="6"
-                        style={{ textAlign: "center", padding: "20px" }}
-                      >
-                        No queries found 😌
+                      <td colSpan="8" style={{ textAlign: "center" }}>
+                        No support tickets found 🎉
                       </td>
                     </tr>
                   )}

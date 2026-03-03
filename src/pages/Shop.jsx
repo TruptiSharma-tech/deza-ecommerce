@@ -8,53 +8,95 @@ export default function Shop() {
 
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("All");
+  const [type, setType] = useState("All");
   const [sort, setSort] = useState("default");
 
-  // Toggle Tabs
-  const [activeType, setActiveType] = useState("All");
-
   useEffect(() => {
-    const stored = JSON.parse(localStorage.getItem("dezaProducts")) || [];
+    let stored = JSON.parse(localStorage.getItem("dezaProducts")) || [];
+
+    // ✅ AUTO-SEED IF EMPTY (Premium Collection)
+    if (stored.length === 0) {
+      stored = [
+        {
+          id: 101,
+          title: "DEZA Noir",
+          description: "A bold, magnetic fragrance with deep notes of oud and leather.",
+          categories: ["Men", "Unisex"],
+          types: ["Deza"],
+          sizePrices: [{ size: "50ml", price: 2499 }, { size: "100ml", price: 4499 }],
+          image: "https://images.unsplash.com/photo-1541643600914-78b084683601?q=80&w=500",
+          rating: 4.8
+        },
+        {
+          id: 102,
+          title: "DEZA Blossom",
+          description: "Soft floral luxury with notes of jasmine, rose, and peony.",
+          categories: ["Women"],
+          types: ["Deza"],
+          sizePrices: [{ size: "50ml", price: 1999 }, { size: "100ml", price: 3499 }],
+          image: "https://images.unsplash.com/photo-1592945403244-b3fbafd7f539?q=80&w=500",
+          rating: 4.7
+        },
+        {
+          id: 103,
+          title: "DEZA Oud Royale",
+          description: "Rich, royal, and timeless. The pinnacle of oriental fragrance.",
+          categories: ["Unisex"],
+          types: ["Deza"],
+          sizePrices: [{ size: "50ml", price: 2999 }, { size: "100ml", price: 5499 }],
+          image: "https://images.unsplash.com/photo-1585232351009-aa87416fca90?q=80&w=500",
+          rating: 4.9
+        }
+      ];
+      localStorage.setItem("dezaProducts", JSON.stringify(stored));
+    }
+
     setProducts(stored);
   }, []);
 
-  // FILTER + SEARCH
+  /* ================= FILTER ================= */
+
   let filteredProducts = products.filter((p) => {
     const matchesSearch = p.title?.toLowerCase().includes(search.toLowerCase());
 
-    // CATEGORY SUPPORT (ARRAY + STRING BOTH)
     const matchesCategory =
       category === "All" ||
-      (Array.isArray(p.category)
-        ? p.category.some(
-            (c) => c.trim().toLowerCase() === category.toLowerCase(),
-          )
-        : String(p.category).trim().toLowerCase() === category.toLowerCase());
+      (Array.isArray(p.categories)
+        ? p.categories.includes(category)
+        : p.categories === category);
 
-    // TYPE SUPPORT (ARRAY + STRING BOTH) ✅ FIXED
     const matchesType =
-      activeType === "All" ||
-      (Array.isArray(p.type)
-        ? p.type.some(
-            (t) => t.trim().toLowerCase() === activeType.toLowerCase(),
-          )
-        : String(p.type).trim().toLowerCase() === activeType.toLowerCase());
+      type === "All" ||
+      (Array.isArray(p.types) ? p.types.includes(type) : p.types === type);
 
     return matchesSearch && matchesCategory && matchesType;
   });
 
-  // SORT
+  /* ================= SORT ================= */
+
   if (sort === "priceLow") {
-    filteredProducts.sort((a, b) => (a.price || 0) - (b.price || 0));
-  } else if (sort === "priceHigh") {
-    filteredProducts.sort((a, b) => (b.price || 0) - (a.price || 0));
-  } else if (sort === "ratingHigh") {
-    filteredProducts.sort((a, b) => (b.rating || 0) - (a.rating || 0));
-  } else if (sort === "ratingLow") {
-    filteredProducts.sort((a, b) => (a.rating || 0) - (b.rating || 0));
+    filteredProducts.sort(
+      (a, b) =>
+        Math.min(...(a.sizePrices || []).map((s) => Number(s.price))) -
+        Math.min(...(b.sizePrices || []).map((s) => Number(s.price))),
+    );
   }
 
-  const categories = ["All", "Men", "Women", "Unisex"];
+  if (sort === "priceHigh") {
+    filteredProducts.sort(
+      (a, b) =>
+        Math.min(...(b.sizePrices || []).map((s) => Number(s.price))) -
+        Math.min(...(a.sizePrices || []).map((s) => Number(s.price))),
+    );
+  }
+
+  if (sort === "ratingHigh") {
+    filteredProducts.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+  }
+
+  if (sort === "ratingLow") {
+    filteredProducts.sort((a, b) => (a.rating || 0) - (b.rating || 0));
+  }
 
   return (
     <div className="shop-page">
@@ -65,45 +107,26 @@ export default function Shop() {
         </p>
       </div>
 
-      {/* TYPE TOGGLE */}
-      <div className="type-toggle">
-        <button
-          className={activeType === "All" ? "active" : ""}
-          onClick={() => setActiveType("All")}
-        >
-          All Perfumes
-        </button>
-
-        <button
-          className={activeType === "Deza Original" ? "active" : ""}
-          onClick={() => setActiveType("Deza")}
-        >
-          Deza Original
-        </button>
-
-        <button
-          className={activeType === "Recreational" ? "active" : ""}
-          onClick={() => setActiveType("Recreational")}
-        >
-          Recreational
-        </button>
-      </div>
-
-      {/* FILTERS */}
-      <div className="shop-filters">
+      {/* ================= MYNTRA STYLE FILTER BAR ================= */}
+      <div className="shop-filter-bar">
         <input
           type="text"
-          placeholder="Search luxury perfumes..."
+          placeholder="Search perfumes..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
 
         <select value={category} onChange={(e) => setCategory(e.target.value)}>
-          {categories.map((c, index) => (
-            <option key={index} value={c}>
-              {c}
-            </option>
-          ))}
+          <option value="All">All Categories</option>
+          <option value="Men">Men</option>
+          <option value="Women">Women</option>
+          <option value="Unisex">Unisex</option>
+        </select>
+
+        <select value={type} onChange={(e) => setType(e.target.value)}>
+          <option value="All">All Types</option>
+          <option value="Deza">Deza</option>
+          <option value="Recreational">Recreational</option>
         </select>
 
         <select value={sort} onChange={(e) => setSort(e.target.value)}>
@@ -115,7 +138,8 @@ export default function Shop() {
         </select>
       </div>
 
-      {/* PRODUCTS */}
+      {/* ================= PRODUCTS ================= */}
+
       <div className="shop-grid">
         {filteredProducts.length > 0 ? (
           filteredProducts.map((p) => (
@@ -124,38 +148,36 @@ export default function Shop() {
               key={p.id}
               onClick={() => navigate(`/product/${p.id}`)}
             >
-              <div className="img-wrap">
-                <img src={p.image} alt={p.title} className="shop-img" />
+              <img src={p.image} alt={p.title} className="shop-img" />
+
+              <h2>{p.title}</h2>
+
+              <p className="shop-price">
+                ₹
+                {p.sizePrices && p.sizePrices.length > 0
+                  ? Math.min(
+                    ...p.sizePrices.map((s) => Number(s.price)),
+                  ).toLocaleString("en-IN")
+                  : "Price Not Available"}
+              </p>
+
+              <div className="shop-rating" style={{ color: '#D4AF37', fontSize: '14px', marginBottom: '8px' }}>
+                {"⭐".repeat(Math.round(p.rating || 0))}
+                <span style={{ color: 'rgba(255,255,255,0.6)', marginLeft: '5px' }}>({p.rating || 0})</span>
               </div>
 
-              <div className="shop-card-content">
-                <h2 className="product-title">{p.title}</h2>
+              <p className="shop-tags">
+                {(p.categories || []).join(", ")} • {(p.types || []).join(", ")}
+              </p>
 
-                <p className="shop-price">₹{p.price}</p>
-
-                <p className="shop-rating">
-                  ⭐ {p.rating ? p.rating.toFixed(1) : "0.0"} (
-                  {p.ratingCount || 0})
-                </p>
-
-                <p className="shop-category">
-                  {(Array.isArray(p.category)
-                    ? p.category.join(", ")
-                    : p.category) || "No Category"}{" "}
-                  •{" "}
-                  {(Array.isArray(p.type) ? p.type.join(", ") : p.type) ||
-                    "No Type"}
-                </p>
-
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    navigate(`/product/${p.id}`);
-                  }}
-                >
-                  View Details
-                </button>
-              </div>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigate(`/product/${p.id}`);
+                }}
+              >
+                View Details
+              </button>
             </div>
           ))
         ) : (

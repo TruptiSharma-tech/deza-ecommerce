@@ -6,10 +6,12 @@ import "./PaymentGateway.css";
 export default function PaymentGateway() {
   const navigate = useNavigate();
   const [paymentDone, setPaymentDone] = useState(false);
-  const [paymentType, setPaymentType] = useState("");
 
   const checkoutInfo = JSON.parse(localStorage.getItem("checkoutInfo")) || {};
-  const { name, phone, address, cart, total } = checkoutInfo;
+  const rawTotal = checkoutInfo.total || 0;
+  const total = typeof rawTotal === "string" ? Number(rawTotal.replace(/[^0-9.]/g, "")) : Number(rawTotal);
+  const { name, phone, address, cart = [] } = checkoutInfo;
+  const cleanPhone = (phone || "").replace(/\D/g, "");
 
   useEffect(() => {
     if (!cart || cart.length === 0) navigate("/checkout");
@@ -17,6 +19,7 @@ export default function PaymentGateway() {
 
   const loadRazorpayScript = () =>
     new Promise((resolve) => {
+      if (window.Razorpay) return resolve(true);
       const script = document.createElement("script");
       script.src = "https://checkout.razorpay.com/v1/checkout.js";
       script.onload = () => resolve(true);
@@ -26,55 +29,81 @@ export default function PaymentGateway() {
 
   const saveOrder = (paymentMethod, status, paymentId = "") => {
     const orders = JSON.parse(localStorage.getItem("dezaOrders")) || [];
-
     const newOrder = {
       id: Date.now(),
       date: new Date().toLocaleString(),
-      name,
-      phone,
-      address,
+      customerName: name,
+      customerPhone: "+91" + phone,
+      address: address,
       paymentMethod,
       items: cart,
-      total,
+      totalPrice: total,
       status,
       paymentId,
     };
-
     localStorage.setItem("dezaOrders", JSON.stringify([...orders, newOrder]));
     localStorage.removeItem("deza_cart");
     localStorage.removeItem("checkoutInfo");
   };
 
-  const handleRazorpayPayment = async (method) => {
-    if (!total || isNaN(total)) return alert("Invalid total amount!");
+  const handleRazorpayPayment = async (selectedType) => {
+    // 1. DATA PREP
+    const amountInPaise = Math.round(Number(total) * 100);
+    const displayPhone = cleanPhone || "9999999999";
 
+    console.log("[RAZORPAY DEBUG]", { amountInPaise, displayPhone, selectedType });
+
+    if (isNaN(amountInPaise) || amountInPaise <= 0) {
+      console.error("CRITICAL ERROR: Invalid Amount detected.");
+      return;
+    }
+
+    // 2. SCRIPT LOADING
     const isLoaded = await loadRazorpayScript();
-    if (!isLoaded) return alert("Razorpay SDK failed to load!");
+    if (!isLoaded || !window.Razorpay) {
+      alert("FAILED to load Razorpay. Check your internet.");
+      return;
+    }
 
+    // 3. UNIVERSAL CONFIG (No filters to prevent "No appropriate payment method" error)
     const options = {
       key: "rzp_test_1DP5mmOlF5G5ag",
-      amount: total * 100,
+      amount: amountInPaise,
       currency: "INR",
-      name: "DEZA Store",
-      description: `Order Payment via ${method}`,
+      name: "DEZA Luxury Store",
+      description: `Luxury Fragrance - ${selectedType}`,
+      image: "https://img.icons8.com/color/96/000000/perfume-bottle-2.png",
+
       handler: function (response) {
-        if (!response || !response.razorpay_payment_id) {
-          alert("Payment failed or cancelled!");
-          return;
-        }
-
-        saveOrder(method, "Paid", response.razorpay_payment_id);
+        console.log("PAYMENT SUCCESS:", response.razorpay_payment_id);
+        saveOrder(selectedType, "Paid", response.razorpay_payment_id);
         setPaymentDone(true);
-
         setTimeout(() => navigate("/checkout/success"), 2000);
       },
-      prefill: { name, contact: phone, email: "test@example.com" },
+      prefill: {
+        name: name || "Customer",
+        contact: displayPhone,
+        email: "support@deza.com"
+      },
       theme: { color: "#D4AF37" },
-      modal: { ondismiss: () => alert("Payment cancelled") },
+      modal: {
+        ondismiss: function () {
+          console.log("Payment window closed.");
+        }
+      }
     };
 
-    const rzp = new window.Razorpay(options);
-    rzp.open();
+    // 4. EXECUTION
+    try {
+      const rzp = new window.Razorpay(options);
+      rzp.on('payment.failed', function (response) {
+        alert("Payment Failed: " + response.error.description);
+      });
+      rzp.open();
+    } catch (err) {
+      console.error("SDK OPEN ERROR:", err);
+      alert("Something went wrong with the payment portal.");
+    }
   };
 
   const handleCOD = () => {
@@ -83,78 +112,81 @@ export default function PaymentGateway() {
     setTimeout(() => navigate("/checkout/success"), 2000);
   };
 
+
   return (
     <div className="payment-page">
       {paymentDone && <Confetti />}
 
-      <h1 className="payment-title">Choose Payment Method</h1>
+      <h1 className="payment-title">Select <span>Payment</span></h1>
 
       <div className="payment-options">
-        <button
-          className="payment-btn upi-btn"
-          onClick={() => {
-            setPaymentType("UPI");
-            handleRazorpayPayment("UPI");
-          }}
-        >
-          <img src="https://img.icons8.com/color/48/000000/upi.png" alt="UPI" />
-          Pay via UPI
+        {/* UPI BUTTON */}
+        <button className="payment-btn upi-btn" onClick={() => handleRazorpayPayment("UPI")}>
+          <div className="icon-stack">
+            <img src="https://img.icons8.com/color/48/000000/upi.png" alt="UPI" />
+          </div>
+          <div className="btn-info">
+            <span className="btn-label">UPI / QR Code</span>
+            <span className="btn-sub">GPay, PhonePe, BHIM</span>
+            <div className="mini-icons">
+              <img src="https://img.icons8.com/color/48/000000/google-pay.png" alt="GPay" />
+              <img src="https://img.icons8.com/color/48/000000/phonepe.png" alt="PhonePe" />
+            </div>
+          </div>
         </button>
 
-        <button
-          className="payment-btn card-btn"
-          onClick={() => {
-            setPaymentType("Card");
-            handleRazorpayPayment("Card");
-          }}
-        >
-          <img
-            src="https://img.icons8.com/color/48/000000/bank-card-back-side.png"
-            alt="Card"
-          />
-          Pay via Card
+        {/* CARD BUTTON */}
+        <button className="payment-btn card-btn" onClick={() => handleRazorpayPayment("Card")}>
+          <div className="icon-stack">
+            <img src="https://img.icons8.com/color/48/000000/visa.png" alt="Visa" />
+          </div>
+          <div className="btn-info">
+            <span className="btn-label">Card Payment</span>
+            <span className="btn-sub">Debit / Credit Card</span>
+            <div className="mini-icons">
+              <img src="https://img.icons8.com/color/48/000000/mastercard.png" alt="Mastercard" />
+            </div>
+          </div>
         </button>
 
+        {/* COD BUTTON */}
         <button className="payment-btn cod-btn" onClick={handleCOD}>
-          <img
-            src="https://img.icons8.com/color/48/000000/cash-in-hand.png"
-            alt="COD"
-          />
-          Cash On Delivery
+          <div className="icon-stack">
+            <img src="https://img.icons8.com/color/48/000000/cash-in-hand.png" alt="COD" />
+          </div>
+          <div className="btn-info">
+            <span className="btn-label">Cash on Delivery</span>
+            <span className="btn-sub">Pay at Your Doorstep</span>
+          </div>
         </button>
       </div>
 
       <div className="order-summary">
         <h2>Order Summary</h2>
-        <p>
-          <b>Name:</b> {name}
-        </p>
-        <p>
-          <b>Phone:</b> {phone}
-        </p>
-        <p>
-          <b>Address:</b> {address}
-        </p>
-        <p className="total">
-          <b>Total Amount:</b> ₹{total || 0}
-        </p>
+        <div className="summary-details">
+          <div className="customer-info">
+            <p><b>Pay To:</b> DEZA Luxury Perfumes</p>
+            <p><b>Deliver To:</b> {name || "Guest"}</p>
+            <p><b>Contact:</b> {phone}</p>
+          </div>
+          <div className="price-info">
+            <p className="total-label">Total Amount</p>
+            <p className="total-amount">₹{total}</p>
+          </div>
+        </div>
 
-        <h3>Products</h3>
-        {cart &&
-          cart.map((item) => (
-            <div
-              key={`${item.id}-${item.selectedSize}`}
-              className="summary-item"
-            >
+        <div className="summary-items">
+          {cart.map((item) => (
+            <div key={`${item.id}-${item.selectedSize}`} className="summary-item">
               <img src={item.image} alt={item.name} />
-              <div>
-                <p className="pname">{item.name}</p>
-                <p>Size: {item.selectedSize}</p>
-                <p>Qty: {item.qty}</p>
-                <p className="pprice">₹{item.price * item.qty}</p>
+              <div className="item-text">
+                <p className="item-name">{item.name}</p>
+                <p className="item-meta">{item.selectedSize} | Qty: {item.qty}</p>
+                <p className="item-price">₹{item.price * item.qty}</p>
               </div>
             </div>
           ))}
+        </div>
       </div>
     </div>
   );

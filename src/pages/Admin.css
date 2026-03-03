@@ -599,3 +599,181 @@
     height: 280px !important;
   }
 }
+/* ============================
+   TABLET RESPONSIVE (<= 1024px)
+============================ */
+
+@media (max-width: 1024px) {
+  .admin-content {
+    padding: 20px;
+  }
+
+  .admin-cards {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  }
+
+  .charts-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .chart-box {
+    height: 360px;
+  }
+
+  .chart-box canvas {
+    height: 260px !important;
+  }
+}
+
+
+/* ============================
+   MOBILE RESPONSIVE (<= 768px)
+============================ */
+
+@media (max-width: 768px) {
+
+  .admin-page {
+    flex-direction: column;
+  }
+
+  /* Sidebar becomes top nav */
+  .admin-sidebar {
+    width: 100%;
+    height: auto;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    padding: 15px;
+    gap: 10px;
+  }
+
+  .admin-logo {
+    width: 100%;
+    text-align: center;
+    margin-bottom: 10px;
+  }
+
+  .admin-sidebar button {
+    width: 48%;
+    justify-content: center;
+    text-align: center;
+    font-size: 13px;
+    padding: 10px;
+  }
+
+  .logout-btn {
+    width: 100%;
+  }
+
+  .admin-content {
+    padding: 18px;
+  }
+
+  .admin-section {
+    padding: 20px;
+  }
+
+  .admin-title {
+    font-size: 22px;
+  }
+
+  .admin-cards {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-card p {
+    font-size: 22px;
+  }
+
+  /* Tables scroll nicely */
+  .table-wrapper {
+    overflow-x: auto;
+  }
+
+  .product-table,
+  .orders-table,
+  .queries-table {
+    min-width: 650px;
+  }
+
+  /* Forms full width */
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .checkbox-row {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .preview-images img {
+    width: 80px;
+    height: 80px;
+  }
+
+  .lux-btn {
+    font-size: 14px;
+    padding: 12px;
+  }
+}
+
+
+/* ============================
+   SMALL MOBILE (<= 480px)
+============================ */
+
+@media (max-width: 480px) {
+
+  .admin-content {
+    padding: 12px;
+  }
+
+  .admin-section {
+    padding: 16px;
+  }
+
+  .admin-title {
+    font-size: 18px;
+  }
+
+  .admin-card {
+    padding: 15px;
+  }
+
+  .admin-card h3 {
+    font-size: 12px;
+  }
+
+  .admin-card p {
+    font-size: 18px;
+  }
+
+  .chart-box {
+    height: 320px;
+  }
+
+  .chart-box canvas {
+    height: 220px !important;
+  }
+
+  .admin-sidebar button {
+    font-size: 12px;
+    padding: 8px;
+  }
+
+  .filter-item select {
+    font-size: 13px;
+    padding: 9px;
+  }
+
+  .export-btns-container button,
+  .csv-link {
+    font-size: 12px;
+    padding: 10px;
+  }
+
+  .small-btn {
+    padding: 7px 10px;
+    font-size: 11px;
+  }
+}

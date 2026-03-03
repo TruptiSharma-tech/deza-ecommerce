@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import "./ProductDetails.css";
 import { FaHeart, FaRegHeart, FaShoppingCart, FaStar } from "react-icons/fa";
+import { FaWhatsapp } from "react-icons/fa";
 
 export default function ProductDetails() {
   const { id } = useParams();
@@ -12,18 +13,21 @@ export default function ProductDetails() {
   const [qty, setQty] = useState(1);
   const [wish, setWish] = useState(false);
 
-  // ⭐ Review states
   const [stars, setStars] = useState(0);
   const [hoverStars, setHoverStars] = useState(0);
   const [comment, setComment] = useState("");
-
-  // ⭐ Image slider state
+  const [reviewImage, setReviewImage] = useState(null);
+  const [previewImage, setPreviewImage] = useState(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
-  // ✅ Logged in user
+  // 🚚 Delivery
+  const [pincode, setPincode] = useState("");
+  const [deliveryMessage, setDeliveryMessage] = useState(
+    "Estimated Delivery: 7 - 10 Business Days",
+  );
+
   const currentUser = JSON.parse(localStorage.getItem("currentUser"));
 
-  // ✅ Fetch product from Admin Panel (localStorage)
   useEffect(() => {
     const storedProducts =
       JSON.parse(localStorage.getItem("dezaProducts")) || [];
@@ -31,20 +35,18 @@ export default function ProductDetails() {
     const found = storedProducts.find((p) => String(p.id) === String(id));
 
     if (found) {
-      // Ensure images always exists
       if (!found.images || found.images.length === 0) {
         found.images = [found.image];
       }
 
       setProduct(found);
 
-      // default size
-      if (found?.sizes?.length > 0) {
-        setSelectedSize(found.sizes[0]);
+      // ✅ Default size from sizePrices
+      if (found?.sizePrices?.length > 0) {
+        setSelectedSize(found.sizePrices[0].size);
       }
     }
 
-    // Wishlist check
     const wishlist = JSON.parse(localStorage.getItem("deza_wishlist")) || [];
     const exists = wishlist.find((x) => String(x.id) === String(id));
     setWish(!!exists);
@@ -52,7 +54,6 @@ export default function ProductDetails() {
     setCurrentImageIndex(0);
   }, [id]);
 
-  // ❌ If product not found
   if (!product) {
     return (
       <div className="product-not-found">
@@ -62,20 +63,17 @@ export default function ProductDetails() {
     );
   }
 
-  // ✅ Price by Size Logic
+  // ✅ FIXED PRICE LOGIC
   const getPriceBySize = () => {
-    // If you store size-wise prices like { "25ml": 999, "50ml": 1700 }
     if (product.sizePrices && selectedSize) {
-      return Number(product.sizePrices[selectedSize] || product.price);
+      const sizeObj = product.sizePrices.find((sp) => sp.size === selectedSize);
+      if (sizeObj) return Number(sizeObj.price);
     }
-
-    // default
-    return Number(product.price);
+    return Number(product.price) || 0;
   };
 
   const finalPrice = getPriceBySize();
 
-  // ✅ Check login before actions
   const checkLogin = () => {
     if (!currentUser) {
       alert("⚠️ Please Login First to Continue!");
@@ -85,7 +83,6 @@ export default function ProductDetails() {
     return true;
   };
 
-  // ⭐ Add to cart
   const handleAddToCart = () => {
     if (!checkLogin()) return;
 
@@ -101,8 +98,8 @@ export default function ProductDetails() {
     } else {
       cart.push({
         id: product.id,
-        name: product.title, // ✅ FIXED
-        price: finalPrice, // ✅ FIXED
+        name: product.title,
+        price: finalPrice,
         image: product.images?.[0],
         selectedSize,
         qty,
@@ -113,20 +110,16 @@ export default function ProductDetails() {
     alert("✅ Added to Cart!");
   };
 
-  // ⭐ Buy Now
   const handleBuyNow = () => {
     if (!checkLogin()) return;
-
     handleAddToCart();
     navigate("/cart");
   };
 
-  // ⭐ WhatsApp Order Button
   const handleWhatsAppOrder = () => {
     if (!checkLogin()) return;
 
     const phoneNumber = "919082710359";
-
     const productImage = product.images?.[0] || "";
 
     const message = `Hello DEZA 💛 I want to place an order.
@@ -147,7 +140,6 @@ Please confirm my order.`;
     window.open(url, "_blank");
   };
 
-  // ⭐ Wishlist toggle
   const handleWishlist = () => {
     if (!checkLogin()) return;
 
@@ -170,172 +162,148 @@ Please confirm my order.`;
     alert("❤️ Added to Wishlist!");
   };
 
-  // ⭐ Add Review
-  const handleAddReview = () => {
-    if (!checkLogin()) return;
+  // ⭐ Image Upload
+  const handleImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
 
-    if (!comment || stars === 0) {
-      alert("⚠️ Please fill all review fields");
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setPreviewImage(reader.result);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // ⭐ Submit Review
+  const handleReviewSubmit = () => {
+    if (!currentUser) {
+      alert("Please login to submit review");
+      navigate("/login");
       return;
     }
 
-    const stored = JSON.parse(localStorage.getItem("dezaProducts")) || [];
+    if (stars === 0) {
+      alert("Please select rating");
+      return;
+    }
 
-    const updatedProducts = stored.map((p) => {
-      if (String(p.id) === String(product.id)) {
-        const newReview = {
-          id: Date.now(),
-          userName: currentUser?.name || "User",
-          comment,
-          stars,
-        };
+    const allProducts = JSON.parse(localStorage.getItem("dezaProducts")) || [];
 
-        const updatedReviews = [...(p.reviews || []), newReview];
-
-        const avgRating =
-          updatedReviews.reduce((acc, r) => acc + r.stars, 0) /
-          updatedReviews.length;
-
-        return {
-          ...p,
-          reviews: updatedReviews,
-          rating: avgRating,
-          ratingCount: updatedReviews.length,
-        };
-      }
-      return p;
-    });
-
-    localStorage.setItem("dezaProducts", JSON.stringify(updatedProducts));
-
-    const updatedProduct = updatedProducts.find(
+    const productIndex = allProducts.findIndex(
       (p) => String(p.id) === String(product.id),
     );
-    setProduct(updatedProduct);
 
-    setComment("");
+    const newReview = {
+      user: currentUser.name,
+      rating: stars,
+      comment,
+      image: previewImage,
+      date: new Date().toLocaleDateString(),
+    };
+
+    if (!allProducts[productIndex].reviews) {
+      allProducts[productIndex].reviews = [];
+    }
+
+    allProducts[productIndex].reviews.push(newReview);
+
+    // ⭐ Recalculate average
+    const ratings = allProducts[productIndex].reviews.map((r) => r.rating);
+    const avg = ratings.reduce((a, b) => a + b, 0) / ratings.length;
+
+    allProducts[productIndex].rating = avg;
+    allProducts[productIndex].ratingCount = ratings.length;
+
+    localStorage.setItem("dezaProducts", JSON.stringify(allProducts));
+
+    setProduct(allProducts[productIndex]);
     setStars(0);
-    setHoverStars(0);
+    setComment("");
+    setPreviewImage(null);
 
-    alert("✅ Review added!");
+    alert("⭐ Review Submitted!");
   };
 
-  // ⭐ Delete Review
-  const handleDeleteReview = (reviewId) => {
-    const stored = JSON.parse(localStorage.getItem("dezaProducts")) || [];
+  const checkDelivery = () => {
+    if (!pincode || pincode.length !== 6) {
+      setDeliveryMessage("Please enter valid 6 digit pincode");
+      return;
+    }
 
-    const updatedProducts = stored.map((p) => {
-      if (String(p.id) === String(product.id)) {
-        const updatedReviews = (p.reviews || []).filter(
-          (r) => r.id !== reviewId,
-        );
+    const firstDigit = pincode[0];
 
-        const avgRating =
-          updatedReviews.length > 0
-            ? updatedReviews.reduce((acc, r) => acc + r.stars, 0) /
-              updatedReviews.length
-            : 0;
-
-        return {
-          ...p,
-          reviews: updatedReviews,
-          rating: avgRating,
-          ratingCount: updatedReviews.length,
-        };
-      }
-      return p;
-    });
-
-    localStorage.setItem("dezaProducts", JSON.stringify(updatedProducts));
-
-    const updatedProduct = updatedProducts.find(
-      (p) => String(p.id) === String(product.id),
-    );
-    setProduct(updatedProduct);
-
-    alert("🗑 Review deleted!");
+    if (["4", "5"].includes(firstDigit)) {
+      setDeliveryMessage("🚀 Fast Delivery: 3 - 5 Business Days");
+    } else if (["6", "7"].includes(firstDigit)) {
+      setDeliveryMessage("Estimated Delivery: 5 - 7 Business Days");
+    } else {
+      setDeliveryMessage("Estimated Delivery: 7 - 10 Business Days");
+    }
   };
 
   return (
     <div className="pd-page">
-      {/* ✅ PRODUCT NAME ON TOP */}
       <h1 className="pd-top-title">{product.title}</h1>
 
       <div className="pd-card">
-        {/* ⭐ Product Image Slider */}
         <div className="pd-img">
           <img
             src={product.images?.[currentImageIndex]}
             alt={product.title}
             className="main-image"
           />
-
-          <div className="thumbnail-images" style={{ marginTop: "10px" }}>
-            {(product.images || []).map((img, index) => (
-              <img
-                key={index}
-                src={img}
-                alt={`${product.title}-${index}`}
-                onClick={() => setCurrentImageIndex(index)}
-                style={{
-                  width: "60px",
-                  height: "60px",
-                  objectFit: "cover",
-                  marginRight: "5px",
-                  border:
-                    index === currentImageIndex
-                      ? "2px solid #d4af37"
-                      : "1px solid #ccc",
-                  cursor: "pointer",
-                  borderRadius: "5px",
-                }}
-              />
-            ))}
-          </div>
         </div>
 
-        {/* ⭐ Product Info */}
         <div className="pd-info">
           <p className="pd-brand">{product.brand || "DEZA Luxury"}</p>
 
-          {/* ⭐ Average Rating */}
-          <h2 style={{ margin: "5px 0" }}>
+          <h2>
             {Array.from({ length: 5 }, (_, i) => (
               <FaStar
                 key={i}
                 color={i < Math.round(product.rating || 0) ? "#ffd369" : "#555"}
               />
             ))}{" "}
-            <span style={{ color: "#d4af37", fontWeight: "bold" }}>
-              ({product.ratingCount || 0} Reviews)
-            </span>
+            ({product.ratingCount || 0} Reviews)
           </h2>
 
-          {/* ✅ Dynamic Price */}
           <p className="pd-price">₹{finalPrice}</p>
 
-          <p className="pd-desc">
-            {product.description ||
-              "A premium luxury fragrance crafted to leave an unforgettable impression."}
-          </p>
+          {/* Description */}
+          <div className="pd-section">
+            <h3>Description</h3>
+            <p>
+              {product.description ||
+                "A premium luxury fragrance crafted to leave an unforgettable impression."}
+            </p>
+          </div>
 
-          {/* ⭐ Size Selection */}
+          {/* Fragrance Notes */}
+          <div className="pd-section">
+            <h3>Fragrance Notes</h3>
+            <p>
+              {product.fragrance ||
+                "Top Notes: Fresh Citrus | Heart Notes: Floral | Base Notes: Woody & Musk"}
+            </p>
+          </div>
+
+          {/* Size */}
           <div className="pd-sizes">
             <h4>Select Size</h4>
             <div className="size-buttons">
-              {product.sizes?.map((s) => (
+              {product.sizePrices?.map((sp) => (
                 <button
-                  key={s}
-                  className={selectedSize === s ? "active" : ""}
-                  onClick={() => setSelectedSize(s)}
+                  key={sp.size}
+                  className={selectedSize === sp.size ? "active" : ""}
+                  onClick={() => setSelectedSize(sp.size)}
                 >
-                  {s}
+                  {sp.size}
                 </button>
               ))}
             </div>
           </div>
 
-          {/* ⭐ Quantity */}
+          {/* Quantity */}
           <div className="pd-qty">
             <h4>Quantity</h4>
             <div className="qty-box">
@@ -345,7 +313,6 @@ Please confirm my order.`;
             </div>
           </div>
 
-          {/* ⭐ Actions */}
           <div className="pd-actions">
             <button className="cart-btn" onClick={handleAddToCart}>
               <FaShoppingCart /> Add to Cart
@@ -355,37 +322,30 @@ Please confirm my order.`;
               Buy Now
             </button>
 
-            <button className="wish-btn" onClick={handleWishlist}>
-              {wish ? <FaHeart /> : <FaRegHeart />} Wishlist
-            </button>
+            <div className="wish-whatsapp">
+              <button className="wish-btn" onClick={handleWishlist}>
+                {wish ? <FaHeart /> : <FaRegHeart />} Wishlist
+              </button>
+
+              <button className="whatsapp-btn" onClick={handleWhatsAppOrder}>
+                <FaWhatsapp className="wa-icon" />
+                WhatsApp
+              </button>
+            </div>
           </div>
 
-          {/* ✅ WHATSAPP ORDER BUTTON */}
-          <button className="whatsapp-btn" onClick={handleWhatsAppOrder}>
-            Order on WhatsApp 💬
-          </button>
+          {/* ⭐ REVIEW SECTION */}
+          <div className="pd-review-section">
+            <h3>Rate this Product</h3>
 
-          <div className="pd-extra">
-            <p>💛 100% Authentic DEZA Perfumes</p>
-          </div>
-
-          {/* ⭐ Review Section */}
-          <div className="review-section" style={{ marginTop: "30px" }}>
-            <h3 style={{ color: "#d4af37" }}>Rate this Product</h3>
-
-            <div
-              style={{
-                display: "flex",
-                gap: "5px",
-                fontSize: "24px",
-                marginTop: "5px",
-              }}
-            >
+            {/* STAR SELECT */}
+            <div style={{ marginBottom: "10px" }}>
               {Array.from({ length: 5 }, (_, i) => (
                 <FaStar
                   key={i}
+                  size={22}
+                  style={{ cursor: "pointer", marginRight: "5px" }}
                   color={i < (hoverStars || stars) ? "#ffd369" : "#555"}
-                  style={{ cursor: "pointer", transition: "0.2s" }}
                   onMouseEnter={() => setHoverStars(i + 1)}
                   onMouseLeave={() => setHoverStars(0)}
                   onClick={() => setStars(i + 1)}
@@ -393,70 +353,89 @@ Please confirm my order.`;
               ))}
             </div>
 
+            {/* COMMENT */}
             <textarea
-              placeholder="Your Review"
+              placeholder="Write your review..."
               value={comment}
               onChange={(e) => setComment(e.target.value)}
               style={{
-                marginTop: "10px",
-                padding: "10px",
-                borderRadius: "10px",
                 width: "100%",
+                padding: "10px",
+                borderRadius: "8px",
+                marginBottom: "10px",
               }}
             />
 
+            {/* IMAGE UPLOAD */}
+            <input type="file" accept="image/*" onChange={handleImageUpload} />
+
+            {previewImage && (
+              <div style={{ marginTop: "10px" }}>
+                <img
+                  src={previewImage}
+                  alt="preview"
+                  style={{ width: "100px", borderRadius: "8px" }}
+                />
+              </div>
+            )}
+
             <button
-              onClick={handleAddReview}
+              onClick={handleReviewSubmit}
               style={{
                 marginTop: "10px",
-                padding: "10px 20px",
-                backgroundColor: "#d4af37",
+                padding: "10px 15px",
+                background: "#d4af37",
                 border: "none",
-                borderRadius: "10px",
+                borderRadius: "8px",
+                fontWeight: "bold",
                 cursor: "pointer",
               }}
             >
               Submit Review
             </button>
 
-            {/* ⭐ Display Reviews */}
-            <div className="reviews-list" style={{ marginTop: "20px" }}>
-              {(product.reviews || []).map((r) => (
+            {/* SHOW REVIEWS */}
+            <div style={{ marginTop: "25px" }}>
+              {product.reviews?.map((r, index) => (
                 <div
-                  key={r.id}
+                  key={index}
                   style={{
-                    marginBottom: "10px",
-                    borderBottom: "1px solid #ccc",
-                    paddingBottom: "5px",
+                    borderBottom: "1px solid #333",
+                    paddingBottom: "15px",
+                    marginBottom: "15px",
                   }}
                 >
-                  <strong>{r.userName}</strong> -{" "}
-                  {Array.from({ length: 5 }, (_, i) => (
-                    <FaStar key={i} color={i < r.stars ? "#ffd369" : "#555"} />
-                  ))}
+                  <strong>{r.user}</strong>
+
+                  <div>
+                    {Array.from({ length: 5 }, (_, i) => (
+                      <FaStar
+                        key={i}
+                        size={14}
+                        color={i < r.rating ? "#ffd369" : "#555"}
+                      />
+                    ))}
+                  </div>
+
                   <p>{r.comment}</p>
-                  <button
-                    onClick={() => handleDeleteReview(r.id)}
-                    style={{
-                      color: "red",
-                      cursor: "pointer",
-                      fontSize: "12px",
-                      background: "none",
-                      border: "none",
-                    }}
-                  >
-                    Delete
-                  </button>
+
+                  {r.image && (
+                    <img
+                      src={r.image}
+                      alt="review"
+                      style={{
+                        width: "80px",
+                        borderRadius: "8px",
+                        marginTop: "5px",
+                      }}
+                    />
+                  )}
+
+                  <small style={{ opacity: 0.6 }}>{r.date}</small>
                 </div>
               ))}
             </div>
           </div>
-
-          {!currentUser && (
-            <p style={{ marginTop: "15px", color: "red" }}>
-              ⚠️ Please Login to Add to Cart / Buy / WhatsApp Order.
-            </p>
-          )}
         </div>
       </div>
     </div>
