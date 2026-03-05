@@ -20,6 +20,7 @@ import OrderSuccess from "./pages/OrderSuccess";
 import Orders from "./pages/Orders";
 import ProductDetails from "./pages/ProductDetails";
 import OrderTracking from "./pages/TrackOrder";
+import MyTickets from "./pages/MyTickets";
 
 // CONTACT PAGE ✅
 import Contact from "./pages/Contact";
@@ -67,6 +68,7 @@ export default function App() {
         {/* ORDERS */}
         <Route path="/orders" element={<Orders />} />
         <Route path="/track-order/:orderId" element={<OrderTracking />} />
+        <Route path="/my-tickets" element={<MyTickets />} />
 
         {/* POLICIES */}
         <Route path="/terms" element={<Terms />} />

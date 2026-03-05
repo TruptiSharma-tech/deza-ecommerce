@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { apiGetProducts } from "../utils/api";
 import "./Shop.css";
 
 export default function Shop() {
   const navigate = useNavigate();
   const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("All");
@@ -12,47 +14,22 @@ export default function Shop() {
   const [sort, setSort] = useState("default");
 
   useEffect(() => {
-    let stored = JSON.parse(localStorage.getItem("dezaProducts")) || [];
-
-    // ✅ AUTO-SEED IF EMPTY (Premium Collection)
-    if (stored.length === 0) {
-      stored = [
-        {
-          id: 101,
-          title: "DEZA Noir",
-          description: "A bold, magnetic fragrance with deep notes of oud and leather.",
-          categories: ["Men", "Unisex"],
-          types: ["Deza"],
-          sizePrices: [{ size: "50ml", price: 2499 }, { size: "100ml", price: 4499 }],
-          image: "https://images.unsplash.com/photo-1541643600914-78b084683601?q=80&w=500",
-          rating: 4.8
-        },
-        {
-          id: 102,
-          title: "DEZA Blossom",
-          description: "Soft floral luxury with notes of jasmine, rose, and peony.",
-          categories: ["Women"],
-          types: ["Deza"],
-          sizePrices: [{ size: "50ml", price: 1999 }, { size: "100ml", price: 3499 }],
-          image: "https://images.unsplash.com/photo-1592945403244-b3fbafd7f539?q=80&w=500",
-          rating: 4.7
-        },
-        {
-          id: 103,
-          title: "DEZA Oud Royale",
-          description: "Rich, royal, and timeless. The pinnacle of oriental fragrance.",
-          categories: ["Unisex"],
-          types: ["Deza"],
-          sizePrices: [{ size: "50ml", price: 2999 }, { size: "100ml", price: 5499 }],
-          image: "https://images.unsplash.com/photo-1585232351009-aa87416fca90?q=80&w=500",
-          rating: 4.9
-        }
-      ];
-      localStorage.setItem("dezaProducts", JSON.stringify(stored));
-    }
-
-    setProducts(stored);
+    loadProducts();
   }, []);
+
+  const loadProducts = async () => {
+    setLoading(true);
+    try {
+      const data = await apiGetProducts();
+      setProducts(data);
+    } catch (err) {
+      console.error("Failed to fetch products:", err);
+      // Fallback: seed collection message
+      setProducts([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   /* ================= FILTER ================= */
 
@@ -107,7 +84,7 @@ export default function Shop() {
         </p>
       </div>
 
-      {/* ================= MYNTRA STYLE FILTER BAR ================= */}
+      {/* ================= FILTER BAR ================= */}
       <div className="shop-filter-bar">
         <input
           type="text"
@@ -139,51 +116,56 @@ export default function Shop() {
       </div>
 
       {/* ================= PRODUCTS ================= */}
-
-      <div className="shop-grid">
-        {filteredProducts.length > 0 ? (
-          filteredProducts.map((p) => (
-            <div
-              className="shop-card"
-              key={p.id}
-              onClick={() => navigate(`/product/${p.id}`)}
-            >
-              <img src={p.image} alt={p.title} className="shop-img" />
-
-              <h2>{p.title}</h2>
-
-              <p className="shop-price">
-                ₹
-                {p.sizePrices && p.sizePrices.length > 0
-                  ? Math.min(
-                    ...p.sizePrices.map((s) => Number(s.price)),
-                  ).toLocaleString("en-IN")
-                  : "Price Not Available"}
-              </p>
-
-              <div className="shop-rating" style={{ color: '#D4AF37', fontSize: '14px', marginBottom: '8px' }}>
-                {"⭐".repeat(Math.round(p.rating || 0))}
-                <span style={{ color: 'rgba(255,255,255,0.6)', marginLeft: '5px' }}>({p.rating || 0})</span>
-              </div>
-
-              <p className="shop-tags">
-                {(p.categories || []).join(", ")} • {(p.types || []).join(", ")}
-              </p>
-
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  navigate(`/product/${p.id}`);
-                }}
+      {loading ? (
+        <div style={{ textAlign: 'center', padding: '60px', color: '#d4af37', fontSize: '18px' }}>
+          Loading products...
+        </div>
+      ) : (
+        <div className="shop-grid">
+          {filteredProducts.length > 0 ? (
+            filteredProducts.map((p) => (
+              <div
+                className="shop-card"
+                key={p._id}
+                onClick={() => navigate(`/product/${p._id}`)}
               >
-                View Details
-              </button>
-            </div>
-          ))
-        ) : (
-          <p className="no-products">No products found 😢</p>
-        )}
-      </div>
+                <img src={p.image} alt={p.title} className="shop-img" />
+
+                <h2>{p.title}</h2>
+
+                <p className="shop-price">
+                  ₹
+                  {p.sizePrices && p.sizePrices.length > 0
+                    ? Math.min(
+                      ...p.sizePrices.map((s) => Number(s.price)),
+                    ).toLocaleString("en-IN")
+                    : "Price Not Available"}
+                </p>
+
+                <div className="shop-rating" style={{ color: '#D4AF37', fontSize: '14px', marginBottom: '8px' }}>
+                  {"⭐".repeat(Math.round(p.rating || 0))}
+                  <span style={{ color: 'rgba(255,255,255,0.6)', marginLeft: '5px' }}>({p.rating || 0})</span>
+                </div>
+
+                <p className="shop-tags">
+                  {(p.categories || []).join(", ")} • {(p.types || []).join(", ")}
+                </p>
+
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigate(`/product/${p._id}`);
+                  }}
+                >
+                  View Details
+                </button>
+              </div>
+            ))
+          ) : (
+            <p className="no-products">No products found 😢</p>
+          )}
+        </div>
+      )}
     </div>
   );
 }

@@ -1,7 +1,13 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import "./Admin.css";
 import { Filler } from "chart.js";
 import { useNavigate } from "react-router-dom";
+import {
+  apiGetProducts, apiAddProduct, apiUpdateProduct, apiDeleteProduct,
+  apiGetOrders, apiUpdateOrderStatus,
+  apiGetQueries, apiUpdateQuery, apiReplyQuery, apiInitiateRefund,
+  apiGetReviews, apiDeleteReview,
+} from "../utils/api";
 import { Line, Pie, Bar } from "react-chartjs-2";
 import {
   Chart as ChartJS,
@@ -33,6 +39,8 @@ ChartJS.register(
   Filler,
 );
 
+const REFRESH_INTERVAL = 5000; // Real-time sync every 5 seconds ⚡
+
 // ❌ REMOVE THESE (these were making everything black)
 // ChartJS.defaults.color = "#1A1A1A";
 // ChartJS.defaults.borderColor = "#1A1A1A";
@@ -52,12 +60,15 @@ export default function Admin() {
   // Orders & Queries
   const [orders, setOrders] = useState([]);
   const [queries, setQueries] = useState([]);
+  const [lastUpdated, setLastUpdated] = useState(new Date());
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   // Support Reply State
   const [replyInputs, setReplyInputs] = useState({});
 
   // Filters
-  const [reportPeriod, setReportPeriod] = useState("monthly");
+  const [reportPeriod, setReportPeriod] = useState("all");
   const [filterCategory, setFilterCategory] = useState("All");
   const [filterType, setFilterType] = useState("All");
 
@@ -90,81 +101,127 @@ export default function Admin() {
     maintainAspectRatio: false,
     plugins: {
       legend: {
+        position: 'top',
         labels: {
-          color: "rgba(255,255,255,0.85)",
-          font: {
-            size: 12,
-            weight: "600",
-          },
+          color: "#fff",
+          font: { family: 'Poppins', size: 12, weight: '600' },
+          padding: 20,
+          usePointStyle: true,
         },
       },
       tooltip: {
-        backgroundColor: "rgba(15,15,15,0.95)",
+        backgroundColor: "rgba(10, 10, 10, 0.9)",
         titleColor: "#D4AF37",
-        bodyColor: "white",
-        borderColor: "rgba(212,175,55,0.6)",
+        bodyColor: "#fff",
+        borderColor: "rgba(212, 175, 55, 0.4)",
         borderWidth: 1,
         padding: 12,
+        cornerRadius: 10,
+        displayColors: false,
       },
     },
     scales: {
       x: {
-        ticks: {
-          color: "rgba(255,255,255,0.75)",
-          font: { size: 11, weight: "500" },
-        },
-        grid: {
-          color: "rgba(255,255,255,0.08)",
-        },
+        grid: { color: "rgba(255, 255, 255, 0.05)", drawBorder: false },
+        ticks: { color: "rgba(255, 255, 255, 0.5)", font: { size: 11 } },
       },
       y: {
-        ticks: {
-          color: "rgba(255,255,255,0.75)",
-          font: { size: 11, weight: "500" },
-        },
-        grid: {
-          color: "rgba(255,255,255,0.08)",
-        },
+        grid: { color: "rgba(255, 255, 255, 0.05)", drawBorder: false },
+        ticks: { color: "rgba(255, 255, 255, 0.5)", font: { size: 11 } },
+        beginAtZero: true,
       },
     },
+    animation: {
+      duration: 1000,
+      easing: 'easeInOutQuart'
+    }
   };
 
-  // Load LocalStorage
+  // ✅ Notification State
+  const [notifications, setNotifications] = useState([]);
+  const prevOrderRef = useRef(0);
+  const prevQueryRef = useRef(0);
+  const firstLoadRef = useRef(true);
+
+  // ✅ Real-time Auto-Refresh
   useEffect(() => {
-    const loadData = () => {
-      setProducts(JSON.parse(localStorage.getItem("dezaProducts")) || []);
-      setOrders(JSON.parse(localStorage.getItem("dezaOrders")) || []);
-      setQueries(JSON.parse(localStorage.getItem("dezaQueries")) || []);
-      setReviews(JSON.parse(localStorage.getItem("dezaReviews")) || []);
-    };
+    loadAll();
+    const interval = setInterval(() => {
+      loadAll(true); // silent refresh
+    }, REFRESH_INTERVAL);
 
-    loadData();
-
-    // Auto refresh dashboard
-    window.addEventListener("storage", loadData);
-
-    return () => window.removeEventListener("storage", loadData);
+    return () => clearInterval(interval);
   }, []);
 
-  const saveProducts = (updated) => {
-    setProducts(updated);
-    localStorage.setItem("dezaProducts", JSON.stringify(updated));
+  const loadAll = async (silent = false) => {
+    if (!silent) setLoading(true);
+    try {
+      const [prods, ords, qrys, revs] = await Promise.all([
+        apiGetProducts().catch(e => { console.error("Products error:", e); return []; }),
+        apiGetOrders().catch(e => { console.error("Orders error:", e); return []; }),
+        apiGetQueries().catch(e => { console.error("Queries error:", e); return []; }),
+        apiGetReviews().catch(e => { console.error("Reviews error:", e); return []; }),
+      ]);
+
+      console.log("Admin Data Loaded:", { prods: prods.length, ords: ords.length, qrys: qrys.length });
+
+      // ✅ New Order Notification Logic
+      if (!firstLoadRef.current && ords.length > prevOrderRef.current) {
+        const newCount = ords.length - prevOrderRef.current;
+        const newNotify = {
+          id: Date.now(),
+          message: `🎉 ${newCount} New Order(s) Received!`,
+          time: new Date().toLocaleTimeString()
+        };
+        setNotifications(prev => [newNotify, ...prev].slice(0, 10));
+
+        try {
+          const audio = new Audio("https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3");
+          audio.play();
+        } catch (e) { }
+      }
+
+      // ✅ New Query Notification Logic
+      if (!firstLoadRef.current && qrys.length > prevQueryRef.current) {
+        const newCount = qrys.length - prevQueryRef.current;
+        const newNotify = {
+          id: Date.now() + 1,
+          message: `📬 ${newCount} New Support Query!`,
+          time: new Date().toLocaleTimeString()
+        };
+        setNotifications(prev => [newNotify, ...prev].slice(0, 10));
+        try {
+          const audio = new Audio("https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3");
+          audio.play();
+        } catch (e) { }
+      }
+
+      prevOrderRef.current = ords.length;
+      prevQueryRef.current = qrys.length;
+      firstLoadRef.current = false;
+
+      setProducts(prods);
+      setOrders(ords);
+      setQueries(qrys);
+      setReviews(revs);
+      setLastUpdated(new Date());
+      setError(null);
+    } catch (err) {
+      console.error("Critical Admin Load Error:", err);
+      setError("Failed to connect to server. Check if backend is running.");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const saveOrders = (updated) => {
-    setOrders(updated);
-    localStorage.setItem("dezaOrders", JSON.stringify(updated));
-  };
-
-  const saveQueries = (updated) => {
-    setQueries(updated);
-    localStorage.setItem("dezaQueries", JSON.stringify(updated));
-  };
-
-  const saveReviews = (updated) => {
-    setReviews(updated);
-    localStorage.setItem("dezaReviews", JSON.stringify(updated));
-  };
+  // ✅ Computed Sales Ticker (Live data)
+  const recentSalesTicker = useMemo(() => {
+    return [...orders]
+      .sort((a, b) => new Date(b.date) - new Date(a.date))
+      .slice(0, 5)
+      .map(o => `${o.customerName} just ordered ₹${o.totalPrice}!`)
+      .join(" • ");
+  }, [orders]);
 
   const handleImageUpload = (e) => {
     const files = Array.from(e.target.files);
@@ -191,47 +248,60 @@ export default function Admin() {
   };
 
   // ADD PRODUCT
-  const handleAddProduct = (e) => {
+  const handleAddProduct = async (e) => {
     e.preventDefault();
 
     if (
-      !title ||
+      !title.trim() ||
       !stock ||
       !categoriesSelected.length ||
       !typesSelected.length ||
-      !description ||
+      !description.trim() ||
       !images.length
     ) {
       alert("⚠ Please fill all fields & upload images!");
       return;
     }
 
-    const validSizePrices = sizePrices.filter(
-      (sp) => sp.size && sp.price !== "",
-    );
-
-    if (!validSizePrices.length) {
-      alert("⚠ Please add size-wise prices!");
+    if (Number(stock) < 0) {
+      alert("⚠ Stock cannot be negative!");
       return;
     }
 
-    const newProduct = {
-      id: Date.now(),
-      title,
-      stock: Number(stock),
-      categories: categoriesSelected,
-      types: typesSelected,
-      fragrance,
-      description,
-      images,
-      image: images[0],
-      sold: 0,
-      sizePrices: validSizePrices,
-      createdAt: new Date().toISOString(),
-    };
+    const validSizePrices = sizePrices.filter(
+      (sp) => sp.size.trim() !== "" && sp.price !== "",
+    );
 
-    saveProducts([newProduct, ...products]);
-    alert("✅ Product added successfully!");
+    if (!validSizePrices.length) {
+      alert("⚠ Please add valid size-wise prices!");
+      return;
+    }
+
+    const negativePrice = validSizePrices.find((sp) => Number(sp.price) < 0);
+    if (negativePrice) {
+      alert("⚠ Price cannot be negative!");
+      return;
+    }
+
+    try {
+      const newProduct = await apiAddProduct({
+        title,
+        stock: Number(stock),
+        categories: categoriesSelected,
+        types: typesSelected,
+        fragrance,
+        description,
+        images,
+        image: images[0],
+        sizePrices: validSizePrices,
+      });
+
+      setProducts([newProduct, ...products]);
+      alert("✅ Product added successfully!");
+    } catch (err) {
+      alert("❌ Failed to add product: " + err.message);
+      return;
+    }
 
     setTitle("");
     setStock("");
@@ -249,10 +319,16 @@ export default function Admin() {
   };
 
   // DELETE PRODUCT
-  const handleDeleteProduct = (id) => {
-    saveProducts(products.filter((p) => p.id !== id));
-    saveReviews(reviews.filter((r) => r.productId !== id));
-    alert("❌ Product deleted!");
+  const handleDeleteProduct = async (id) => {
+    if (!window.confirm("Delete this product?")) return;
+    try {
+      await apiDeleteProduct(id);
+      setProducts(products.filter((p) => p._id !== id));
+      setReviews(reviews.filter((r) => r.productId !== id));
+      alert("❌ Product deleted!");
+    } catch (err) {
+      alert("❌ Failed to delete: " + err.message);
+    }
   };
 
   // EDIT PRODUCT
@@ -281,30 +357,62 @@ export default function Admin() {
     setActiveTab("add");
   };
 
-  const handleUpdateProduct = (e) => {
+  const handleUpdateProduct = async (e) => {
     e.preventDefault();
 
     if (!editingProduct) return;
 
-    const updatedProduct = {
-      ...editingProduct,
-      title,
-      stock: Number(stock),
-      categories: categoriesSelected,
-      types: typesSelected,
-      fragrance,
-      description,
-      images,
-      image: images[0] || editingProduct.image,
-      sizePrices,
-    };
+    if (
+      !title.trim() ||
+      !stock ||
+      !categoriesSelected.length ||
+      !typesSelected.length ||
+      !description.trim() ||
+      !images.length
+    ) {
+      alert("⚠ Please fill all fields & upload images!");
+      return;
+    }
 
-    const updatedProducts = products.map((p) =>
-      p.id === editingProduct.id ? updatedProduct : p,
+    if (Number(stock) < 0) {
+      alert("⚠ Stock cannot be negative!");
+      return;
+    }
+
+    const validSizePrices = sizePrices.filter(
+      (sp) => sp.size.trim() !== "" && sp.price !== "",
     );
 
-    saveProducts(updatedProducts);
-    alert("✅ Product updated successfully!");
+    if (!validSizePrices.length) {
+      alert("⚠ Please add valid size-wise prices!");
+      return;
+    }
+
+    const negativePrice = validSizePrices.find((sp) => Number(sp.price) < 0);
+    if (negativePrice) {
+      alert("⚠ Price cannot be negative!");
+      return;
+    }
+
+    try {
+      const updatedProduct = await apiUpdateProduct(editingProduct._id, {
+        title,
+        stock: Number(stock),
+        categories: categoriesSelected,
+        types: typesSelected,
+        fragrance,
+        description,
+        images,
+        image: images[0] || editingProduct.image,
+        sizePrices,
+      });
+
+      setProducts(products.map((p) => (p._id === editingProduct._id ? updatedProduct : p)));
+      alert("✅ Product updated successfully!");
+    } catch (err) {
+      alert("❌ Failed to update: " + err.message);
+      return;
+    }
 
     setEditingProduct(null);
     setTitle("");
@@ -316,29 +424,28 @@ export default function Admin() {
     setImages([]);
   };
 
-  // ORDER UPDATE
-  const updateOrderStatus = (id, status) => {
-    saveOrders(orders.map((o) => (o.id === id ? { ...o, status } : o)));
-  };
-
-  const resolveQuery = (id) => {
-    saveQueries(
-      queries.map((q) => (q.id === id ? { ...q, resolved: true } : q)),
-    );
+  // ORDER STATUS UPDATE
+  const updateOrderStatus = async (id, status) => {
+    try {
+      const updated = await apiUpdateOrderStatus(id, status);
+      setOrders(orders.map((o) => (o._id === id ? updated : o)));
+    } catch (err) {
+      alert("❌ Failed to update order status: " + err.message);
+    }
   };
 
   // UPDATE QUERY FIELD (priority / status)
-  const updateQueryField = (id, field, value) => {
-    const updated = queries.map((q) =>
-      q.id === id ? { ...q, [field]: value } : q,
-    );
-
-    setQueries(updated);
-    localStorage.setItem("dezaQueries", JSON.stringify(updated));
+  const updateQueryField = async (id, field, value) => {
+    try {
+      const updated = await apiUpdateQuery(id, { [field]: value });
+      setQueries(queries.map((q) => (q._id === id ? updated : q)));
+    } catch (err) {
+      console.error("Failed to update query:", err);
+    }
   };
 
   // SEND ADMIN REPLY
-  const sendAdminReply = (id) => {
+  const sendAdminReply = async (id) => {
     const replyText = replyInputs[id];
 
     if (!replyText) {
@@ -346,31 +453,32 @@ export default function Admin() {
       return;
     }
 
-    const updated = queries.map((q) =>
-      q.id === id
-        ? {
-          ...q,
-          adminReply: replyText,
-          repliedAt: new Date().toLocaleString(),
-          status: "Resolved",
-        }
-        : q,
-    );
+    try {
+      const updated = await apiReplyQuery(id, replyText);
+      setQueries(queries.map((q) => (q._id === id ? updated : q)));
+      setReplyInputs({ ...replyInputs, [id]: "" });
+      alert("✅ Reply sent successfully!");
+    } catch (err) {
+      alert("❌ Failed to send reply: " + err.message);
+    }
+  };
 
-    setQueries(updated);
-    localStorage.setItem("dezaQueries", JSON.stringify(updated));
+  const handleRefund = async (id) => {
+    if (!window.confirm("Are you sure you want to initiate a full refund for this query? This cannot be undone.")) return;
 
-    setReplyInputs({
-      ...replyInputs,
-      [id]: "",
-    });
-
-    alert("✅ Reply sent successfully!");
+    try {
+      const { query } = await apiInitiateRefund(id);
+      setQueries(queries.map((q) => (q._id === id ? { ...q, refundStatus: "Initiated" } : q)));
+      alert("✅ Refund successfully initiated and customer has been notified via email.");
+    } catch (err) {
+      alert("❌ Failed to initiate refund: " + err.message);
+    }
   };
 
   // Filter Orders
   const filteredOrders = orders.filter((o) => {
-    const orderDate = new Date(o.date);
+    // Priority: createdAt (ISO) > date (Locale String)
+    const orderDate = o.createdAt ? new Date(o.createdAt) : new Date(o.date);
     const now = new Date();
 
     if (reportPeriod === "daily")
@@ -391,6 +499,8 @@ export default function Admin() {
 
     if (reportPeriod === "yearly")
       return orderDate.getFullYear() === now.getFullYear();
+
+    if (reportPeriod === "all") return true;
 
     return true;
   });
@@ -420,6 +530,9 @@ export default function Admin() {
     (o) => o.status === "Shipped",
   ).length;
 
+  const pendingQueries = queries.filter(q => q.status === "Pending").length;
+  const resolvedQueries = queries.filter(q => q.status === "Resolved" || q.resolved).length;
+
   const successfulTransactions = finalOrders.filter(
     (o) => o.paymentStatus === "Success",
   ).length;
@@ -438,7 +551,7 @@ export default function Admin() {
 
   // Ratings
   const productsWithAvgRating = products.map((p) => {
-    const productReviews = reviews.filter((r) => r.productId === p.id);
+    const productReviews = reviews.filter((r) => r.productId === p._id);
     const avgRating = productReviews.length
       ? productReviews.reduce((sum, r) => sum + r.rating, 0) /
       productReviews.length
@@ -506,9 +619,10 @@ export default function Admin() {
         data: types.map(
           (t) => products.filter((p) => (p.types || []).includes(t)).length,
         ),
-        backgroundColor: ["rgba(212,175,55,0.9)", "rgba(249,247,242,0.9)"],
-        borderColor: "rgba(255,255,255,0.2)",
-        borderWidth: 2,
+        backgroundColor: ["#d4af37", "#f9f7f2"],
+        borderColor: "rgba(255,255,255,0.05)",
+        borderWidth: 1,
+        borderRadius: 8,
       },
     ],
   };
@@ -519,9 +633,15 @@ export default function Admin() {
       {
         label: "Average Ratings",
         data: productsWithAvgRating.map((p) => p.avgRating),
-        backgroundColor: "rgba(212,175,55,0.8)",
-        borderColor: "rgba(255,255,255,0.2)",
-        borderWidth: 2,
+        backgroundColor: [
+          "rgba(212, 175, 55, 0.7)",
+          "rgba(155, 132, 119, 0.7)",
+          "rgba(105, 240, 174, 0.7)",
+          "rgba(79, 195, 247, 0.7)",
+        ],
+        borderColor: "rgba(212, 175, 55, 0.4)",
+        borderWidth: 1,
+        borderRadius: 8,
       },
     ],
   };
@@ -529,23 +649,34 @@ export default function Admin() {
   // Export PDF with Charts
   const exportReportWithCharts = async () => {
     const doc = new jsPDF("p", "mm", "a4");
+    const timestamp = new Date().toLocaleString();
 
-    doc.setFontSize(18);
-    doc.text("DEZA Admin Dashboard Report", 10, 15);
+    // Title & Brand
+    doc.setFontSize(22);
+    doc.setTextColor(212, 175, 55); // Gold
+    doc.text("DEZA PREMIUM ANALYTICS", 10, 20);
 
-    doc.setFontSize(12);
-    doc.text(`Report Period: ${reportPeriod}`, 10, 25);
-    doc.text(`Total Products: ${totalProducts}`, 10, 35);
-    doc.text(`Total Orders: ${totalOrders}`, 10, 42);
-    doc.text(`Revenue Generated: ₹${totalRevenue}`, 10, 49);
-    doc.text(`Delivered Orders: ${deliveredOrders}`, 10, 56);
-    doc.text(`Pending Orders: ${pendingOrders}`, 10, 63);
-    doc.text(`Shipped Orders: ${shippedOrders}`, 10, 70);
-    doc.text(`Successful Transactions: ${successfulTransactions}`, 10, 77);
-    doc.text(`Failed Transactions: ${failedTransactions}`, 10, 84);
-    doc.text(`Most Sold Product: ${mostSoldProduct}`, 10, 91);
-    doc.text(`Least Sold Product: ${leastSoldProduct}`, 10, 98);
-    doc.text(`Highest Rated Product: ${highestRatedProduct.title}`, 10, 105);
+    doc.setFontSize(10);
+    doc.setTextColor(100, 100, 100);
+    doc.text(`Generated on: ${timestamp}`, 10, 28);
+    doc.text(`Report Period: ${reportPeriod.toUpperCase()}`, 10, 33);
+
+    // Summary Box
+    doc.setDrawColor(212, 175, 55);
+    doc.setLineWidth(0.5);
+    doc.line(10, 38, 200, 38);
+
+    doc.setFontSize(14);
+    doc.setTextColor(0, 0, 0);
+    doc.text("Business Summary", 10, 48);
+
+    doc.setFontSize(11);
+    doc.text(`Total Revenue: INR ${totalRevenue.toLocaleString()}`, 15, 58);
+    doc.text(`Total Orders: ${totalOrders}`, 15, 65);
+    doc.text(`Total Products: ${totalProducts}`, 15, 72);
+    doc.text(`Delivered: ${deliveredOrders} | Pending: ${pendingOrders}`, 15, 79);
+    doc.text(`Most Sold: ${mostSoldProduct}`, 15, 86);
+    doc.text(`Highest Rated: ${highestRatedProduct.title}`, 15, 93);
 
     doc.addPage();
 
@@ -556,21 +687,31 @@ export default function Admin() {
       return;
     }
 
+    // Capture the entire dashboard as a snapshot for visual depth
     const canvas = await html2canvas(dashboardElement, {
       scale: 2,
       useCORS: true,
+      backgroundColor: "#1a1a1a"
     });
 
     const imgData = canvas.toDataURL("image/png");
 
-    doc.text("Dashboard Charts Snapshot", 10, 15);
-    doc.addImage(imgData, "PNG", 10, 20, 190, 250);
+    doc.setFontSize(16);
+    doc.setTextColor(212, 175, 55);
+    doc.text("Visual Analytics Dashboard", 10, 20);
 
-    doc.save("DEZA-Dashboard-Report.pdf");
+    // Maintain aspect ratio for the dashboard snapshot
+    const imgWidth = 190;
+    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+    doc.addImage(imgData, "PNG", 10, 30, imgWidth, imgHeight > 250 ? 250 : imgHeight);
+
+    doc.save(`DEZA-Analytics-${reportPeriod}.pdf`);
   };
 
   const handleLogout = () => {
     localStorage.removeItem("currentUser");
+    localStorage.removeItem("deza_token");
     alert("👋 Admin logged out!");
     navigate("/admin-login");
   };
@@ -633,65 +774,144 @@ export default function Admin() {
 
       {/* CONTENT */}
       <div className="admin-content">
+        {error && <div className="admin-error"><h2>{error} ❌</h2><button onClick={() => loadAll()}>Retry</button></div>}
+
         {/* DASHBOARD */}
         {activeTab === "dashboard" && (
           <div className="admin-section" ref={dashboardRef}>
-            <h1 className="admin-title">Welcome Admin 👑</h1>
+            <div className="admin-header-flex">
+              <div>
+                <h1 className="admin-title">Live Dashboard 💎</h1>
+                <p className="admin-subtitle">
+                  Last synced: {lastUpdated.toLocaleTimeString()}
+                  {loading && <span style={{ color: "#D4AF37", marginLeft: "10px", fontWeight: "bold" }}>⚡ Syncing...</span>}
+                </p>
+              </div>
+              <button className="small-btn edit-btn" onClick={() => loadAll()} disabled={loading}>
+                {loading ? "⏳ Syncing..." : "🔄 Refresh Now"}
+              </button>
+            </div>
+
+            {/* LIVE TICKER */}
+            {orders.length > 0 && (
+              <div className="live-ticker-container">
+                <div className="live-ticker-label">LATEST SALES</div>
+                <marquee className="live-ticker-text">
+                  {recentSalesTicker || "Waiting for new orders..."}
+                </marquee>
+              </div>
+            )}
 
             <div className="admin-cards">
-              <div className="admin-card">
-                <h3>Total Products</h3>
-                <p>{totalProducts}</p>
+              <div className="admin-card myntra-card purple">
+                <div className="card-icon">🛍️</div>
+                <div className="card-content">
+                  <h3>Total Products</h3>
+                  <p>{totalProducts}</p>
+                </div>
               </div>
 
-              <div className="admin-card">
-                <h3>Total Orders</h3>
-                <p>{totalOrders}</p>
+              <div className="admin-card myntra-card gold">
+                <div className="card-icon">📦</div>
+                <div className="card-content">
+                  <h3>Orders Received</h3>
+                  <p>{totalOrders}</p>
+                </div>
               </div>
 
-              <div className="admin-card">
-                <h3>Total Revenue</h3>
-                <p>₹{totalRevenue}</p>
+              <div className="admin-card myntra-card green">
+                <div className="card-icon">💰</div>
+                <div className="card-content">
+                  <h3>Total Revenue</h3>
+                  <p>₹{totalRevenue.toLocaleString()}</p>
+                </div>
               </div>
 
-              <div className="admin-card">
-                <h3>Delivered</h3>
-                <p>{deliveredOrders}</p>
+              <div className="admin-card myntra-card teal">
+                <div className="card-icon">🚚</div>
+                <div className="card-content">
+                  <h3>Orders Delivered</h3>
+                  <p>{deliveredOrders}</p>
+                </div>
               </div>
 
-              <div className="admin-card">
-                <h3>Pending</h3>
-                <p>{pendingOrders}</p>
+              <div className="admin-card myntra-card orange">
+                <div className="card-icon">⏳</div>
+                <div className="card-content">
+                  <h3>Orders Pending</h3>
+                  <p>{pendingOrders}</p>
+                </div>
               </div>
 
-              <div className="admin-card">
-                <h3>Shipped</h3>
-                <p>{shippedOrders}</p>
+              <div className="admin-card myntra-card blue">
+                <div className="card-icon">✔</div>
+                <div className="card-content">
+                  <h3>Queries Solved</h3>
+                  <p>{resolvedQueries}</p>
+                </div>
               </div>
 
-              <div className="admin-card">
-                <h3>Successful Transactions</h3>
-                <p>{successfulTransactions}</p>
+              <div className="admin-card myntra-card orange">
+                <div className="card-icon">💬</div>
+                <div className="card-content">
+                  <h3>Queries Pending</h3>
+                  <p>{pendingQueries}</p>
+                </div>
               </div>
 
-              <div className="admin-card">
-                <h3>Failed Transactions</h3>
-                <p>{failedTransactions}</p>
+              <div className="admin-card myntra-card green">
+                <div className="card-icon">💳</div>
+                <div className="card-content">
+                  <h3>Txn Success</h3>
+                  <p>{successfulTransactions}</p>
+                </div>
               </div>
 
-              <div className="admin-card">
-                <h3>Most Sold Product</h3>
-                <p>{mostSoldProduct}</p>
+              <div className="admin-card myntra-card" style={{ background: "linear-gradient(135deg, #e53935, #b71c1c)" }}>
+                <div className="card-icon">❌</div>
+                <div className="card-content">
+                  <h3>Txn Failed</h3>
+                  <p>{failedTransactions}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* NOTIFICATIONS & ACTIVITY */}
+            <div className="dashboard-grid-2">
+              <div className="activity-panel">
+                <h3>🔔 Recent Notifications</h3>
+                <div className="notifications-list">
+                  {notifications.length > 0 ? (
+                    notifications.map(n => (
+                      <div key={n.id} className="notify-item">
+                        <p>{n.message}</p>
+                        <span>{n.time}</span>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="empty-notify">No new notifications ☕</p>
+                  )}
+                </div>
               </div>
 
-              <div className="admin-card">
-                <h3>Least Sold Product</h3>
-                <p>{leastSoldProduct}</p>
-              </div>
-
-              <div className="admin-card">
-                <h3>Highest Rated Product</h3>
-                <p>{highestRatedProduct.title}</p>
+              <div className="quick-stats-panel">
+                <h3>🚀 Quick Stats</h3>
+                <div className="stat-row">
+                  <span>Pending Orders</span>
+                  <span className="count orange">{pendingOrders}</span>
+                </div>
+                <div className="stat-row">
+                  <span>Orders Delivered</span>
+                  <span className="count green">{deliveredOrders}</span>
+                </div>
+                <div className="stat-row">
+                  <span>Pending Queries</span>
+                  <span className="count orange">{pendingQueries}</span>
+                </div>
+                <div className="stat-row">
+                  <span>Queries Solved</span>
+                  <span className="count green">{resolvedQueries}</span>
+                </div>
               </div>
             </div>
 
@@ -704,6 +924,7 @@ export default function Admin() {
                     value={reportPeriod}
                     onChange={(e) => setReportPeriod(e.target.value)}
                   >
+                    <option value="all">All Time</option>
                     <option value="daily">Daily</option>
                     <option value="monthly">Monthly</option>
                     <option value="quarterly">Quarterly</option>
@@ -750,7 +971,7 @@ export default function Admin() {
                 <CSVLink
                   className="csv-link"
                   data={finalOrders.map((o) => ({
-                    id: o.id,
+                    id: o._id,
                     date: o.date,
                     total: o.totalPrice,
                     status: o.status,
@@ -765,28 +986,28 @@ export default function Admin() {
             <div className="charts-grid">
               <div className="chart-box">
                 <h3>Revenue Trend</h3>
-                <div style={{ height: "250px" }}>
+                <div className="chart-container-inner" style={{ flex: 1, paddingBottom: '20px' }}>
                   <Line data={revenueChart} options={chartOptions} />
                 </div>
               </div>
 
               <div className="chart-box">
                 <h3>Products by Category</h3>
-                <div style={{ height: "250px" }}>
+                <div className="chart-container-inner" style={{ flex: 1, paddingBottom: '20px' }}>
                   <Pie data={categoryChart} options={chartOptions} />
                 </div>
               </div>
 
               <div className="chart-box">
                 <h3>Products by Type</h3>
-                <div style={{ height: "250px" }}>
+                <div className="chart-container-inner" style={{ flex: 1, paddingBottom: '20px' }}>
                   <Bar data={typeChart} options={chartOptions} />
                 </div>
               </div>
 
               <div className="chart-box">
                 <h3>Ratings Overview</h3>
-                <div style={{ height: "250px" }}>
+                <div className="chart-container-inner" style={{ flex: 1, paddingBottom: '20px' }}>
                   <Bar data={ratingsChart} options={chartOptions} />
                 </div>
               </div>
@@ -989,7 +1210,7 @@ export default function Admin() {
 
                 <tbody>
                   {productsWithAvgRating.map((p) => (
-                    <tr key={p.id}>
+                    <tr key={p._id}>
                       <td>
                         <img
                           src={p.image}
@@ -1014,7 +1235,7 @@ export default function Admin() {
 
                         <button
                           className="small-btn delete-btn"
-                          onClick={() => handleDeleteProduct(p.id)}
+                          onClick={() => handleDeleteProduct(p._id)}
                         >
                           Delete
                         </button>
@@ -1060,9 +1281,9 @@ export default function Admin() {
 
                 <tbody>
                   {finalOrders.map((o) => (
-                    <tr key={o.id}>
-                      <td>{o.id}</td>
-                      <td>{o.date}</td>
+                    <tr key={o._id}>
+                      <td>{o.orderId || "DZ-" + String(o._id).slice(-6).toUpperCase()}</td>
+                      <td>{new Date(o.date).toLocaleDateString()}</td>
 
                       <td>
                         <strong>{o.customerName || "N/A"}</strong>
@@ -1089,8 +1310,8 @@ export default function Admin() {
                         )}
                       </td>
                       <td>
-                        {(o.items || []).map((item) => (
-                          <div key={item.id} style={{ marginBottom: "10px" }}>
+                        {(o.items || []).map((item, idx) => (
+                          <div key={item._id || item.id || idx} style={{ marginBottom: "10px" }}>
                             <img
                               src={item.image}
                               alt={item.name}
@@ -1111,11 +1332,13 @@ export default function Admin() {
                         <select
                           value={o.status}
                           onChange={(e) =>
-                            updateOrderStatus(o.id, e.target.value)
+                            updateOrderStatus(o._id, e.target.value)
                           }
                         >
                           <option value="Pending">Pending</option>
+                          <option value="Packed">Packed</option>
                           <option value="Shipped">Shipped</option>
+                          <option value="Out for Delivery">Out for Delivery</option>
                           <option value="Delivered">Delivered</option>
                         </select>
                       </td>
@@ -1160,8 +1383,8 @@ export default function Admin() {
 
                 <tbody>
                   {queries.map((q) => (
-                    <tr key={q.id}>
-                      <td>{q.ticketId || "DZ-" + q.id}</td>
+                    <tr key={q._id}>
+                      <td>{"DZ-" + String(q._id).slice(-6).toUpperCase()}</td>
                       <td>{q.name}</td>
                       <td>{q.email}</td>
                       <td>{q.message}</td>
@@ -1183,7 +1406,7 @@ export default function Admin() {
                         <select
                           value={q.priority || "Medium"}
                           onChange={(e) =>
-                            updateQueryField(q.id, "priority", e.target.value)
+                            updateQueryField(q._id, "priority", e.target.value)
                           }
                         >
                           <option value="Low">Low</option>
@@ -1196,7 +1419,7 @@ export default function Admin() {
                         <select
                           value={q.status || "Pending"}
                           onChange={(e) =>
-                            updateQueryField(q.id, "status", e.target.value)
+                            updateQueryField(q._id, "status", e.target.value)
                           }
                         >
                           <option value="Pending">Pending</option>
@@ -1214,23 +1437,61 @@ export default function Admin() {
                           </div>
                         ) : (
                           <>
+                            <select
+                              style={{ width: "100%", marginBottom: "5px", padding: "5px", background: "#333", color: "#fff", border: "1px solid #555" }}
+                              onChange={(e) => {
+                                if (e.target.value) {
+                                  setReplyInputs({
+                                    ...replyInputs,
+                                    [q._id]: e.target.value,
+                                  });
+                                }
+                              }}
+                              value={""} // Always empty to allow re-selection
+                            >
+                              <option value="" disabled>✨ Select Auto-Reply...</option>
+                              <option value="We sincerely apologize for the inconvenience. A replacement for the wrong product has been initiated and will reach you within 3-5 business days.">Wrong Product Received</option>
+                              <option value="We apologize that the scent did not meet your expectations. We have approved your return request. Please pack the item securely for pickup.">Not Satisfied with Smell</option>
+                              <option value="We are terribly sorry about the damaged/leaking bottle. We have initiated a full refund to your original payment method.">Damaged / Leakage</option>
+                              <option value="Your order is currently in transit and is facing a slight delay due to unforeseen logistics issues. We are expediting it and it should reach you shortly.">Delivery Delayed</option>
+                              <option value="Thank you for reaching out. Your request has been received and our luxury support team is currently reviewing your case. We will update you soon.">General Acknowledgment</option>
+                            </select>
+
                             <textarea
                               placeholder="Write reply..."
-                              value={replyInputs[q.id] || ""}
+                              value={replyInputs[q._id] || ""}
                               onChange={(e) =>
                                 setReplyInputs({
                                   ...replyInputs,
-                                  [q.id]: e.target.value,
+                                  [q._id]: e.target.value,
                                 })
                               }
-                              style={{ width: "100%" }}
+                              style={{ width: "100%", minHeight: "50px" }}
                             />
                             <button
                               className="small-btn edit-btn"
-                              onClick={() => sendAdminReply(q.id)}
+                              onClick={() => sendAdminReply(q._id)}
+                              style={{ marginTop: "5px" }}
                             >
-                              Send Reply
+                              Send Reply 🚀
                             </button>
+                            {q.refundStatus === "Initiated" || q.refundStatus === "Completed" ? (
+                              <button
+                                className="small-btn edit-btn"
+                                disabled
+                                style={{ marginTop: "5px", marginLeft: "5px", background: "#4caf50", border: "1px solid #388e3c", opacity: 0.8 }}
+                              >
+                                Refund Initiated ✅
+                              </button>
+                            ) : (
+                              <button
+                                className="small-btn edit-btn"
+                                onClick={() => handleRefund(q._id)}
+                                style={{ marginTop: "5px", marginLeft: "5px", background: "#f44336", border: "1px solid #d32f2f" }}
+                              >
+                                Initiate Refund 💸
+                              </button>
+                            )}
                           </>
                         )}
                       </td>

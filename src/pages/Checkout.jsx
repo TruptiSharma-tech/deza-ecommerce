@@ -36,23 +36,23 @@ export default function Checkout() {
 
   // Validation
   const validateForm = () => {
-    if (!name || !/^[a-zA-Z\s]+$/.test(name)) {
-      alert("⚠ Enter valid name!");
+    if (!name || name.trim().length === 0 || !/^[a-zA-Z\s]+$/.test(name)) {
+      alert("⚠ Enter a valid full name!");
       return false;
     }
 
     if (!phone || !/^\d{10}$/.test(phone)) {
-      alert("⚠ Enter valid 10-digit phone!");
+      alert("⚠ Enter a valid 10-digit phone number!");
       return false;
     }
 
     if (
-      !address.street ||
-      !address.city ||
-      !address.state ||
-      !address.pincode
+      !address.street || !address.street.trim() ||
+      !address.city || !address.city.trim() ||
+      !address.state || !address.state.trim() ||
+      !address.pincode || !address.pincode.trim()
     ) {
-      alert("⚠ Please fill complete address!");
+      alert("⚠ Please fill complete shipping address!");
       return false;
     }
 
@@ -183,7 +183,7 @@ export default function Checkout() {
               {cart.map((item) => (
                 <div
                   className="checkout-item"
-                  key={`${item.id}-${item.selectedSize}`}
+                  key={`${item._id}-${item.selectedSize}`}
                 >
                   <img src={item.image} alt={item.name} />
 

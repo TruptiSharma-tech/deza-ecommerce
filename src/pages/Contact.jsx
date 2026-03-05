@@ -1,25 +1,33 @@
 import React, { useState, useEffect } from "react";
+import { apiSubmitQuery, apiGetMyQueries } from "../utils/api";
 import "./Contact.css";
+import { useAuth } from "../context/AuthContext";
 
 export default function Support() {
+  const { user: currentUser } = useAuth();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
   const [image, setImage] = useState(null);
   const [myQueries, setMyQueries] = useState([]);
-
-  const currentUser = JSON.parse(localStorage.getItem("currentUser"));
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const allQueries = JSON.parse(localStorage.getItem("dezaQueries")) || [];
-
-    if (currentUser) {
-      const userQueries = allQueries.filter(
-        (q) => q.email === currentUser.email,
-      );
-      setMyQueries(userQueries);
+    if (currentUser?.email) {
+      setName(currentUser.name || "");
+      setEmail(currentUser.email || "");
+      loadMyQueries(currentUser.email);
     }
-  }, []);
+  }, [currentUser]);
+
+  const loadMyQueries = async (email) => {
+    try {
+      const data = await apiGetMyQueries(email);
+      setMyQueries(data);
+    } catch (err) {
+      console.error("Failed to load queries:", err);
+    }
+  };
 
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
@@ -32,40 +40,36 @@ export default function Support() {
     reader.readAsDataURL(file);
   };
 
-  const submitQuery = (e) => {
+  const submitQuery = async (e) => {
     e.preventDefault();
 
-    if (!name || !email || !message) {
+    if (!name.trim() || !email.trim() || !message.trim()) {
       alert("⚠ Please fill all fields!");
       return;
     }
 
-    const oldQueries = JSON.parse(localStorage.getItem("dezaQueries")) || [];
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      alert("⚠ Please enter a valid email address!");
+      return;
+    }
 
-    const newQuery = {
-      id: "Q" + Date.now(),
-      name,
-      email,
-      message,
-      image,
-      status: "Pending",
-      reply: "",
-      date: new Date().toLocaleString(),
-    };
+    setLoading(true);
+    try {
+      const newQuery = await apiSubmitQuery({ name, email, message, image });
+      alert("✅ Query submitted successfully! Track status below 💛");
 
-    localStorage.setItem(
-      "dezaQueries",
-      JSON.stringify([newQuery, ...oldQueries]),
-    );
+      setName(currentUser?.name || "");
+      setEmail(currentUser?.email || "");
+      setMessage("");
+      setImage(null);
 
-    alert("✅ Query submitted successfully! Track status below 💛");
-
-    setName("");
-    setEmail("");
-    setMessage("");
-    setImage(null);
-
-    setMyQueries([newQuery, ...myQueries]);
+      setMyQueries((prev) => [newQuery, ...prev]);
+    } catch (err) {
+      alert("❌ Failed to submit query: " + err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -105,8 +109,8 @@ export default function Support() {
             <input type="file" accept="image/*" onChange={handleImageUpload} />
           </label>
 
-          <button type="submit" className="support-btn">
-            Send Query 🚀
+          <button type="submit" className="support-btn" disabled={loading}>
+            {loading ? "Submitting..." : "Send Query 🚀"}
           </button>
         </form>
 
@@ -116,9 +120,9 @@ export default function Support() {
             <h2>📦 Your Queries</h2>
 
             {myQueries.map((q) => (
-              <div key={q.id} className="query-card">
+              <div key={q._id} className="query-card">
                 <p>
-                  <strong>ID:</strong> {q.id}
+                  <strong>ID:</strong> {q._id}
                 </p>
 
                 <p>
@@ -132,9 +136,9 @@ export default function Support() {
                   </span>
                 </p>
 
-                {q.reply && (
+                {q.adminReply && (
                   <p>
-                    <strong>Admin Reply:</strong> {q.reply}
+                    <strong>Admin Reply:</strong> {q.adminReply}
                   </p>
                 )}
 

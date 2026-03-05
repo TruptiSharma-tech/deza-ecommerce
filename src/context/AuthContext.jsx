@@ -5,20 +5,24 @@ const AuthContext = createContext();
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
 
-  // Persist user in localStorage
+  // Load user from localStorage on mount
   useEffect(() => {
     const storedUser = JSON.parse(localStorage.getItem("currentUser"));
-    if (storedUser) setUser(storedUser);
+    const token = localStorage.getItem("deza_token");
+    if (storedUser && token) setUser(storedUser);
   }, []);
 
-  const login = (userData) => {
+  // Called after successful API login/register
+  const login = (userData, token) => {
     setUser(userData);
     localStorage.setItem("currentUser", JSON.stringify(userData));
+    if (token) localStorage.setItem("deza_token", token);
   };
 
   const logout = () => {
     setUser(null);
     localStorage.removeItem("currentUser");
+    localStorage.removeItem("deza_token");
   };
 
   return (

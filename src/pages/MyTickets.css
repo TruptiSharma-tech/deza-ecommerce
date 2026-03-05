@@ -1,0 +1,245 @@
+.my-tickets-page {
+    background: #0a0a0a;
+    /* Onyx Black */
+    min-height: 100vh;
+    padding: 60px 20px;
+    font-family: 'Times New Roman', Times, serif;
+    color: #fff;
+}
+
+.tickets-container {
+    max-width: 100%;
+}
+
+.tickets-header {
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+.header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.refresh-btn {
+    background: none;
+    border: 1px solid #d4af37;
+    color: #d4af37;
+    padding: 8px 20px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: 0.3s;
+}
+
+.refresh-btn:hover {
+    background: #1a1a1a;
+    color: #d4af37;
+    border-color: #1a1a1a;
+}
+
+.spin {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.back-btn {
+    background: none;
+    border: 1px solid #d4af37;
+    color: #d4af37;
+    padding: 8px 16px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: 0.3s;
+}
+
+.back-btn:hover {
+    background: #d4af37;
+    color: #fff;
+}
+
+.tickets-header h1 {
+    font-size: 32px;
+    color: #d4af37;
+    /* Gold */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+.tickets-header p {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 16px;
+    margin-top: 5px;
+}
+
+/* LIST */
+.tickets-list {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.ticket-card {
+    background: #111;
+    /* Dark Card */
+    border: 1px solid rgba(212, 175, 55, 0.2);
+    /* Subtle Gold Border */
+    border-radius: 12px;
+    padding: 25px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+    transition: 0.3s ease;
+}
+
+.ticket-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(212, 175, 55, 0.2);
+    border-color: rgba(212, 175, 55, 0.5);
+}
+
+.ticket-main {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 15px;
+    margin-bottom: 15px;
+}
+
+.ticket-id {
+    font-weight: 900;
+    color: #d4af37;
+    font-size: 14px;
+    background: rgba(212, 175, 55, 0.1);
+    padding: 4px 12px;
+    border-radius: 6px;
+}
+
+.ticket-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 700;
+    font-size: 15px;
+    text-transform: uppercase;
+}
+
+.status-icon.resolved {
+    color: #4caf50;
+}
+
+.status-icon.review {
+    color: #2196f3;
+}
+
+.status-icon.pending {
+    color: #ff9800;
+}
+
+.ticket-date {
+    font-size: 13px;
+    color: #999;
+}
+
+.ticket-message {
+    font-size: 15px;
+    color: #eee;
+    line-height: 1.6;
+}
+
+.ticket-message strong {
+    display: block;
+    margin-bottom: 5px;
+    color: #d4af37;
+    font-size: 12px;
+    text-transform: uppercase;
+}
+
+/* ADMIN RESPONSE */
+.admin-response {
+    margin-top: 20px;
+    background: rgba(212, 175, 55, 0.05);
+    border-left: 4px solid #d4af37;
+    padding: 15px;
+    border-radius: 0 8px 8px 0;
+}
+
+.response-header {
+    font-weight: bold;
+    color: #d4af37;
+    font-size: 13px;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+}
+
+.admin-response p {
+    margin: 0;
+    font-size: 15px;
+    color: #fff;
+}
+
+.admin-response small {
+    display: block;
+    margin-top: 10px;
+    color: #999;
+    font-size: 12px;
+}
+
+/* EMPTY STATE */
+.empty-state {
+    text-align: center;
+    background: #111;
+    padding: 60px;
+    border-radius: 20px;
+    border: 2px dashed rgba(212, 175, 55, 0.3);
+}
+
+.empty-icon {
+    font-size: 64px;
+    margin-bottom: 20px;
+}
+
+.contact-btn {
+    margin-top: 20px;
+    background: #d4af37;
+    color: #fff;
+    border: none;
+    padding: 12px 30px;
+    border-radius: 30px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.contact-btn:hover {
+    background: #1a1a1a;
+    color: #d4af37;
+}
+
+.loader {
+    text-align: center;
+    padding: 40px;
+    color: #d4af37;
+    font-weight: bold;
+}

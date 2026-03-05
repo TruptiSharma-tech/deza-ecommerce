@@ -12,6 +12,15 @@ export default function AdminLogin() {
   const handleSubmit = (e) => {
     e.preventDefault();
 
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      return alert("❌ Please enter a valid email address!");
+    }
+
+    if (!formData.password) {
+      return alert("❌ Password cannot be empty!");
+    }
+
     const adminEmail = "admin@deza.com";
     const adminPassword = "Deza@123";
 

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Confetti from "react-confetti";
+import { apiCreateOrder } from "../utils/api";
 import "./PaymentGateway.css";
 
 export default function PaymentGateway() {
@@ -12,6 +13,8 @@ export default function PaymentGateway() {
   const total = typeof rawTotal === "string" ? Number(rawTotal.replace(/[^0-9.]/g, "")) : Number(rawTotal);
   const { name, phone, address, cart = [] } = checkoutInfo;
   const cleanPhone = (phone || "").replace(/\D/g, "");
+
+  const currentUser = JSON.parse(localStorage.getItem("currentUser"));
 
   useEffect(() => {
     if (!cart || cart.length === 0) navigate("/checkout");
@@ -27,27 +30,32 @@ export default function PaymentGateway() {
       document.body.appendChild(script);
     });
 
-  const saveOrder = (paymentMethod, status, paymentId = "") => {
-    const orders = JSON.parse(localStorage.getItem("dezaOrders")) || [];
-    const newOrder = {
-      id: Date.now(),
-      date: new Date().toLocaleString(),
-      customerName: name,
-      customerPhone: "+91" + phone,
-      address: address,
-      paymentMethod,
-      items: cart,
-      totalPrice: total,
-      status,
-      paymentId,
-    };
-    localStorage.setItem("dezaOrders", JSON.stringify([...orders, newOrder]));
-    localStorage.removeItem("deza_cart");
-    localStorage.removeItem("checkoutInfo");
+  const saveOrder = async (paymentMethod, paymentStatus, paymentId = "") => {
+    try {
+      await apiCreateOrder({
+        customerId: currentUser?._id || null,
+        customerName: name || currentUser?.name || "Guest",
+        customerPhone: "+91" + (cleanPhone || phone || ""),
+        customerEmail: currentUser?.email || "",
+        address: address || {},
+        items: cart,
+        totalPrice: total,
+        paymentMethod,
+        paymentId,
+        paymentStatus,
+        status: "Pending",
+        date: new Date().toISOString(),
+      });
+      // Clear cart
+      localStorage.removeItem("deza_cart");
+      localStorage.removeItem("checkoutInfo");
+    } catch (err) {
+      console.error("Failed to save order:", err);
+      alert("⚠ Order placed but failed to save to database. Contact support.");
+    }
   };
 
   const handleRazorpayPayment = async (selectedType) => {
-    // 1. DATA PREP
     const amountInPaise = Math.round(Number(total) * 100);
     const displayPhone = cleanPhone || "9999999999";
 
@@ -58,14 +66,12 @@ export default function PaymentGateway() {
       return;
     }
 
-    // 2. SCRIPT LOADING
     const isLoaded = await loadRazorpayScript();
     if (!isLoaded || !window.Razorpay) {
       alert("FAILED to load Razorpay. Check your internet.");
       return;
     }
 
-    // 3. UNIVERSAL CONFIG (No filters to prevent "No appropriate payment method" error)
     const options = {
       key: "rzp_test_1DP5mmOlF5G5ag",
       amount: amountInPaise,
@@ -74,16 +80,16 @@ export default function PaymentGateway() {
       description: `Luxury Fragrance - ${selectedType}`,
       image: "https://img.icons8.com/color/96/000000/perfume-bottle-2.png",
 
-      handler: function (response) {
+      handler: async function (response) {
         console.log("PAYMENT SUCCESS:", response.razorpay_payment_id);
-        saveOrder(selectedType, "Paid", response.razorpay_payment_id);
+        await saveOrder(selectedType, "Paid", response.razorpay_payment_id);
         setPaymentDone(true);
         setTimeout(() => navigate("/checkout/success"), 2000);
       },
       prefill: {
         name: name || "Customer",
         contact: displayPhone,
-        email: "support@deza.com"
+        email: currentUser?.email || "support@deza.com"
       },
       theme: { color: "#D4AF37" },
       modal: {
@@ -93,7 +99,6 @@ export default function PaymentGateway() {
       }
     };
 
-    // 4. EXECUTION
     try {
       const rzp = new window.Razorpay(options);
       rzp.on('payment.failed', function (response) {
@@ -106,12 +111,11 @@ export default function PaymentGateway() {
     }
   };
 
-  const handleCOD = () => {
-    saveOrder("Cash On Delivery", "Pending");
+  const handleCOD = async () => {
+    await saveOrder("Cash On Delivery", "Pending");
     setPaymentDone(true);
     setTimeout(() => navigate("/checkout/success"), 2000);
   };
-
 
   return (
     <div className="payment-page">
@@ -176,8 +180,8 @@ export default function PaymentGateway() {
         </div>
 
         <div className="summary-items">
-          {cart.map((item) => (
-            <div key={`${item.id}-${item.selectedSize}`} className="summary-item">
+          {cart.map((item, idx) => (
+            <div key={`${item.id || idx}-${item.selectedSize}`} className="summary-item">
               <img src={item.image} alt={item.name} />
               <div className="item-text">
                 <p className="item-name">{item.name}</p>

@@ -6,24 +6,30 @@ export default function ForgotPassword() {
     const [email, setEmail] = useState("");
     const [submitted, setSubmitted] = useState(false);
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
 
-        // Check if user exists in localStorage
-        const users = JSON.parse(localStorage.getItem("users")) || [];
-        const userExists = users.find(u => u.email === email);
-
-        if (!userExists) {
-            alert("❌ No account found with this email address.");
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            alert("❌ Please enter a valid email address!");
             return;
         }
 
-        // In a real app, you'd send an actual email. 
-        // Here we simulate it and provide a direct link for the demo.
-        setSubmitted(true);
-
-        // For demo purposes, we log the reset link
-        console.log(`[DEZA DEBUG] Password Reset Link: http://localhost:5173/reset-password?email=${email}`);
+        try {
+            const res = await fetch("http://localhost:5000/api/auth/forgot-password", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email }),
+            });
+            const data = await res.json();
+            if (res.ok) {
+                setSubmitted(true);
+            } else {
+                alert("❌ " + data.error);
+            }
+        } catch (err) {
+            alert("❌ Error connecting to server.");
+        }
     };
 
     return (

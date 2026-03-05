@@ -1,0 +1,228 @@
+import express from "express";
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
+import User from "../models/User.js";
+import { sendEmail, getBrandedTemplate } from "../utils/emailHelper.js";
+
+const router = express.Router();
+
+// ─── Register ─────────────────────────────────────────────────────────────────
+router.post("/register", async (req, res) => {
+    try {
+        const { name, email, password, contact, gender, dob } = req.body;
+
+        if (!name || !email || !password) {
+            return res.status(400).json({ error: "Name, email, and password are required." });
+        }
+
+        const strongPasswordRegex = /^(?=.*[0-9])(?=.*[!@#$%^&*])[a-zA-Z0-9!@#$%^&*]{8,}$/;
+        if (!strongPasswordRegex.test(password)) {
+            return res.status(400).json({ error: "Password must be min 8 chars with 1 number and 1 special character." });
+        }
+
+        const existing = await User.findOne({ email: email.toLowerCase() });
+        if (existing) {
+            return res.status(409).json({ error: "Account already exists with this email." });
+        }
+
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        const newUser = await User.create({
+            name: name.trim(),
+            email: email.toLowerCase().trim(),
+            password: hashedPassword,
+            contact: contact || "",
+            gender: gender || "",
+            dob: dob || "",
+            role: "user",
+            verifiedAt: new Date().toISOString(),
+        });
+
+        const token = jwt.sign(
+            { id: newUser._id, email: newUser.email, role: newUser.role },
+            process.env.JWT_SECRET,
+            { expiresIn: "7d" }
+        );
+
+        res.status(201).json({
+            message: "Registration successful!",
+            token,
+            user: {
+                _id: newUser._id,
+                name: newUser.name,
+                email: newUser.email,
+                role: newUser.role,
+                contact: newUser.contact,
+                gender: newUser.gender,
+                dob: newUser.dob,
+            },
+        });
+    } catch (err) {
+        console.error("Register error:", err);
+        res.status(500).json({ error: "Server error during registration." });
+    }
+});
+
+// ─── Login ────────────────────────────────────────────────────────────────────
+router.post("/login", async (req, res) => {
+    try {
+        const { email, password } = req.body;
+
+        if (!email || !password) {
+            return res.status(400).json({ error: "Email and password are required." });
+        }
+
+        const user = await User.findOne({ email: email.toLowerCase() });
+        if (!user) {
+            return res.status(401).json({ error: "Invalid credentials." });
+        }
+
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) {
+            return res.status(401).json({ error: "Invalid credentials." });
+        }
+
+        const token = jwt.sign(
+            { id: user._id, email: user.email, role: user.role },
+            process.env.JWT_SECRET,
+            { expiresIn: "7d" }
+        );
+
+        res.json({
+            message: "Login successful!",
+            token,
+            user: {
+                _id: user._id,
+                name: user.name,
+                email: user.email,
+                role: user.role,
+                contact: user.contact,
+                gender: user.gender,
+                dob: user.dob,
+            },
+        });
+    } catch (err) {
+        console.error("Login error:", err);
+        res.status(500).json({ error: "Server error during login." });
+    }
+});
+
+// ─── Admin Login ──────────────────────────────────────────────────────────────
+router.post("/admin-login", async (req, res) => {
+    try {
+        const { email, password } = req.body;
+
+        const user = await User.findOne({ email: email.toLowerCase(), role: "admin" });
+        if (!user) {
+            return res.status(401).json({ error: "Admin not found." });
+        }
+
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) {
+            return res.status(401).json({ error: "Invalid admin credentials." });
+        }
+
+        const token = jwt.sign(
+            { id: user._id, email: user.email, role: user.role },
+            process.env.JWT_SECRET,
+            { expiresIn: "1d" }
+        );
+
+        res.json({
+            message: "Admin login successful!",
+            token,
+            user: { _id: user._id, name: user.name, email: user.email, role: user.role },
+        });
+    } catch (err) {
+        res.status(500).json({ error: "Server error during admin login." });
+    }
+});
+
+// ─── Create Admin (Bootstrap) ─────────────────────────────────────────────────
+router.post("/create-admin", async (req, res) => {
+    try {
+        const { name, email, password, secret } = req.body;
+
+        if (secret !== "DEZA_ADMIN_SECRET_2024") {
+            return res.status(403).json({ error: "Invalid secret key." });
+        }
+
+        const existing = await User.findOne({ email: email.toLowerCase() });
+        if (existing) {
+            return res.status(409).json({ error: "Admin already exists." });
+        }
+
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const admin = await User.create({
+            name: name || "Admin",
+            email: email.toLowerCase(),
+            password: hashedPassword,
+            role: "admin",
+        });
+
+        res.status(201).json({ message: "Admin created successfully!", admin: { email: admin.email } });
+    } catch (err) {
+        res.status(500).json({ error: "Server error." });
+    }
+});
+
+// ─── Forgot Password (SMTP Recovery) ─────────────────────────────────────────
+router.post("/forgot-password", async (req, res) => {
+    try {
+        const { email } = req.body;
+        const user = await User.findOne({ email: email.toLowerCase() });
+        if (!user) return res.status(404).json({ error: "No account found." });
+
+        const resetLink = `http://localhost:5173/reset-password?email=${encodeURIComponent(email)}`;
+
+        const html = getBrandedTemplate("Password Recovery", `
+            <p>We received a request to access your DEZA account. Click the button below to restore your access:</p>
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="${resetLink}" style="background: #1a1a1a; color: #d4af37; padding: 15px 35px; text-decoration: none; border-radius: 8px; font-weight: bold; border: 1px solid #d4af37;">
+                    RESET PASSWORD
+                </a>
+            </div>
+            <p style="font-size: 14px; color: #666;">This link is valid for 1 hour. If you did not request this, please ignore this email.</p>
+        `);
+
+        const success = await sendEmail(email, "🔑 Secure Reset Link", html);
+
+        if (!success) {
+            return res.status(500).json({ error: "Failed to connect to email server. Please try again." });
+        }
+        res.json({ message: "Recovery email sent! Please check your inbox." });
+    } catch (err) {
+        res.status(500).json({ error: "Failed to send email." });
+    }
+});
+
+// ─── Reset Password ───────────────────────────────────────────────────────────
+router.post("/reset-password", async (req, res) => {
+    try {
+        const { email, newPassword } = req.body;
+
+        // Validation
+        const strongPasswordRegex = /^(?=.*[0-9])(?=.*[!@#$%^&*])[a-zA-Z0-9!@#$%^&*]{8,}$/;
+        if (!newPassword || !strongPasswordRegex.test(newPassword)) {
+            return res.status(400).json({ error: "New password must be min 8 chars with 1 number and 1 special character." });
+        }
+
+        const user = await User.findOne({ email: email.toLowerCase() });
+        if (!user) return res.status(404).json({ error: "User not found." });
+
+        user.password = await bcrypt.hash(newPassword, 10);
+        await user.save();
+
+        const html = getBrandedTemplate("Password Updated", `
+            <p>Success! Your DEZA account password has been successfully updated.</p>
+            <p>If you did not perform this action, please contact our security team immediately.</p>
+        `);
+        await sendEmail(email, "✅ Password Updated Successfully", html);
+
+        res.json({ message: "Password reset successful! You can now login." });
+    } catch (err) {
+        res.status(500).json({ error: "Server error during reset." });
+    }
+});
+
+export default router;

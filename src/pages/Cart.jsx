@@ -24,19 +24,19 @@ export default function Cart() {
     localStorage.setItem("deza_cart", JSON.stringify(updated));
   };
 
-  const removeItem = (id, selectedSize) => {
+  const removeItem = (_id, selectedSize) => {
     const updated = cart.filter(
       (item) =>
-        !(String(item.id) === String(id) && item.selectedSize === selectedSize),
+        !(String(item._id) === String(_id) && item.selectedSize === selectedSize),
     );
     updateCart(updated);
   };
 
-  const changeQty = (id, selectedSize, qty) => {
+  const changeQty = (_id, selectedSize, qty) => {
     if (qty < 1) return;
 
     const updated = cart.map((item) =>
-      String(item.id) === String(id) && item.selectedSize === selectedSize
+      String(item._id) === String(_id) && item.selectedSize === selectedSize
         ? { ...item, qty: qty }
         : item,
     );
@@ -79,7 +79,7 @@ export default function Cart() {
           <div className="cart-list">
             {cart.map((item) => (
               <div
-                key={`${item.id}-${item.selectedSize}`}
+                key={`${item._id}-${item.selectedSize}`}
                 className="cart-card"
               >
                 <div className="cart-img-wrap">
@@ -94,7 +94,7 @@ export default function Cart() {
                   <div className="qty-box">
                     <button
                       onClick={() =>
-                        changeQty(item.id, item.selectedSize, item.qty - 1)
+                        changeQty(item._id, item.selectedSize, item.qty - 1)
                       }
                     >
                       −
@@ -102,7 +102,7 @@ export default function Cart() {
                     <span>{item.qty}</span>
                     <button
                       onClick={() =>
-                        changeQty(item.id, item.selectedSize, item.qty + 1)
+                        changeQty(item._id, item.selectedSize, item.qty + 1)
                       }
                     >
                       +
@@ -115,7 +115,7 @@ export default function Cart() {
 
                   <button
                     className="remove-btn"
-                    onClick={() => removeItem(item.id, item.selectedSize)}
+                    onClick={() => removeItem(item._id, item.selectedSize)}
                   >
                     Remove
                   </button>

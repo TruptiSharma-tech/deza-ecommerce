@@ -172,6 +172,26 @@
   gap: 8px;
 }
 
+.otp-timer-info {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.6);
+  margin: 5px 0 10px 0;
+  text-align: center;
+}
+
+.resend-btn {
+  background: rgba(212, 175, 55, 0.1) !important;
+  color: #d4af37 !important;
+  border: 1px dashed #d4af37 !important;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.resend-btn:hover {
+  background: rgba(212, 175, 55, 0.2) !important;
+  transform: scale(1.02);
+}
+
 .auth-footer {
   margin-top: 30px;
   font-size: 15px;

@@ -9,13 +9,29 @@ export default function Navbar() {
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
+  const [cartCount, setCartCount] = useState(0);
 
   const currentUser = JSON.parse(localStorage.getItem("currentUser"));
 
+  const updateCartCount = () => {
+    const cart = JSON.parse(localStorage.getItem("deza_cart")) || [];
+    const count = cart.reduce((total, item) => total + item.qty, 0);
+    setCartCount(count);
+  };
+
   useEffect(() => {
+    updateCartCount();
+    // Listen for custom event or storage changes
+    window.addEventListener("storage", updateCartCount);
+    window.addEventListener("cartUpdate", updateCartCount);
+
     const closeDropdowns = () => setMenuOpen(false);
     window.addEventListener("scroll", closeDropdowns);
-    return () => window.removeEventListener("scroll", closeDropdowns);
+    return () => {
+      window.removeEventListener("scroll", closeDropdowns);
+      window.removeEventListener("storage", updateCartCount);
+      window.removeEventListener("cartUpdate", updateCartCount);
+    };
   }, []);
 
   const isAdmin = currentUser?.isAdmin === true;
@@ -58,11 +74,12 @@ export default function Navbar() {
 
                 {/* CART */}
                 <button
-                  className="icon-btn"
+                  className="icon-btn cart-btn"
                   onClick={() => navigate("/cart")}
                   title="Cart"
                 >
                   <FaShoppingCart className="nav-icon" />
+                  {cartCount > 0 && <span className="cart-badge">{cartCount}</span>}
                 </button>
               </>
             )}

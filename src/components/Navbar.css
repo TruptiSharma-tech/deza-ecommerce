@@ -80,32 +80,33 @@
 
 /* ICON BUTTONS */
 .icon-btn {
-  width: 46px;
-  height: 46px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.06);
+  background: transparent;
   display: flex;
   justify-content: center;
   align-items: center;
-  border: 1px solid rgba(255, 255, 255, 0.25);
+  border: none;
   cursor: pointer;
   transition: 0.3s ease;
+  padding: 8px;
 }
 
 .icon-btn:hover {
-  background: rgba(212, 175, 55, 0.18);
   transform: translateY(-2px);
-  border: 1px solid rgba(212, 175, 55, 0.5);
 }
 
 .nav-icon {
-  color: #f9f7f2;
-  font-size: 24px;
-  transition: 0.3s ease;
+  color: #ffffff;
+  font-size: 26px;
+  transition: 0.2s ease;
 }
 
 .icon-btn:hover .nav-icon {
   color: #d4af37;
+}
+
+/* 🛒 EXCEPTION: Simple White Cart (No Gold Hover) */
+.cart-btn:hover .nav-icon {
+  color: #ffffff !important;
 }
 
 /* DROPDOWN WRAPPER */
@@ -242,4 +243,44 @@
 .admin-panel-btn:hover {
   background: #d4af37;
   color: #121212;
+}
+
+/* CART BADGE */
+.cart-btn {
+  position: relative;
+}
+
+.cart-badge {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  background: #ffffff;
+  /* Simple White */
+  color: #000000;
+  /* Black Text */
+  font-size: 11px;
+  font-weight: 900;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid #000;
+  animation: badgePop 0.3s ease-out;
+  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.4);
+}
+
+@keyframes badgePop {
+  0% {
+    transform: scale(0);
+  }
+
+  80% {
+    transform: scale(1.2);
+  }
+
+  100% {
+    transform: scale(1);
+  }
 }

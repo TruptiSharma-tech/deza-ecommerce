@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from "react";
+import { apiGetMyOrders, apiCancelOrder, apiReturnOrder, apiRefundOrder } from "../utils/api";
 import "./Orders.css";
 
 export default function Orders() {
   const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  // ✅ Return Modal states
+  // Return Modal states
   const [showReturnModal, setShowReturnModal] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
 
@@ -12,53 +14,49 @@ export default function Orders() {
   const [returnReason, setReturnReason] = useState("Wrong Product Received");
   const [returnMessage, setReturnMessage] = useState("");
 
+  const currentUser = JSON.parse(localStorage.getItem("currentUser"));
+
   useEffect(() => {
     loadOrders();
   }, []);
 
-  const loadOrders = () => {
+  const loadOrders = async () => {
+    setLoading(true);
     try {
-      const stored = JSON.parse(localStorage.getItem("dezaOrders")) || [];
-      if (Array.isArray(stored)) {
-        setOrders([...stored].reverse());
+      if (currentUser?.email) {
+        const data = await apiGetMyOrders(currentUser.email);
+        setOrders(Array.isArray(data) ? data : []);
       } else {
         setOrders([]);
       }
     } catch (err) {
-      console.error("Error parsing orders:", err);
+      console.error("Failed to load orders:", err);
       setOrders([]);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const saveOrders = (updatedOrders) => {
-    setOrders(updatedOrders);
-    localStorage.setItem(
-      "dezaOrders",
-      JSON.stringify([...updatedOrders].reverse()),
-    );
-  };
-
   // ❌ Cancel Order
-  const cancelOrder = (id) => {
+  const cancelOrder = async (id) => {
     if (!window.confirm("Are you sure you want to cancel this order?")) return;
 
-    const updatedOrders = orders.filter((o) => o.id !== id);
-    saveOrders(updatedOrders);
+    try {
+      const updated = await apiCancelOrder(id);
+      setOrders((prev) => prev.map((o) => (o._id === id ? updated : o)));
+    } catch (err) {
+      alert("❌ " + err.message);
+    }
   };
 
   // ⭐ Progress Bar Steps
   const getProgressStep = (status) => {
     switch (status) {
-      case "Packed":
-        return 2;
-      case "Shipped":
-        return 3;
-      case "Out for Delivery":
-        return 4;
-      case "Delivered":
-        return 5;
-      default:
-        return 1;
+      case "Packed": return 2;
+      case "Shipped": return 3;
+      case "Out for Delivery": return 4;
+      case "Delivered": return 5;
+      default: return 1;
     }
   };
 
@@ -71,85 +69,61 @@ export default function Orders() {
     setShowReturnModal(true);
   };
 
-  // ✅ Submit Return Request (Refund / Exchange)
-  const submitReturnRequest = () => {
+  // ✅ Submit Return Request
+  const submitReturnRequest = async () => {
     if (!selectedOrder) return;
 
-    const currentUser = JSON.parse(localStorage.getItem("currentUser"));
-
-    const updatedOrders = orders.map((o) =>
-      o.id === selectedOrder.id
-        ? {
-          ...o,
-          returnStatus: "Return Requested",
-          returnRequest: {
-            type: returnType,
-            reason: returnReason,
-            message: returnMessage,
-            date: new Date().toLocaleString(),
-          },
-        }
-        : o,
-    );
-
-    saveOrders(updatedOrders);
-
-    // ✅ ALSO CREATE CUSTOMER SUPPORT QUERY
-    const supportQueries =
-      JSON.parse(localStorage.getItem("dezaSupportQueries")) || [];
-
-    supportQueries.push({
-      id: Date.now(),
-      orderId: selectedOrder.id,
-      userName: currentUser?.name || "Customer",
-      email: currentUser?.email || "N/A",
-      type: "Return Request",
-      returnType: returnType,
-      reason: returnReason,
-      message: returnMessage,
-      status: "Pending",
-      date: new Date().toLocaleString(),
-    });
-
-    localStorage.setItem("dezaSupportQueries", JSON.stringify(supportQueries));
-
-    alert("✅ Return Request Sent Successfully to Admin & Support!");
-
-    setShowReturnModal(false);
-    setSelectedOrder(null);
+    try {
+      const updated = await apiReturnOrder(selectedOrder._id, {
+        returnType,
+        reason: returnReason,
+        message: returnMessage,
+      });
+      setOrders((prev) => prev.map((o) => (o._id === selectedOrder._id ? updated : o)));
+      alert("✅ Return Request Sent Successfully to Admin & Support!");
+      setShowReturnModal(false);
+      setSelectedOrder(null);
+    } catch (err) {
+      alert("❌ " + err.message);
+    }
   };
 
-  // 💰 Refund Request (Direct without return)
-  const requestRefund = (id) => {
-    if (!window.confirm("Do you want to request REFUND for this order?"))
-      return;
+  // 💰 Refund Request
+  const requestRefund = async (id) => {
+    if (!window.confirm("Do you want to request REFUND for this order?")) return;
 
-    const updatedOrders = orders.map((o) =>
-      o.id === id
-        ? {
-          ...o,
-          refundStatus: "Refund Requested",
-          refundRequestDate: new Date().toLocaleString(),
-        }
-        : o,
-    );
-
-    saveOrders(updatedOrders);
-    alert("✅ Refund Request Sent to Admin!");
+    try {
+      const updated = await apiRefundOrder(id);
+      setOrders((prev) => prev.map((o) => (o._id === id ? updated : o)));
+      alert("✅ Refund Request Sent to Admin!");
+    } catch (err) {
+      alert("❌ " + err.message);
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="orders-page">
+        <h1 className="orders-title">📦 My Orders</h1>
+        <p className="empty-msg">Loading your orders...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="orders-page">
       <h1 className="orders-title">📦 My Orders</h1>
 
-      {orders.length === 0 ? (
+      {!currentUser ? (
+        <p className="empty-msg">Please login to view your orders.</p>
+      ) : orders.length === 0 ? (
         <p className="empty-msg">No Orders Yet 💛</p>
       ) : (
         <div className="orders-grid">
           {orders.map((o) => (
-            <div className="order-card" key={o.id}>
+            <div className="order-card" key={o._id}>
               <div className="order-head">
-                <h2>Order #{o.id}</h2>
+                <h2>Order #{o.orderId || "DZ-" + String(o._id).slice(-6).toUpperCase()}</h2>
                 <span className="order-status">{o.status || "Placed"}</span>
               </div>
 
@@ -163,7 +137,7 @@ export default function Orders() {
                 <b>Payment:</b> {o.paymentMethod || "N/A"}
               </p>
 
-              {/* ✅ Return Refund Status */}
+              {/* Return Refund Status */}
               <p>
                 <b>Return Status:</b>{" "}
                 <span style={{ color: "#d4af37" }}>
@@ -178,7 +152,7 @@ export default function Orders() {
                 </span>
               </p>
 
-              {/* ✅ Progress Bar */}
+              {/* Progress Bar */}
               <div className="progress-bar-container">
                 {[
                   "Placed",
@@ -189,29 +163,26 @@ export default function Orders() {
                 ].map((step, index) => (
                   <div
                     key={step}
-                    className={`progress-step ${index < getProgressStep(o.status) ? "active" : ""
-                      }`}
+                    className={`progress-step ${index < getProgressStep(o.status) ? "active" : ""}`}
                   >
                     {step}
                   </div>
                 ))}
               </div>
 
-              {/* ❌ Cancel only before Delivered */}
-              {o.status !== "Delivered" && (
+              {/* Cancel only before Delivered */}
+              {o.status !== "Delivered" && o.status !== "Cancelled" && (
                 <button
                   className="cancel-btn"
-                  onClick={() => cancelOrder(o.id)}
+                  onClick={() => cancelOrder(o._id)}
                 >
                   Cancel Order
                 </button>
               )}
 
-              {/* ✅ Return / Refund Buttons after Delivered */}
+              {/* Return / Refund after Delivered */}
               {o.status === "Delivered" && (
-                <div
-                  style={{ display: "flex", gap: "10px", marginTop: "12px" }}
-                >
+                <div style={{ display: "flex", gap: "10px", marginTop: "12px" }}>
                   <button
                     className="cancel-btn"
                     style={{ background: "#444" }}
@@ -226,7 +197,7 @@ export default function Orders() {
                   <button
                     className="cancel-btn"
                     style={{ background: "#d4af37", color: "#111" }}
-                    onClick={() => requestRefund(o.id)}
+                    onClick={() => requestRefund(o._id)}
                     disabled={o.refundStatus === "Refund Requested"}
                   >
                     {o.refundStatus === "Refund Requested"
@@ -238,9 +209,9 @@ export default function Orders() {
 
               {/* Items */}
               <div className="order-items">
-                {(o.items || []).map((item) => (
+                {(o.items || []).map((item, idx) => (
                   <div
-                    key={`${item.id}-${item.selectedSize}`}
+                    key={`${item.id || idx}-${item.selectedSize}`}
                     className="order-item"
                   >
                     <img
@@ -269,7 +240,7 @@ export default function Orders() {
         </div>
       )}
 
-      {/* ✅ RETURN MODAL */}
+      {/* RETURN MODAL */}
       {showReturnModal && (
         <div className="return-modal-overlay">
           <div className="return-modal">

@@ -13,8 +13,8 @@ export default function Wishlist() {
     setWishlist(storedWishlist);
   }, []);
 
-  const handleRemove = (id) => {
-    const updated = wishlist.filter((item) => item.id !== id);
+  const handleRemove = (_id) => {
+    const updated = wishlist.filter((item) => item._id !== _id);
     setWishlist(updated);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
   };
@@ -35,7 +35,7 @@ export default function Wishlist() {
                 : null;
 
             return (
-              <div className="wishlist-card" key={item.id}>
+              <div className="wishlist-card" key={item._id}>
                 <img src={item.image} alt={item.title} />
 
                 <h3>{item.title}</h3>
@@ -49,14 +49,14 @@ export default function Wishlist() {
                 <div className="wishlist-btns">
                   <button
                     className="view-btn"
-                    onClick={() => navigate(`/product/${item.id}`)}
+                    onClick={() => navigate(`/product/${item._id}`)}
                   >
                     View Product
                   </button>
 
                   <button
                     className="remove-btn"
-                    onClick={() => handleRemove(item.id)}
+                    onClick={() => handleRemove(item._id)}
                   >
                     Remove
                   </button>

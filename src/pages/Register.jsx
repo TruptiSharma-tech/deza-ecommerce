@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { apiRegister } from "../utils/api";
 import "./Auth.css";
 
 export default function Register() {
@@ -20,14 +21,31 @@ export default function Register() {
   const [generatedOtp, setGeneratedOtp] = useState("");
   const [otpSent, setOtpSent] = useState(false);
   const [otpVerified, setOtpVerified] = useState(false);
-  const [uiMessage, setUiMessage] = useState(""); // For UI notifications
+  const [uiMessage, setUiMessage] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [timer, setTimer] = useState(0);
+  const timerRef = React.useRef(null);
 
   const handleChange = (e) =>
     setFormData({ ...formData, [e.target.name]: e.target.value });
 
   const handleSendOtp = () => {
-    const cleanNumber = formData.contact.replace(/\D/g, "");
+    if (!formData.name || formData.name.trim().length < 3) {
+      setUiMessage("❌ Full name is required and should be at least 3 chars!");
+      return;
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!formData.email || !emailRegex.test(formData.email)) {
+      setUiMessage("❌ Please enter a valid email address!");
+      return;
+    }
+    const strongPasswordRegex = /^(?=.*[0-9])(?=.*[!@#$%^&*])[a-zA-Z0-9!@#$%^&*]{8,}$/;
+    if (!formData.password || !strongPasswordRegex.test(formData.password)) {
+      setUiMessage("❌ Password must be min 8 chars with 1 number and 1 special character.");
+      return;
+    }
 
+    const cleanNumber = formData.contact.replace(/\D/g, "");
     if (cleanNumber.length !== 10) {
       setUiMessage("❌ Please enter active 10-digit number");
       return;
@@ -39,20 +57,36 @@ export default function Register() {
     setGeneratedOtp(newOtp);
     setOtpSent(true);
     setOtpVerified(false);
-
-    // Show on UI immediately
     setUiMessage(`📩 OTP SENT: ${newOtp}`);
+    setTimer(30);
 
-    // Still try alert as fallback
+    // Start 30s Timer
+    if (timerRef.current) clearInterval(timerRef.current);
+    timerRef.current = setInterval(() => {
+      setTimer(prev => {
+        if (prev <= 1) {
+          clearInterval(timerRef.current);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
     setTimeout(() => {
       alert(`DEZA VERIFICATION\nYour OTP is: ${newOtp}`);
     }, 50);
   };
 
   const handleVerifyOtp = () => {
+    if (timer === 0) {
+      setUiMessage("❌ OTP Expired. Please resend.");
+      return;
+    }
     if (otp.trim() === generatedOtp && generatedOtp !== "") {
       setOtpVerified(true);
       setUiMessage("✅ Phone Verified Successfully");
+      if (timerRef.current) clearInterval(timerRef.current);
+      setTimer(0);
     } else {
       setOtpVerified(false);
       setUiMessage("❌ Incorrect OTP. Try again.");
@@ -60,36 +94,33 @@ export default function Register() {
   };
 
   const handleResetOtp = () => {
+    if (timerRef.current) clearInterval(timerRef.current);
     setOtpSent(false);
     setOtpVerified(false);
     setOtp("");
     setGeneratedOtp("");
     setUiMessage("");
+    setTimer(0);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!otpVerified) {
       setUiMessage("⚠️ Please verify phone first");
       return;
     }
 
-    const users = JSON.parse(localStorage.getItem("users")) || [];
-    if (users.find((u) => u.email === formData.email)) {
-      return alert("Error: Account already exists.");
+    setLoading(true);
+    try {
+      const data = await apiRegister(formData);
+      login(data.user, data.token);
+      alert("🎉 Registration Successful!");
+      navigate("/");
+    } catch (err) {
+      setUiMessage("❌ " + (err.message || "Registration failed. Please try again."));
+    } finally {
+      setLoading(false);
     }
-
-    const newUser = {
-      ...formData,
-      role: "user",
-      verifiedAt: new Date().toISOString()
-    };
-    users.push(newUser);
-    localStorage.setItem("users", JSON.stringify(users));
-
-    login(newUser);
-    alert("🎉 Registration Successful!");
-    navigate("/");
   };
 
   return (
@@ -167,21 +198,36 @@ export default function Register() {
               </button>
             ) : !otpVerified ? (
               <>
-                <input
-                  type="text"
-                  placeholder="Enter 6-Digit OTP"
-                  value={otp}
-                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
-                  maxLength={6}
-                  required
-                />
-                <button
-                  type="button"
-                  className="auth-btn"
-                  onClick={handleVerifyOtp}
-                >
-                  Verify Now
-                </button>
+                {timer > 0 ? (
+                  <>
+                    <input
+                      type="text"
+                      placeholder="Enter 6-Digit OTP"
+                      value={otp}
+                      onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
+                      maxLength={6}
+                      required
+                    />
+                    <div className="otp-timer-info">
+                      OTP expires in: <span style={{ color: '#d4af37', fontWeight: 'bold' }}>{timer}s</span>
+                    </div>
+                    <button
+                      type="button"
+                      className="auth-btn"
+                      onClick={handleVerifyOtp}
+                    >
+                      Verify Now
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    type="button"
+                    className="auth-btn resend-btn"
+                    onClick={handleSendOtp}
+                  >
+                    Resend OTP
+                  </button>
+                )}
               </>
             ) : (
               <div className="verified-badge">
@@ -215,9 +261,9 @@ export default function Register() {
           <button
             type="submit"
             className={`auth-btn ${!otpVerified ? 'disabled' : ''}`}
-            disabled={!otpVerified}
+            disabled={!otpVerified || loading}
           >
-            Complete Registration
+            {loading ? "Registering..." : "Complete Registration"}
           </button>
         </form>
 

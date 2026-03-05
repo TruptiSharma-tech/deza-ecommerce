@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
+import { apiResetPassword } from "../utils/api";
 import "./Auth.css";
 
 export default function ResetPassword() {
@@ -13,34 +14,27 @@ export default function ResetPassword() {
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
+
+        const strongPasswordRegex = /^(?=.*[0-9])(?=.*[!@#$%^&*])[a-zA-Z0-9!@#$%^&*]{8,}$/;
+        if (!strongPasswordRegex.test(password)) {
+            alert("❌ New password must be min 8 chars with 1 number and 1 special character.");
+            return;
+        }
 
         if (password !== confirmPassword) {
             alert("❌ Passwords do not match!");
             return;
         }
 
-        if (password.length < 6) {
-            alert("❌ Password must be at least 6 characters long.");
-            return;
-        }
-
-        const users = JSON.parse(localStorage.getItem("users")) || [];
-        const userIndex = users.findIndex(u => u.email === email);
-
-        if (userIndex === -1) {
-            alert("❌ Error: User not found.");
+        try {
+            await apiResetPassword({ email, newPassword: password });
+            alert("✅ Password reset successful! You can now login with your new password.");
             navigate("/login");
-            return;
+        } catch (err) {
+            alert("❌ " + (err.message || "Failed to reset password."));
         }
-
-        // Update password
-        users[userIndex].password = password;
-        localStorage.setItem("users", JSON.stringify(users));
-
-        alert("✅ Password reset successful! You can now login with your new password.");
-        navigate("/login");
     };
 
     if (!email) {

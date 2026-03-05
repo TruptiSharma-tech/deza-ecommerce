@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import "./ProductDetails.css";
 import { FaHeart, FaRegHeart, FaShoppingCart, FaStar } from "react-icons/fa";
 import { FaWhatsapp } from "react-icons/fa";
+import { apiGetProduct, apiGetProductReviews, apiSubmitReview } from "../utils/api";
 
 export default function ProductDetails() {
   const { id } = useParams();
@@ -26,33 +27,43 @@ export default function ProductDetails() {
     "Estimated Delivery: 7 - 10 Business Days",
   );
 
+  const [reviews, setReviews] = useState([]);
+
   const currentUser = JSON.parse(localStorage.getItem("currentUser"));
 
   useEffect(() => {
-    const storedProducts =
-      JSON.parse(localStorage.getItem("dezaProducts")) || [];
-
-    const found = storedProducts.find((p) => String(p.id) === String(id));
-
-    if (found) {
-      if (!found.images || found.images.length === 0) {
-        found.images = [found.image];
-      }
-
-      setProduct(found);
-
-      // ✅ Default size from sizePrices
-      if (found?.sizePrices?.length > 0) {
-        setSelectedSize(found.sizePrices[0].size);
-      }
-    }
-
-    const wishlist = JSON.parse(localStorage.getItem("deza_wishlist")) || [];
-    const exists = wishlist.find((x) => String(x.id) === String(id));
-    setWish(!!exists);
-
-    setCurrentImageIndex(0);
+    loadProductData();
   }, [id]);
+
+  const loadProductData = async () => {
+    try {
+      // 1. Fetch Product
+      const data = await apiGetProduct(id);
+      if (data) {
+        if (!data.images || data.images.length === 0) {
+          data.images = [data.image];
+        }
+        setProduct(data);
+        if (data?.sizePrices?.length > 0) {
+          setSelectedSize(data.sizePrices[0].size);
+        }
+      }
+
+      // 2. Fetch Reviews
+      const revs = await apiGetProductReviews(id);
+      setReviews(revs || []);
+
+      // 3. Wishlist check
+      const wishlist = JSON.parse(localStorage.getItem("deza_wishlist")) || [];
+      const exists = wishlist.find((x) => String(x._id) === String(id));
+      setWish(!!exists);
+
+      setCurrentImageIndex(0);
+    } catch (err) {
+      console.error("Error loading product data:", err);
+      setProduct(null);
+    }
+  };
 
   if (!product) {
     return (
@@ -90,14 +101,14 @@ export default function ProductDetails() {
 
     const existingIndex = cart.findIndex(
       (x) =>
-        String(x.id) === String(product.id) && x.selectedSize === selectedSize,
+        String(x._id) === String(product._id) && x.selectedSize === selectedSize,
     );
 
     if (existingIndex !== -1) {
       cart[existingIndex].qty += qty;
     } else {
       cart.push({
-        id: product.id,
+        _id: product._id,
         name: product.title,
         price: finalPrice,
         image: product.images?.[0],
@@ -107,6 +118,8 @@ export default function ProductDetails() {
     }
 
     localStorage.setItem("deza_cart", JSON.stringify(cart));
+    // ✅ Trigger navbar update
+    window.dispatchEvent(new Event("cartUpdate"));
     alert("✅ Added to Cart!");
   };
 
@@ -144,11 +157,11 @@ Please confirm my order.`;
     if (!checkLogin()) return;
 
     const wishlist = JSON.parse(localStorage.getItem("deza_wishlist")) || [];
-    const exists = wishlist.find((x) => String(x.id) === String(product.id));
+    const exists = wishlist.find((x) => String(x._id) === String(product._id));
 
     if (exists) {
       const updated = wishlist.filter(
-        (x) => String(x.id) !== String(product.id),
+        (x) => String(x._id) !== String(product._id),
       );
       localStorage.setItem("deza_wishlist", JSON.stringify(updated));
       setWish(false);
@@ -175,7 +188,7 @@ Please confirm my order.`;
   };
 
   // ⭐ Submit Review
-  const handleReviewSubmit = () => {
+  const handleReviewSubmit = async () => {
     if (!currentUser) {
       alert("Please login to submit review");
       navigate("/login");
@@ -187,41 +200,29 @@ Please confirm my order.`;
       return;
     }
 
-    const allProducts = JSON.parse(localStorage.getItem("dezaProducts")) || [];
+    try {
+      const payload = {
+        productId: product._id,
+        userName: currentUser.name,
+        userEmail: currentUser.email,
+        rating: stars,
+        comment,
+      };
 
-    const productIndex = allProducts.findIndex(
-      (p) => String(p.id) === String(product.id),
-    );
+      await apiSubmitReview(payload);
 
-    const newReview = {
-      user: currentUser.name,
-      rating: stars,
-      comment,
-      image: previewImage,
-      date: new Date().toLocaleDateString(),
-    };
+      // Reload reviews and product data
+      loadProductData();
 
-    if (!allProducts[productIndex].reviews) {
-      allProducts[productIndex].reviews = [];
+      setStars(0);
+      setComment("");
+      setPreviewImage(null);
+
+      alert("⭐ Review Submitted!");
+    } catch (err) {
+      console.error("Review failed:", err);
+      alert("Failed to submit review. Please try again.");
     }
-
-    allProducts[productIndex].reviews.push(newReview);
-
-    // ⭐ Recalculate average
-    const ratings = allProducts[productIndex].reviews.map((r) => r.rating);
-    const avg = ratings.reduce((a, b) => a + b, 0) / ratings.length;
-
-    allProducts[productIndex].rating = avg;
-    allProducts[productIndex].ratingCount = ratings.length;
-
-    localStorage.setItem("dezaProducts", JSON.stringify(allProducts));
-
-    setProduct(allProducts[productIndex]);
-    setStars(0);
-    setComment("");
-    setPreviewImage(null);
-
-    alert("⭐ Review Submitted!");
   };
 
   const checkDelivery = () => {
@@ -396,7 +397,7 @@ Please confirm my order.`;
 
             {/* SHOW REVIEWS */}
             <div style={{ marginTop: "25px" }}>
-              {product.reviews?.map((r, index) => (
+              {reviews.map((r, index) => (
                 <div
                   key={index}
                   style={{
@@ -405,7 +406,7 @@ Please confirm my order.`;
                     marginBottom: "15px",
                   }}
                 >
-                  <strong>{r.user}</strong>
+                  <strong>{r.userName}</strong>
 
                   <div>
                     {Array.from({ length: 5 }, (_, i) => (
@@ -419,19 +420,7 @@ Please confirm my order.`;
 
                   <p>{r.comment}</p>
 
-                  {r.image && (
-                    <img
-                      src={r.image}
-                      alt="review"
-                      style={{
-                        width: "80px",
-                        borderRadius: "8px",
-                        marginTop: "5px",
-                      }}
-                    />
-                  )}
-
-                  <small style={{ opacity: 0.6 }}>{r.date}</small>
+                  <small style={{ opacity: 0.6 }}>{new Date(r.createdAt).toLocaleDateString()}</small>
                 </div>
               ))}
             </div>
