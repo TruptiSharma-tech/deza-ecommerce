@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import "./Cart.css";
 import { useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
 
 export default function Cart() {
   const [cart, setCart] = useState([]);
@@ -50,13 +51,13 @@ export default function Cart() {
 
   const checkout = () => {
     if (!currentUser) {
-      alert("⚠️ Please Login First!");
+      toast.error("Please Login First!");
       navigate("/login");
       return;
     }
 
     if (cart.length === 0) {
-      alert("⚠ Cart is empty!");
+      toast.error("Cart is empty!");
       return;
     }
 

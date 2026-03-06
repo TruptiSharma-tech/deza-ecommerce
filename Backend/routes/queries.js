@@ -1,116 +1,139 @@
 import express from "express";
-import Query from "../models/Query.js";
+import SupportTicket from "../models/SupportTicket.js";
+import AuditLog from "../models/AuditLog.js";
+import { auth, adminOnly } from "../middleware/auth.js";
 import { sendEmail, getBrandedTemplate } from "../utils/emailHelper.js";
 
 const router = express.Router();
 
-// ─── GET All Queries (Admin) ───────────────────────────────────────────────────
-router.get("/", async (req, res) => {
+// ─── GET All Tickets (Admin) ───────────────────────────────────────────────────
+router.get("/", auth, adminOnly, async (req, res) => {
     try {
-        const queries = await Query.find().sort({ createdAt: -1 });
-        res.json(queries);
+        const tickets = await SupportTicket.find().sort({ createdAt: -1 });
+        res.json(tickets);
     } catch (err) {
-        res.status(500).json({ error: "Failed to fetch queries." });
+        res.status(500).json({ error: "Failed to fetch support tickets." });
     }
 });
 
-// ─── GET Queries by User Email ─────────────────────────────────────────────────
-router.get("/my/:email", async (req, res) => {
+// ─── GET Tickets by User Email (Enforce Privacy) ───────────────────────────────
+router.get("/my/:email", auth, async (req, res) => {
     try {
         const searchEmail = req.params.email.toLowerCase().trim();
-        const queries = await Query.find({ email: searchEmail }).sort({ createdAt: -1 });
-        res.json(queries);
+
+        // Security check: Match logged-in user email
+        if (req.user.email.toLowerCase() !== searchEmail && req.user.role !== "admin") {
+            return res.status(403).json({ error: "Access denied. You can only view your own tickets." });
+        }
+
+        const tickets = await SupportTicket.find({ email: searchEmail }).sort({ createdAt: -1 });
+        res.json(tickets);
     } catch (err) {
-        res.status(500).json({ error: "Failed to fetch your queries." });
+        res.status(500).json({ error: "Failed to fetch your tickets." });
     }
 });
 
-// ─── POST - Submit Query ───────────────────────────────────────────────────────
+// ─── POST - Submit Support Ticket ─────────────────────────────────────────────
 router.post("/", async (req, res) => {
     try {
-        const { name, email, message, image } = req.body;
+        const { name, email, message, image, ticketType, issueType, orderId } = req.body;
 
         if (!name || !email || !message) {
             return res.status(400).json({ error: "Name, email, and message are required." });
         }
 
-        const newQuery = await Query.create({
+        const newTicket = await SupportTicket.create({
             name: name.trim(),
             email: email.toLowerCase().trim(),
             message: message.trim(),
             image: image || "",
+            ticketType: ticketType || "General Query",
+            issueType: issueType || "Other",
+            orderId: orderId || "",
             status: "Pending",
-            date: new Date().toLocaleString(),
         });
 
         // Send Confirmation Email
         const html = getBrandedTemplate("Ticket Received 🎫", `
             <p>Hello ${name},</p>
-            <p>We have successfully received your support request regarding:</p>
+            <p>We have successfully received your support request [${newTicket.ticketType}].</p>
             <blockquote style="background: #f0f0f0; padding: 15px; border-radius: 5px;">"${message}"</blockquote>
-            <p>Our team is reviewing your ticket (ID: DZ-${String(newQuery._id).slice(-6).toUpperCase()}) and will get back to you shortly.</p>
+            <p>Ticket ID: <strong>DZ-TK-${String(newTicket._id).slice(-6).toUpperCase()}</strong></p>
+            <p>Our team will get back to you shortly.</p>
         `);
-        await sendEmail(email, "🎫 DEZA Support Ticket Received", html);
+        await sendEmail(email, `🎫 DEZA Support Ticket: ${newTicket.ticketType}`, html);
 
-        res.status(201).json(newQuery);
+        res.status(201).json(newTicket);
     } catch (err) {
-        res.status(500).json({ error: "Failed to submit query." });
+        console.error("Ticket submission error:", err);
+        res.status(500).json({ error: "Failed to submit support ticket." });
     }
 });
 
-// ─── PATCH - Update Priority / Status (Admin) ─────────────────────────────────
-router.patch("/:id", async (req, res) => {
+// ─── PATCH - Update Status (Admin) ─────────────────────────────────────────────
+router.patch("/:id", auth, adminOnly, async (req, res) => {
     try {
-        const queryBefore = await Query.findById(req.params.id);
-        const updated = await Query.findByIdAndUpdate(req.params.id, req.body, { new: true });
-        if (!updated) return res.status(404).json({ error: "Query not found." });
+        const ticketBefore = await SupportTicket.findById(req.params.id);
+        const updated = await SupportTicket.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        if (!updated) return res.status(404).json({ error: "Ticket not found." });
 
-        // If status changed, notify user
-        if (req.body.status && req.body.status !== queryBefore.status) {
-            const html = getBrandedTemplate(`Status Update: ${req.body.status} 📊`, `
+        if (req.body.status && req.body.status !== ticketBefore.status) {
+            const html = getBrandedTemplate(`Ticket Status: ${req.body.status} 📊`, `
                 <p>Hello ${updated.name},</p>
-                <p>The status of your DEZA support ticket <strong>DZ-${String(updated._id).slice(-6).toUpperCase()}</strong> has been updated to:</p>
+                <p>The status of your support ticket <strong>DZ-TK-${String(updated._id).slice(-6).toUpperCase()}</strong> has been updated to:</p>
                 <div style="background: #1a1a1a; color: #d4af37; padding: 15px; text-align: center; border-radius: 8px; font-weight: bold; font-size: 20px;">
                     ${req.body.status.toUpperCase()}
                 </div>
-                <p style="margin-top: 20px;">You can track your ticket live on our <a href="http://localhost:5173/my-tickets" style="color: #d4af37;">Support Center</a>.</p>
             `);
             await sendEmail(updated.email, `📊 Ticket Status Updated: ${req.body.status}`, html);
         }
 
+        await AuditLog.create({
+            adminId: req.user.id,
+            action: "Update Support Ticket",
+            module: "Support",
+            details: `Updated ticket ${updated._id} status to ${updated.status}`,
+            ipAddress: req.ip || "0.0.0.0"
+        });
+
         res.json(updated);
     } catch (err) {
-        res.status(500).json({ error: "Failed to update query." });
+        res.status(500).json({ error: "Failed to update ticket." });
     }
 });
 
 // ─── PATCH - Admin Reply ───────────────────────────────────────────────────────
-router.patch("/:id/reply", async (req, res) => {
+router.patch("/:id/reply", auth, adminOnly, async (req, res) => {
     try {
         const { adminReply } = req.body;
         if (!adminReply) return res.status(400).json({ error: "Reply text is required." });
 
-        const updated = await Query.findByIdAndUpdate(
+        const updated = await SupportTicket.findByIdAndUpdate(
             req.params.id,
             {
                 adminReply,
-                repliedAt: new Date().toLocaleString(),
+                repliedAt: new Date(),
                 status: "Resolved",
                 resolved: true,
             },
             { new: true }
         );
-        if (!updated) return res.status(404).json({ error: "Query not found." });
+        if (!updated) return res.status(404).json({ error: "Ticket not found." });
 
-        // Send Reply Email
+        await AuditLog.create({
+            adminId: req.user.id,
+            action: "Support Reply",
+            module: "Support",
+            details: `Replied to ticket from ${updated.email}`,
+            ipAddress: req.ip || "0.0.0.0"
+        });
+
         const html = getBrandedTemplate("Support Ticket Resolved ✅", `
             <p>Hello ${updated.name},</p>
             <p>Our team has responded to your ticket:</p>
             <div style="background: #fdfaf0; border-left: 4px solid #d4af37; padding: 15px; margin: 20px 0;">
-                <strong>Admin Reply:</strong>
                 <p>${adminReply}</p>
             </div>
-            <p>Your ticket status is now: <strong>Resolved</strong>.</p>
         `);
         await sendEmail(updated.email, "✅ DEZA Support Reply", html);
 
@@ -121,40 +144,58 @@ router.patch("/:id/reply", async (req, res) => {
 });
 
 // ─── POST - Initiate Refund ──────────────────────────────────────────────────────
-router.post("/:id/refund", async (req, res) => {
+router.post("/:id/refund", auth, adminOnly, async (req, res) => {
     try {
-        const query = await Query.findById(req.params.id);
-        if (!query) return res.status(404).json({ error: "Query not found." });
+        const ticket = await SupportTicket.findById(req.params.id);
+        if (!ticket) return res.status(404).json({ error: "Ticket not found." });
 
-        if (query.refundStatus === "Initiated" || query.refundStatus === "Completed") {
-            return res.status(400).json({ error: "Refund already processed." });
-        }
+        ticket.status = "Resolved";
+        ticket.resolved = true;
+        await ticket.save();
 
-        query.refundStatus = "Initiated";
-        await query.save();
+        // ✅ RECORD AUDIT LOG
+        await AuditLog.create({
+            adminId: req.user.id,
+            action: "Initiate Refund",
+            module: "Finance",
+            details: `Refund processed for ticket ${ticket._id}`,
+            ipAddress: req.ip || "0.0.0.0"
+        });
 
+        // Send Refund Confirmation Email with 24h promise
         const html = getBrandedTemplate("Refund Initiated 💸", `
-            <p>Hello ${query.name},</p>
-            <p>This email is to confirm that a refund has been initiated from our end for your support ticket <strong>DZ-${String(query._id).slice(-6).toUpperCase()}</strong>.</p>
-            <p><strong>Timeline:</strong> The amount will be reflected in your original payment method within the next 24-48 business hours after the order pickup is completed.</p>
-            <p>Thank you for choosing DEZA Luxury.</p>
+            <p>Hello ${ticket.name},</p>
+            <p>This email is to confirm that a refund has been initiated for your support ticket <strong>DZ-TK-${String(ticket._id).slice(-6).toUpperCase()}</strong>.</p>
+            <p style="font-size: 18px; color: #d4af37; font-weight: bold;">💎 DEZA Promise: 24-Hour Refund Timeline</p>
+            <p>As per our premium service policy, the amount will be credited back to your original payment method within <strong>24 business hours</strong>.</p>
+            <p>Thank you for your patience and for choosing DEZA Luxury.</p>
         `);
-        await sendEmail(query.email, "💸 DEZA Refund Initiated", html);
+        await sendEmail(ticket.email, "💸 DEZA Refund Initiated (24-Hour Promise)", html);
 
-        res.json({ message: "Refund successfully initiated.", query });
+        res.json({ message: "Refund initiated and email sent.", ticket });
     } catch (err) {
-        res.status(500).json({ error: "Failed to initiate refund." });
+        console.error("Refund error:", err);
+        res.status(500).json({ error: "Failed to process refund." });
     }
 });
 
-// ─── DELETE Query ──────────────────────────────────────────────────────────────
-router.delete("/:id", async (req, res) => {
+// ─── DELETE Ticket ──────────────────────────────────────────────────────────────
+router.delete("/:id", auth, adminOnly, async (req, res) => {
     try {
-        const deleted = await Query.findByIdAndDelete(req.params.id);
-        if (!deleted) return res.status(404).json({ error: "Query not found." });
-        res.json({ message: "Query deleted." });
+        const deleted = await SupportTicket.findByIdAndDelete(req.params.id);
+        if (!deleted) return res.status(404).json({ error: "Ticket not found." });
+
+        await AuditLog.create({
+            adminId: req.user.id,
+            action: "Delete Support Ticket",
+            module: "Support",
+            details: `Deleted ticket from ${deleted.email}`,
+            ipAddress: req.ip || "0.0.0.0"
+        });
+
+        res.json({ message: "Ticket deleted." });
     } catch (err) {
-        res.status(500).json({ error: "Failed to delete query." });
+        res.status(500).json({ error: "Failed to delete ticket." });
     }
 });
 

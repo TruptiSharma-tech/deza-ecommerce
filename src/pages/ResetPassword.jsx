@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import { apiResetPassword } from "../utils/api";
+import toast from "react-hot-toast";
 import "./Auth.css";
 
 export default function ResetPassword() {
@@ -19,21 +20,21 @@ export default function ResetPassword() {
 
         const strongPasswordRegex = /^(?=.*[0-9])(?=.*[!@#$%^&*])[a-zA-Z0-9!@#$%^&*]{8,}$/;
         if (!strongPasswordRegex.test(password)) {
-            alert("❌ New password must be min 8 chars with 1 number and 1 special character.");
+            toast.error("New password must be min 8 chars with 1 number and 1 special character.");
             return;
         }
 
         if (password !== confirmPassword) {
-            alert("❌ Passwords do not match!");
+            toast.error("Passwords do not match!");
             return;
         }
 
         try {
             await apiResetPassword({ email, newPassword: password });
-            alert("✅ Password reset successful! You can now login with your new password.");
+            toast.success("Password reset successful! You can now login with your new password. ✨");
             navigate("/login");
         } catch (err) {
-            alert("❌ " + (err.message || "Failed to reset password."));
+            toast.error(err.message || "Failed to reset password.");
         }
     };
 

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { apiSubmitQuery, apiGetMyQueries } from "../utils/api";
+import toast from "react-hot-toast";
 import "./Contact.css";
 import { useAuth } from "../context/AuthContext";
 
@@ -11,6 +12,16 @@ export default function Support() {
   const [image, setImage] = useState(null);
   const [myQueries, setMyQueries] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [queryType, setQueryType] = useState("General Support");
+
+  const queryTypes = [
+    "General Support",
+    "Delayed Delivery",
+    "Wrong Product Received",
+    "Damaged Product Received",
+    "Refund Related",
+    "Exchange Request"
+  ];
 
   useEffect(() => {
     if (currentUser?.email) {
@@ -44,20 +55,33 @@ export default function Support() {
     e.preventDefault();
 
     if (!name.trim() || !email.trim() || !message.trim()) {
-      alert("⚠ Please fill all fields!");
+      toast.error("Please fill all fields!");
       return;
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email.trim())) {
-      alert("⚠ Please enter a valid email address!");
+      toast.error("Please enter a valid email address!");
       return;
     }
 
     setLoading(true);
     try {
-      const newQuery = await apiSubmitQuery({ name, email, message, image });
-      alert("✅ Query submitted successfully! Track status below 💛");
+      // Map frontend queryType to backend model fields
+      let ticketType = "General Query";
+      if (queryType === "Exchange Request") ticketType = "Exchange Request";
+      if (queryType === "Refund Related") ticketType = "Refund Request";
+
+      const newQuery = await apiSubmitQuery({
+        name,
+        email,
+        message,
+        image,
+        ticketType,
+        issueType: queryType,
+      });
+
+      toast.success("Ticket submitted! Our luxury concierge will assist you shortly. ✨");
 
       setName(currentUser?.name || "");
       setEmail(currentUser?.email || "");
@@ -66,7 +90,7 @@ export default function Support() {
 
       setMyQueries((prev) => [newQuery, ...prev]);
     } catch (err) {
-      alert("❌ Failed to submit query: " + err.message);
+      toast.error("Failed to submit query: " + err.message);
     } finally {
       setLoading(false);
     }
@@ -97,8 +121,24 @@ export default function Support() {
           </label>
 
           <label>
+            Query Category
+            <select
+              value={queryType}
+              onChange={(e) => {
+                setQueryType(e.target.value);
+                // Pre-fill message based on type if needed
+              }}
+              className="support-select"
+              style={{ width: "100%", padding: "12px", background: "#111", color: "white", border: "1px solid #333", borderRadius: "8px", marginTop: "8px", marginBottom: "15px" }}
+            >
+              {queryTypes.map(t => <option key={t} value={t}>{t}</option>)}
+            </select>
+          </label>
+
+          <label>
             Your Message
             <textarea
+              placeholder="Please provide details about your issue..."
               value={message}
               onChange={(e) => setMessage(e.target.value)}
             />

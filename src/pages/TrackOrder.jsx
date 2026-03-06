@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import "./TrackOrder.css";
 import { useParams, useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
 
 export default function TrackOrder() {
   const { id } = useParams();
@@ -12,7 +13,7 @@ export default function TrackOrder() {
     const found = storedOrders.find((o) => String(o.id) === String(id));
 
     if (!found) {
-      alert("Order not found!");
+      toast.error("Order not found!");
       navigate("/orders");
       return;
     }

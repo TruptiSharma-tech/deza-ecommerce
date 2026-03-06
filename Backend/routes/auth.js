@@ -225,4 +225,26 @@ router.post("/reset-password", async (req, res) => {
     }
 });
 
+// ─── ADMIN: User Management ───────────────────────────────────────────────────
+router.get("/users", async (req, res) => {
+    try {
+        console.log("🔍 FETCHING ALL USERS FROM DB...");
+        const users = await User.find().select("-password").sort({ createdAt: -1 });
+        console.log(`✅ FOUND ${users.length} USERS`);
+        res.json(users);
+    } catch (err) {
+        res.status(500).json({ error: "Failed to fetch users." });
+    }
+});
+
+router.delete("/users/:id", async (req, res) => {
+    try {
+        const deleted = await User.findByIdAndDelete(req.params.id);
+        if (!deleted) return res.status(404).json({ error: "User not found." });
+        res.json({ message: "User account deleted." });
+    } catch (err) {
+        res.status(500).json({ error: "Failed to delete user." });
+    }
+});
+
 export default router;

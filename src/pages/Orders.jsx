@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { apiGetMyOrders, apiCancelOrder, apiReturnOrder, apiRefundOrder } from "../utils/api";
+import toast from "react-hot-toast";
 import "./Orders.css";
 
 export default function Orders() {
@@ -44,8 +45,9 @@ export default function Orders() {
     try {
       const updated = await apiCancelOrder(id);
       setOrders((prev) => prev.map((o) => (o._id === id ? updated : o)));
+      toast.success("Order cancelled successfully!");
     } catch (err) {
-      alert("❌ " + err.message);
+      toast.error(err.message);
     }
   };
 
@@ -58,6 +60,15 @@ export default function Orders() {
       case "Delivered": return 5;
       default: return 1;
     }
+  };
+
+  const isReturnAllowed = (order) => {
+    if (order.status !== "Delivered") return false;
+    if (!order.deliveredAt) return true; // Support older orders initially
+    const deliveredTime = new Date(order.deliveredAt).getTime();
+    const now = new Date().getTime();
+    const diffInHours = (now - deliveredTime) / (1000 * 60 * 60);
+    return diffInHours <= 48;
   };
 
   // ✅ Open Return Modal
@@ -80,7 +91,7 @@ export default function Orders() {
         message: returnMessage,
       });
       setOrders((prev) => prev.map((o) => (o._id === selectedOrder._id ? updated : o)));
-      alert("✅ Return Request Sent Successfully to Admin & Support!");
+      toast.success("Return Request Sent Successfully! ✨");
       setShowReturnModal(false);
       setSelectedOrder(null);
     } catch (err) {
@@ -95,7 +106,7 @@ export default function Orders() {
     try {
       const updated = await apiRefundOrder(id);
       setOrders((prev) => prev.map((o) => (o._id === id ? updated : o)));
-      alert("✅ Refund Request Sent to Admin!");
+      toast.success("Refund Request Sent to Admin! 💰");
     } catch (err) {
       alert("❌ " + err.message);
     }
@@ -152,6 +163,18 @@ export default function Orders() {
                 </span>
               </p>
 
+              {/* Live Tracking Mock */}
+              {(o.status === "Shipped" || o.status === "Out for Delivery") && (
+                <div className="order-gps-tracking">
+                  <div className="gps-header">📡 Live GPS Tracking (Active)</div>
+                  <div className="gps-map-mock">
+                    <div className="truck-marker" style={{ left: o.status === "Shipped" ? "40%" : "80%" }}>🚚</div>
+                    <div className="gps-line"></div>
+                  </div>
+                  <p className="gps-note">Your luxury parcel is currently in transit.</p>
+                </div>
+              )}
+
               {/* Progress Bar */}
               <div className="progress-bar-container">
                 {[
@@ -182,28 +205,36 @@ export default function Orders() {
 
               {/* Return / Refund after Delivered */}
               {o.status === "Delivered" && (
-                <div style={{ display: "flex", gap: "10px", marginTop: "12px" }}>
-                  <button
-                    className="cancel-btn"
-                    style={{ background: "#444" }}
-                    onClick={() => openReturnModal(o)}
-                    disabled={o.returnStatus === "Return Requested"}
-                  >
-                    {o.returnStatus === "Return Requested"
-                      ? "Return Requested ✅"
-                      : "Request Return"}
-                  </button>
+                <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginTop: "12px" }}>
+                  {isReturnAllowed(o) ? (
+                    <div style={{ display: "flex", gap: "10px" }}>
+                      <button
+                        className="cancel-btn"
+                        style={{ background: "#444" }}
+                        onClick={() => openReturnModal(o)}
+                        disabled={o.returnStatus === "Return Requested"}
+                      >
+                        {o.returnStatus === "Return Requested"
+                          ? "Return Requested ✅"
+                          : "Request Return / Exchange"}
+                      </button>
 
-                  <button
-                    className="cancel-btn"
-                    style={{ background: "#d4af37", color: "#111" }}
-                    onClick={() => requestRefund(o._id)}
-                    disabled={o.refundStatus === "Refund Requested"}
-                  >
-                    {o.refundStatus === "Refund Requested"
-                      ? "Refund Requested ✅"
-                      : "Request Refund"}
-                  </button>
+                      <button
+                        className="cancel-btn"
+                        style={{ background: "#d4af37", color: "#111" }}
+                        onClick={() => requestRefund(o._id)}
+                        disabled={o.refundStatus === "Refund Requested"}
+                      >
+                        {o.refundStatus === "Refund Requested"
+                          ? "Refund Requested ✅"
+                          : "Request Refund"}
+                      </button>
+                    </div>
+                  ) : (
+                    <p className="return-expired">
+                      ⚠️ Return/Exchange window closed (48h expired)
+                    </p>
+                  )}
                 </div>
               )}
 

@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import "./Auth.css";
+import toast from "react-hot-toast";
 
 export default function ForgotPassword() {
     const [email, setEmail] = useState("");
@@ -11,7 +12,7 @@ export default function ForgotPassword() {
 
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(email)) {
-            alert("❌ Please enter a valid email address!");
+            toast.error("Please enter a valid email address!");
             return;
         }
 
@@ -25,10 +26,10 @@ export default function ForgotPassword() {
             if (res.ok) {
                 setSubmitted(true);
             } else {
-                alert("❌ " + data.error);
+                toast.error(data.error || "Failed to send reset link.");
             }
         } catch (err) {
-            alert("❌ Error connecting to server.");
+            toast.error("Error connecting to server.");
         }
     };
 

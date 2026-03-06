@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import "./Admin.css";
+import toast from "react-hot-toast";
 import { Filler } from "chart.js";
 import { useNavigate } from "react-router-dom";
 import {
@@ -7,6 +8,12 @@ import {
   apiGetOrders, apiUpdateOrderStatus,
   apiGetQueries, apiUpdateQuery, apiReplyQuery, apiInitiateRefund,
   apiGetReviews, apiDeleteReview,
+  apiGetUsers, apiDeleteUser,
+  apiGetCategories, apiAddCategory,
+  apiGetBrands, apiAddBrand,
+  apiGetSubscribers,
+  apiGetCoupons, apiAddCoupon,
+  apiGetAuditLogs,
 } from "../utils/api";
 import { Line, Pie, Bar } from "react-chartjs-2";
 import {
@@ -60,6 +67,15 @@ export default function Admin() {
   // Orders & Queries
   const [orders, setOrders] = useState([]);
   const [queries, setQueries] = useState([]);
+
+  // New Collections
+  const [categoriesList, setCategoriesList] = useState([]);
+  const [brandsList, setBrandsList] = useState([]);
+  const [subscribers, setSubscribers] = useState([]);
+  const [coupons, setCoupons] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [auditLogs, setAuditLogs] = useState([]);
+
   const [lastUpdated, setLastUpdated] = useState(new Date());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -156,14 +172,20 @@ export default function Admin() {
   const loadAll = async (silent = false) => {
     if (!silent) setLoading(true);
     try {
-      const [prods, ords, qrys, revs] = await Promise.all([
+      const [prods, ords, qrys, revs, cats, brnds, subs, cpns, logs, usrs] = await Promise.all([
         apiGetProducts().catch(e => { console.error("Products error:", e); return []; }),
         apiGetOrders().catch(e => { console.error("Orders error:", e); return []; }),
         apiGetQueries().catch(e => { console.error("Queries error:", e); return []; }),
         apiGetReviews().catch(e => { console.error("Reviews error:", e); return []; }),
+        apiGetCategories().catch(e => { console.error("Categories error:", e); return []; }),
+        apiGetBrands().catch(e => { console.error("Brands error:", e); return []; }),
+        apiGetSubscribers().catch(e => { console.error("Subscribers error:", e); return []; }),
+        apiGetCoupons().catch(e => { console.error("Coupons error:", e); return []; }),
+        apiGetAuditLogs().catch(e => { console.error("AuditLogs error:", e); return []; }),
+        apiGetUsers().catch(e => { console.error("Users error:", e); return []; }),
       ]);
 
-      console.log("Admin Data Loaded:", { prods: prods.length, ords: ords.length, qrys: qrys.length });
+      console.log("Admin Data Loaded:", { prods: prods.length, ords: ords.length, qrys: qrys.length, cats: cats.length });
 
       // ✅ New Order Notification Logic
       if (!firstLoadRef.current && ords.length > prevOrderRef.current) {
@@ -204,6 +226,13 @@ export default function Admin() {
       setOrders(ords);
       setQueries(qrys);
       setReviews(revs);
+      setCategoriesList(cats);
+      setBrandsList(brnds);
+      setSubscribers(subs);
+      setCoupons(cpns);
+      setUsers(usrs);
+      setAuditLogs(logs);
+
       setLastUpdated(new Date());
       setError(null);
     } catch (err) {
@@ -259,12 +288,12 @@ export default function Admin() {
       !description.trim() ||
       !images.length
     ) {
-      alert("⚠ Please fill all fields & upload images!");
+      toast.error("Please fill all fields & upload images!");
       return;
     }
 
     if (Number(stock) < 0) {
-      alert("⚠ Stock cannot be negative!");
+      toast.error("Stock cannot be negative!");
       return;
     }
 
@@ -273,13 +302,13 @@ export default function Admin() {
     );
 
     if (!validSizePrices.length) {
-      alert("⚠ Please add valid size-wise prices!");
+      toast.error("Please add valid size-wise prices!");
       return;
     }
 
     const negativePrice = validSizePrices.find((sp) => Number(sp.price) < 0);
     if (negativePrice) {
-      alert("⚠ Price cannot be negative!");
+      toast.error("Price cannot be negative!");
       return;
     }
 
@@ -297,9 +326,9 @@ export default function Admin() {
       });
 
       setProducts([newProduct, ...products]);
-      alert("✅ Product added successfully!");
+      toast.success("Product added successfully!");
     } catch (err) {
-      alert("❌ Failed to add product: " + err.message);
+      toast.error("Failed to add product: " + err.message);
       return;
     }
 
@@ -325,9 +354,9 @@ export default function Admin() {
       await apiDeleteProduct(id);
       setProducts(products.filter((p) => p._id !== id));
       setReviews(reviews.filter((r) => r.productId !== id));
-      alert("❌ Product deleted!");
+      toast.success("Product deleted successfully!");
     } catch (err) {
-      alert("❌ Failed to delete: " + err.message);
+      toast.error("Failed to delete: " + err.message);
     }
   };
 
@@ -370,12 +399,12 @@ export default function Admin() {
       !description.trim() ||
       !images.length
     ) {
-      alert("⚠ Please fill all fields & upload images!");
+      toast.error("Please fill all fields & upload images!");
       return;
     }
 
     if (Number(stock) < 0) {
-      alert("⚠ Stock cannot be negative!");
+      toast.error("Stock cannot be negative!");
       return;
     }
 
@@ -384,13 +413,13 @@ export default function Admin() {
     );
 
     if (!validSizePrices.length) {
-      alert("⚠ Please add valid size-wise prices!");
+      toast.error("Please add valid size-wise prices!");
       return;
     }
 
     const negativePrice = validSizePrices.find((sp) => Number(sp.price) < 0);
     if (negativePrice) {
-      alert("⚠ Price cannot be negative!");
+      toast.error("Price cannot be negative!");
       return;
     }
 
@@ -408,9 +437,9 @@ export default function Admin() {
       });
 
       setProducts(products.map((p) => (p._id === editingProduct._id ? updatedProduct : p)));
-      alert("✅ Product updated successfully!");
+      toast.success("Product updated successfully!");
     } catch (err) {
-      alert("❌ Failed to update: " + err.message);
+      toast.error("Failed to update: " + err.message);
       return;
     }
 
@@ -430,7 +459,7 @@ export default function Admin() {
       const updated = await apiUpdateOrderStatus(id, status);
       setOrders(orders.map((o) => (o._id === id ? updated : o)));
     } catch (err) {
-      alert("❌ Failed to update order status: " + err.message);
+      toast.error("Failed to update order status: " + err.message);
     }
   };
 
@@ -449,7 +478,7 @@ export default function Admin() {
     const replyText = replyInputs[id];
 
     if (!replyText) {
-      alert("⚠ Please write a reply first!");
+      toast.error("Please write a reply first!");
       return;
     }
 
@@ -457,9 +486,9 @@ export default function Admin() {
       const updated = await apiReplyQuery(id, replyText);
       setQueries(queries.map((q) => (q._id === id ? updated : q)));
       setReplyInputs({ ...replyInputs, [id]: "" });
-      alert("✅ Reply sent successfully!");
+      toast.success("Reply sent successfully!");
     } catch (err) {
-      alert("❌ Failed to send reply: " + err.message);
+      toast.error("Failed to send reply: " + err.message);
     }
   };
 
@@ -469,9 +498,9 @@ export default function Admin() {
     try {
       const { query } = await apiInitiateRefund(id);
       setQueries(queries.map((q) => (q._id === id ? { ...q, refundStatus: "Initiated" } : q)));
-      alert("✅ Refund successfully initiated and customer has been notified via email.");
+      toast.success("Refund successfully initiated and customer has been notified via email.");
     } catch (err) {
-      alert("❌ Failed to initiate refund: " + err.message);
+      toast.error("Failed to initiate refund: " + err.message);
     }
   };
 
@@ -532,6 +561,17 @@ export default function Admin() {
 
   const pendingQueries = queries.filter(q => q.status === "Pending").length;
   const resolvedQueries = queries.filter(q => q.status === "Resolved" || q.resolved).length;
+
+  // Users Stats
+  const customersOnly = users.filter(u => u.role === "user");
+
+  const usersToday = customersOnly.filter(u => {
+    const d = u.createdAt ? new Date(u.createdAt) : new Date();
+    return d.toDateString() === new Date().toDateString();
+  }).length;
+
+  const onlineSimulated = Math.max(1, Math.floor(customersOnly.length * 0.15) || 1); // 15% online, min 1
+
 
   const successfulTransactions = finalOrders.filter(
     (o) => o.paymentStatus === "Success",
@@ -683,7 +723,7 @@ export default function Admin() {
     const dashboardElement = dashboardRef.current;
 
     if (!dashboardElement) {
-      alert("Dashboard not found!");
+      toast.error("Dashboard not found!");
       return;
     }
 
@@ -712,7 +752,7 @@ export default function Admin() {
   const handleLogout = () => {
     localStorage.removeItem("currentUser");
     localStorage.removeItem("deza_token");
-    alert("👋 Admin logged out!");
+    toast.success("Admin logged out! 👋");
     navigate("/admin-login");
   };
 
@@ -767,6 +807,27 @@ export default function Admin() {
           💬 Support
         </button>
 
+        <button
+          className={activeTab === "users" ? "active" : ""}
+          onClick={() => setActiveTab("users")}
+        >
+          👥 Users
+        </button>
+
+        <button
+          className={activeTab === "reviews" ? "active" : ""}
+          onClick={() => setActiveTab("reviews")}
+        >
+          ⭐ Reviews
+        </button>
+
+        <button
+          className={activeTab === "audit" ? "active" : ""}
+          onClick={() => setActiveTab("audit")}
+        >
+          📜 Audit Logs
+        </button>
+
         <button className="logout-btn" onClick={handleLogout}>
           🚪 Logout
         </button>
@@ -806,6 +867,17 @@ export default function Admin() {
             )}
 
             <div className="admin-cards">
+              <div className="admin-card myntra-card blue">
+                <div className="card-icon">👥</div>
+                <div className="card-content">
+                  <h3>Total Customers</h3>
+                  <p>{customersOnly.length}</p>
+                  <small style={{ display: "block", opacity: 0.6, fontSize: "11px", marginTop: "5px" }}>
+                    🔥 {onlineSimulated} Active Now | 🆕 {usersToday} Today
+                  </small>
+                </div>
+              </div>
+
               <div className="admin-card myntra-card purple">
                 <div className="card-icon">🛍️</div>
                 <div className="card-content">
@@ -1160,7 +1232,31 @@ export default function Admin() {
               {images.length > 0 && (
                 <div className="preview-images">
                   {images.map((img, i) => (
-                    <img key={i} src={img} alt={`preview-${i}`} />
+                    <div key={i} style={{ position: "relative" }}>
+                      <img src={img} alt={`preview-${i}`} />
+                      <button
+                        type="button"
+                        onClick={() => setImages(images.filter((_, idx) => idx !== i))}
+                        style={{
+                          position: "absolute",
+                          top: "-5px",
+                          right: "-5px",
+                          background: "#ff4d4d",
+                          color: "#fff",
+                          border: "none",
+                          borderRadius: "50%",
+                          width: "20px",
+                          height: "20px",
+                          cursor: "pointer",
+                          fontSize: "12px",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }}
+                      >
+                        ×
+                      </button>
+                    </div>
                   ))}
                 </div>
               )}
@@ -1374,59 +1470,45 @@ export default function Admin() {
                 <thead>
                   <tr>
                     <th>Ticket</th>
-                    <th>Name</th>
-                    <th>Email</th>
+                    <th>Customer</th>
+                    <th>Type</th>
+                    <th>Issue</th>
+                    <th>Order ID</th>
                     <th>Message</th>
-                    <th>Image</th>
-                    <th>Priority</th>
                     <th>Status</th>
-                    <th>Reply</th>
+                    <th>Action / Reply</th>
                   </tr>
                 </thead>
 
                 <tbody>
                   {queries.map((q) => (
                     <tr key={q._id}>
-                      <td>{"DZ-" + String(q._id).slice(-6).toUpperCase()}</td>
-                      <td>{q.name}</td>
-                      <td>{q.email}</td>
-                      <td>{q.message}</td>
-
+                      <td>{"DZ-TK-" + String(q._id).slice(-6).toUpperCase()}</td>
                       <td>
-                        {q.image && (
-                          <img
-                            src={q.image}
-                            alt="proof"
-                            style={{
-                              width: "60px",
-                              borderRadius: "6px",
-                            }}
-                          />
-                        )}
+                        <strong>{q.name}</strong><br />
+                        <small>{q.email}</small>
                       </td>
+                      <td><span className="badge-premium">{q.ticketType}</span></td>
+                      <td><span style={{ color: "#d4af37" }}>{q.issueType}</span></td>
+                      <td>{q.orderId || "N/A"}</td>
+                      <td style={{ maxWidth: "200px", fontSize: "12px" }}>{q.message}</td>
 
                       <td>
                         <select
-                          value={q.priority || "Medium"}
-                          onChange={(e) =>
-                            updateQueryField(q._id, "priority", e.target.value)
-                          }
-                        >
-                          <option value="Low">Low</option>
-                          <option value="Medium">Medium</option>
-                          <option value="High">High</option>
-                        </select>
-                      </td>
-
-                      <td>
-                        <select
+                          className="admin-select-status"
                           value={q.status || "Pending"}
                           onChange={(e) =>
                             updateQueryField(q._id, "status", e.target.value)
                           }
+                          style={{
+                            background: q.status === "Resolved" ? "#2e7d32" : (q.status === "In Progress" ? "#f9a825" : "#1a1a1a"),
+                            color: "#fff",
+                            padding: "4px 8px",
+                            borderRadius: "4px"
+                          }}
                         >
                           <option value="Pending">Pending</option>
-                          <option value="In Review">In Review</option>
+                          <option value="In Progress">In Progress</option>
                           <option value="Resolved">Resolved</option>
                         </select>
                       </td>
@@ -1453,11 +1535,11 @@ export default function Admin() {
                               value={""} // Always empty to allow re-selection
                             >
                               <option value="" disabled>✨ Select Auto-Reply...</option>
-                              <option value="We sincerely apologize for the inconvenience. A replacement for the wrong product has been initiated and will reach you within 3-5 business days.">Wrong Product Received</option>
-                              <option value="We apologize that the scent did not meet your expectations. We have approved your return request. Please pack the item securely for pickup.">Not Satisfied with Smell</option>
-                              <option value="We are terribly sorry about the damaged/leaking bottle. We have initiated a full refund to your original payment method.">Damaged / Leakage</option>
-                              <option value="Your order is currently in transit and is facing a slight delay due to unforeseen logistics issues. We are expediting it and it should reach you shortly.">Delivery Delayed</option>
-                              <option value="Thank you for reaching out. Your request has been received and our luxury support team is currently reviewing your case. We will update you soon.">General Acknowledgment</option>
+                              <option value="We sincerely apologize for the inconvenience. For the wrong product received, your return pickup has been scheduled. The order will be pickup in 3 days. Replacement will be sent post pickup.">Wrong Product Received (Pickup in 3 Days)</option>
+                              <option value="We apologize that the scent did not meet your expectations. We have approved your return request. Please pack the item securely for pickup. Note: Return accepted as per 48h policy.">Not Satisfied (Return Approved)</option>
+                              <option value="We are terribly sorry about the damaged bottle. We have initiated a full refund to your original payment method. As per our 24-hour promise, the amount will be credited within 24 hours.">Damaged / Leakage (Full Refund + 24h Promise)</option>
+                              <option value="Your refund request is approved. Our finance team has initiated the transaction. You will receive the credit in your account within 24 business hours as per DEZA luxury standards.">Refund Approved (24-Hour Credit)</option>
+                              <option value="Thank you for reaching out. Your exchange request for a different size/fragrance has been noted. Our team will contact you for pickup within 48 hours.">Exchange Request Acknowledgment</option>
                             </select>
 
                             <textarea
@@ -1507,6 +1589,162 @@ export default function Admin() {
                         No support tickets found 🎉
                       </td>
                     </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* USERS */}
+        {activeTab === "users" && (
+          <div className="admin-section">
+            <h2>👥 Registered Customers</h2>
+            <div className="table-wrapper">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Phone</th>
+                    <th>Joined</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {customersOnly.map((u) => (
+                    <tr key={u._id}>
+                      <td style={{ fontWeight: "bold", color: "#D4AF37" }}>{u.name}</td>
+                      <td>{u.email}</td>
+                      <td>{u.contact || "N/A"}</td>
+                      <td>{new Date(u.createdAt).toLocaleDateString()}</td>
+                    </tr>
+                  ))}
+                  {customersOnly.length === 0 && (
+                    <tr><td colSpan="4" style={{ textAlign: "center" }}>No customers found yet 🛍️.</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* REVIEWS */}
+        {activeTab === "reviews" && (
+          <div className="admin-section">
+            <h2>⭐ Customer Reviews</h2>
+            <div className="table-wrapper">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Customer</th>
+                    <th>Product</th>
+                    <th>Rating</th>
+                    <th>Comment</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {reviews.map((r) => (
+                    <tr key={r._id}>
+                      <td>{r.userName}</td>
+                      <td>{products.find(p => p._id === r.productId)?.title || "Unknown"}</td>
+                      <td style={{ color: "#D4AF37" }}>{"⭐".repeat(r.rating)}</td>
+                      <td>{r.comment}</td>
+                      <td>
+                        <button className="small-btn delete-btn" onClick={async () => {
+                          if (window.confirm("Delete review?")) {
+                            await apiDeleteReview(r._id);
+                            setReviews(reviews.filter(x => x._id !== r._id));
+                            toast.success("Review deleted");
+                          }
+                        }}>Delete</button>
+                      </td>
+                    </tr>
+                  ))}
+                  {reviews.length === 0 && (
+                    <tr><td colSpan="5" style={{ textAlign: "center" }}>No reviews found.</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* CATEGORIES */}
+        {activeTab === "categories" && (
+          <div className="admin-section">
+            <h2>🏷️ Product Categories</h2>
+            <div className="table-wrapper">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Description</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {categoriesList.map((cat) => (
+                    <tr key={cat._id}>
+                      <td>{cat.name}</td>
+                      <td>{cat.description || "N/A"}</td>
+                      <td>{cat.active ? "✅ Active" : "❌ Inactive"}</td>
+                    </tr>
+                  ))}
+                  {categoriesList.length === 0 && (
+                    <tr><td colSpan="3" style={{ textAlign: "center" }}>No categories found.</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+
+
+
+
+
+
+        {/* AUDIT LOGS */}
+        {activeTab === "audit" && (
+          <div className="admin-section">
+            <h2>📜 System Audit Logs</h2>
+            <div style={{
+              background: "rgba(212, 175, 55, 0.05)",
+              border: "1px solid rgba(212, 175, 55, 0.2)",
+              padding: "15px",
+              borderRadius: "12px",
+              marginBottom: "20px",
+              fontSize: "13px",
+              lineHeight: "1.5",
+              color: "rgba(255,255,255,0.7)"
+            }}>
+              <strong>💡 Business Security:</strong> Audit Logs are a "digital paper trail." They record every admin action (like changing prices or marking orders) as they happen. This ensures your startup has full transparency and security as you scale. 💎
+            </div>
+            <div className="table-wrapper">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Timestamp</th>
+                    <th>Module</th>
+                    <th>Action</th>
+                    <th>Admin</th>
+                    <th>Details</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {auditLogs.map((l) => (
+                    <tr key={l._id}>
+                      <td>{new Date(l.createdAt).toLocaleString()}</td>
+                      <td><span style={{ color: "#D4AF37" }}>{l.module}</span></td>
+                      <td>{l.action}</td>
+                      <td>{l.adminId?.name || "System"}</td>
+                      <td style={{ fontSize: "12px" }}>{l.details}</td>
+                    </tr>
+                  ))}
+                  {auditLogs.length === 0 && (
+                    <tr><td colSpan="4" style={{ textAlign: "center" }}>No logs recorded.</td></tr>
                   )}
                 </tbody>
               </table>

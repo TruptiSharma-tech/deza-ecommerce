@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import toast from "react-hot-toast";
 import { useAuth } from "../context/AuthContext";
 import { apiRegister } from "../utils/api";
 import "./Auth.css";
@@ -73,7 +74,7 @@ export default function Register() {
     }, 1000);
 
     setTimeout(() => {
-      alert(`DEZA VERIFICATION\nYour OTP is: ${newOtp}`);
+      toast.success(`DEZA VERIFICATION\nYour OTP is: ${newOtp}`, { duration: 8000 });
     }, 50);
   };
 
@@ -114,7 +115,7 @@ export default function Register() {
     try {
       const data = await apiRegister(formData);
       login(data.user, data.token);
-      alert("🎉 Registration Successful!");
+      toast.success("Registration Successful! Welcome to DEZA! 🎉");
       navigate("/");
     } catch (err) {
       setUiMessage("❌ " + (err.message || "Registration failed. Please try again."));

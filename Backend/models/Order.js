@@ -59,6 +59,7 @@ const orderSchema = new mongoose.Schema(
         category: { type: String, default: "" },
         type: { type: String, default: "" },
         date: { type: String, default: () => new Date().toLocaleString() },
+        deliveredAt: { type: Date, default: null },
     },
     { timestamps: true }
 );

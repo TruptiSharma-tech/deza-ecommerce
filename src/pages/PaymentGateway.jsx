@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Confetti from "react-confetti";
-import { apiCreateOrder } from "../utils/api";
+import { apiCreateOrder, apiCreateRazorpayOrder, apiVerifyRazorpayPayment } from "../utils/api";
+import toast from "react-hot-toast";
 import "./PaymentGateway.css";
 
 export default function PaymentGateway() {
   const navigate = useNavigate();
   const [paymentDone, setPaymentDone] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const checkoutInfo = JSON.parse(localStorage.getItem("checkoutInfo")) || {};
   const rawTotal = checkoutInfo.total || 0;
@@ -56,58 +58,65 @@ export default function PaymentGateway() {
   };
 
   const handleRazorpayPayment = async (selectedType) => {
-    const amountInPaise = Math.round(Number(total) * 100);
-    const displayPhone = cleanPhone || "9999999999";
-
-    console.log("[RAZORPAY DEBUG]", { amountInPaise, displayPhone, selectedType });
-
-    if (isNaN(amountInPaise) || amountInPaise <= 0) {
-      console.error("CRITICAL ERROR: Invalid Amount detected.");
-      return;
-    }
-
-    const isLoaded = await loadRazorpayScript();
-    if (!isLoaded || !window.Razorpay) {
-      alert("FAILED to load Razorpay. Check your internet.");
-      return;
-    }
-
-    const options = {
-      key: "rzp_test_1DP5mmOlF5G5ag",
-      amount: amountInPaise,
-      currency: "INR",
-      name: "DEZA Luxury Store",
-      description: `Luxury Fragrance - ${selectedType}`,
-      image: "https://img.icons8.com/color/96/000000/perfume-bottle-2.png",
-
-      handler: async function (response) {
-        console.log("PAYMENT SUCCESS:", response.razorpay_payment_id);
-        await saveOrder(selectedType, "Paid", response.razorpay_payment_id);
-        setPaymentDone(true);
-        setTimeout(() => navigate("/checkout/success"), 2000);
-      },
-      prefill: {
-        name: name || "Customer",
-        contact: displayPhone,
-        email: currentUser?.email || "support@deza.com"
-      },
-      theme: { color: "#D4AF37" },
-      modal: {
-        ondismiss: function () {
-          console.log("Payment window closed.");
-        }
-      }
-    };
-
     try {
+      setLoading(true);
+      const isLoaded = await loadRazorpayScript();
+      if (!isLoaded || !window.Razorpay) {
+        toast.error("Razorpay SDK failed to load. Check internet.");
+        return;
+      }
+
+      // 1. Create Order on Backend
+      const order = await apiCreateRazorpayOrder({ amount: total });
+
+      const options = {
+        key: "rzp_test_1DP5mmOlF5G5ag", // Key ID
+        amount: order.amount,
+        currency: order.currency,
+        name: "DEZA Luxury Store",
+        description: `Order #${order.id.slice(-6)} - ${selectedType}`,
+        order_id: order.id, // VITAL: Required for UPI/QR to work!
+        image: "https://img.icons8.com/color/96/000000/perfume-bottle-2.png",
+
+        handler: async function (response) {
+          try {
+            // 2. Verify Payment on Backend
+            await apiVerifyRazorpayPayment({
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+            });
+
+            console.log("PAYMENT VERIFIED SUCCESS");
+            await saveOrder(selectedType, "Paid", response.razorpay_payment_id);
+            setPaymentDone(true);
+            toast.success("Payment Successful! 🎉");
+            setTimeout(() => navigate("/checkout/success"), 2000);
+          } catch (verifyErr) {
+            toast.error("Payment Verification Failed! Safety breach. Contact Support.");
+          }
+        },
+        prefill: {
+          name: name || currentUser?.name || "Customer",
+          contact: cleanPhone || "9999999999",
+          email: currentUser?.email || "support@deza.com"
+        },
+        theme: { color: "#D4AF37" },
+        modal: {
+          ondismiss: () => setLoading(false)
+        }
+      };
+
       const rzp = new window.Razorpay(options);
       rzp.on('payment.failed', function (response) {
-        alert("Payment Failed: " + response.error.description);
+        toast.error("Payment Failed: " + response.error.description);
       });
       rzp.open();
     } catch (err) {
-      console.error("SDK OPEN ERROR:", err);
-      alert("Something went wrong with the payment portal.");
+      console.error("RAZORPAY ERROR:", err);
+      toast.error("Failed to initiate payment. " + err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -125,12 +134,16 @@ export default function PaymentGateway() {
 
       <div className="payment-options">
         {/* UPI BUTTON */}
-        <button className="payment-btn upi-btn" onClick={() => handleRazorpayPayment("UPI")}>
+        <button
+          className="payment-btn upi-btn"
+          onClick={() => handleRazorpayPayment("UPI")}
+          disabled={loading}
+        >
           <div className="icon-stack">
             <img src="https://img.icons8.com/color/48/000000/upi.png" alt="UPI" />
           </div>
           <div className="btn-info">
-            <span className="btn-label">UPI / QR Code</span>
+            <span className="btn-label">{loading ? "Connecting..." : "UPI / QR Code"}</span>
             <span className="btn-sub">GPay, PhonePe, BHIM</span>
             <div className="mini-icons">
               <img src="https://img.icons8.com/color/48/000000/google-pay.png" alt="GPay" />
@@ -140,12 +153,16 @@ export default function PaymentGateway() {
         </button>
 
         {/* CARD BUTTON */}
-        <button className="payment-btn card-btn" onClick={() => handleRazorpayPayment("Card")}>
+        <button
+          className="payment-btn card-btn"
+          onClick={() => handleRazorpayPayment("Card")}
+          disabled={loading}
+        >
           <div className="icon-stack">
             <img src="https://img.icons8.com/color/48/000000/visa.png" alt="Visa" />
           </div>
           <div className="btn-info">
-            <span className="btn-label">Card Payment</span>
+            <span className="btn-label">{loading ? "Connecting..." : "Card Payment"}</span>
             <span className="btn-sub">Debit / Credit Card</span>
             <div className="mini-icons">
               <img src="https://img.icons8.com/color/48/000000/mastercard.png" alt="Mastercard" />
@@ -154,7 +171,11 @@ export default function PaymentGateway() {
         </button>
 
         {/* COD BUTTON */}
-        <button className="payment-btn cod-btn" onClick={handleCOD}>
+        <button
+          className="payment-btn cod-btn"
+          onClick={handleCOD}
+          disabled={loading}
+        >
           <div className="icon-stack">
             <img src="https://img.icons8.com/color/48/000000/cash-in-hand.png" alt="COD" />
           </div>

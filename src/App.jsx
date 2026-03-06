@@ -32,6 +32,7 @@ const ReturnRefund = lazy(() => import("./pages/ReturnRefund"));
 const AdminLogin = lazy(() => import("./pages/AdminLogin"));
 const Admin = lazy(() => import("./pages/Admin"));
 import AdminProtectedRoute from "./components/AdminProtectedRoute";
+import { Toaster } from "react-hot-toast";
 
 // PRELOADER FOR SUSPENSE
 const LoadingScreen = () => (
@@ -43,6 +44,32 @@ const LoadingScreen = () => (
 export default function App() {
   return (
     <Router>
+      <Toaster
+        position="top-center"
+        toastOptions={{
+          style: {
+            background: '#1a1a1a',
+            color: '#fff',
+            border: '1px solid rgba(212, 175, 55, 0.3)',
+            fontFamily: 'Poppins, sans-serif',
+            fontSize: '14px',
+            borderRadius: '12px',
+            padding: '12px 24px',
+          },
+          success: {
+            iconTheme: {
+              primary: '#D4AF37',
+              secondary: '#1a1a1a',
+            },
+          },
+          error: {
+            iconTheme: {
+              primary: '#ff4b4b',
+              secondary: '#1a1a1a',
+            },
+          },
+        }}
+      />
       <Navbar />
 
       <Suspense fallback={<LoadingScreen />}>

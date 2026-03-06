@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import "./AccountSidebar.css";
 import { FaUser, FaEdit, FaLock, FaCog, FaSignOutAlt, FaShoppingBag, FaHeart, FaTicketAlt, FaSearchLocation } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
 
 export default function AccountSidebar({ isOpen, onClose }) {
   const navigate = useNavigate();
@@ -39,13 +40,13 @@ export default function AccountSidebar({ isOpen, onClose }) {
     if (!user) return;
     const updatedUser = { ...user, name, phone };
     localStorage.setItem("currentUser", JSON.stringify(updatedUser));
-    alert("✅ Profile Updated Successfully!");
+    toast.success("Profile Updated Successfully! ✨");
     setUser(updatedUser);
   };
 
   const handleChangePassword = () => {
     // Password update would normally go to API
-    alert("✅ Password Update functionality is coming in next update! (Backend connected)");
+    toast.success("Password Update functionality is coming soon! (Backend connected)");
   };
 
   return (

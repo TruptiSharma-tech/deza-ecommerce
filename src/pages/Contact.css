@@ -40,6 +40,7 @@
 }
 
 .support-form input,
+.support-form select,
 .support-form textarea {
   width: 100%;
   padding: 12px;
@@ -50,6 +51,11 @@
   color: #fff;
   font-size: 14px;
   outline: none;
+}
+
+.support-form select option {
+  background-color: #1a1a1a;
+  color: #ffffff;
 }
 
 .support-form textarea {

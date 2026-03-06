@@ -38,6 +38,9 @@ export const apiLogin = (payload) =>
 export const apiAdminLogin = (payload) =>
     request("/auth/admin-login", { method: "POST", body: JSON.stringify(payload) });
 
+export const apiGetUsers = () => request("/auth/users");
+export const apiDeleteUser = (id) => request(`/auth/users/${id}`, { method: "DELETE" });
+
 export const apiForgotPassword = (payload) =>
     request("/auth/forgot-password", { method: "POST", body: JSON.stringify(payload) });
 
@@ -117,3 +120,33 @@ export const apiSubmitReview = (payload) =>
 
 export const apiDeleteReview = (id) =>
     request(`/reviews/${id}`, { method: "DELETE" });
+
+// ══════════════════════════════════════════════════════════════
+//  ADMIN / SYSTEM COLLECTIONS
+// ══════════════════════════════════════════════════════════════
+export const apiGetCategories = () => request("/admin/categories");
+export const apiAddCategory = (payload) =>
+    request("/admin/categories", { method: "POST", body: JSON.stringify(payload) });
+
+export const apiGetBrands = () => request("/admin/brands");
+export const apiAddBrand = (payload) =>
+    request("/admin/brands", { method: "POST", body: JSON.stringify(payload) });
+
+export const apiGetSubscribers = () => request("/admin/subscribers");
+export const apiSubscribe = (email) =>
+    request("/admin/subscribe", { method: "POST", body: JSON.stringify({ email }) });
+
+export const apiGetCoupons = () => request("/admin/coupons");
+export const apiAddCoupon = (payload) =>
+    request("/admin/coupons", { method: "POST", body: JSON.stringify(payload) });
+
+export const apiGetAuditLogs = () => request("/admin/audit-logs");
+
+// ══════════════════════════════════════════════════════════════
+//  PAYMENTS (Razorpay)
+// ══════════════════════════════════════════════════════════════
+export const apiCreateRazorpayOrder = (payload) =>
+    request("/payments/create-order", { method: "POST", body: JSON.stringify(payload) });
+
+export const apiVerifyRazorpayPayment = (payload) =>
+    request("/payments/verify-payment", { method: "POST", body: JSON.stringify(payload) });

@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import "./AdminLogin.css";
+import toast from "react-hot-toast";
 
 export default function AdminLogin() {
   const navigate = useNavigate();
@@ -14,11 +15,13 @@ export default function AdminLogin() {
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(formData.email)) {
-      return alert("❌ Please enter a valid email address!");
+      toast.error("Please enter a valid email address!");
+      return;
     }
 
     if (!formData.password) {
-      return alert("❌ Password cannot be empty!");
+      toast.error("Password cannot be empty!");
+      return;
     }
 
     const adminEmail = "admin@deza.com";
@@ -28,7 +31,8 @@ export default function AdminLogin() {
       formData.email.toLowerCase() !== adminEmail.toLowerCase() ||
       formData.password !== adminPassword
     ) {
-      return alert("❌ Invalid Admin Credentials!");
+      toast.error("Invalid Admin Credentials!");
+      return;
     }
 
     // ✅ Save Admin in LocalStorage
@@ -42,7 +46,7 @@ export default function AdminLogin() {
       }),
     );
 
-    alert("✅ Admin Login Successful!");
+    toast.success("Admin Login Successful! 💎");
     navigate("/admin");
   };
 

@@ -7,6 +7,8 @@ import productRoutes from "./routes/products.js";
 import orderRoutes from "./routes/orders.js";
 import queryRoutes from "./routes/queries.js";
 import reviewRoutes from "./routes/reviews.js";
+import adminRoutes from "./routes/admin.js";
+import paymentRoutes from "./routes/payments.js";
 import compression from "compression";
 
 dotenv.config();
@@ -25,6 +27,8 @@ app.use("/api/products", productRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/queries", queryRoutes);
 app.use("/api/reviews", reviewRoutes);
+app.use("/api/admin", adminRoutes);
+app.use("/api/payments", paymentRoutes);
 
 // Health check
 app.get("/", (req, res) => res.json({ message: "DEZA API is running 🚀" }));

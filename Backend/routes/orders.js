@@ -1,5 +1,7 @@
 import express from "express";
 import Order from "../models/Order.js";
+import AuditLog from "../models/AuditLog.js";
+import { auth, adminOnly } from "../middleware/auth.js";
 import { sendEmail, getBrandedTemplate } from "../utils/emailHelper.js";
 
 const router = express.Router();
@@ -14,9 +16,14 @@ router.get("/", async (req, res) => {
     }
 });
 
-// ─── GET Orders by Customer Email ─────────────────────────────────────────────
-router.get("/my/:email", async (req, res) => {
+// ─── GET Orders by Customer Email (Enforce Privacy) ──────────────────────────
+router.get("/my/:email", auth, async (req, res) => {
     try {
+        // Security check: Only allow users to see their own orders unless they are admin
+        if (req.user.email.toLowerCase() !== req.params.email.toLowerCase() && req.user.role !== "admin") {
+            return res.status(403).json({ error: "Access denied. You can only view your own orders." });
+        }
+
         const orders = await Order.find({ customerEmail: req.params.email }).sort({ createdAt: -1 });
         res.json(orders);
     } catch (err) {
@@ -89,14 +96,19 @@ router.post("/", async (req, res) => {
 });
 
 // ─── PATCH - Update Order Status (Admin) ──────────────────────────────────────
-router.patch("/:id/status", async (req, res) => {
+router.patch("/:id/status", auth, adminOnly, async (req, res) => {
     try {
         const { status } = req.body;
         const oldOrder = await Order.findById(req.params.id);
 
+        const updateData = { status };
+        if (status === "Delivered") {
+            updateData.deliveredAt = new Date();
+        }
+
         const updated = await Order.findByIdAndUpdate(
             req.params.id,
-            { status },
+            updateData,
             { new: true }
         );
         if (!updated) return res.status(404).json({ error: "Order not found." });
@@ -109,9 +121,19 @@ router.patch("/:id/status", async (req, res) => {
                     Current Status: ${status.toUpperCase()}
                 </div>
                 <p>Thank you for choosing DEZA. We hope you enjoy the luxury experience.</p>
+                <p style="font-size: 12px; opacity: 0.7;">Note: Exchange/Return requests are accepted within 48 hours of delivery.</p>
             `);
             sendEmail(updated.customerEmail, `📦 DEZA Order Update: ${status}`, html);
         }
+
+        // ✅ RECORD AUDIT LOG
+        await AuditLog.create({
+            adminId: req.user.id,
+            action: "Update Order",
+            module: "Orders",
+            details: `Updated order ${updated.orderId} status to ${status}`,
+            ipAddress: req.ip || "0.0.0.0"
+        });
 
         res.json(updated);
     } catch (err) {
@@ -135,8 +157,8 @@ router.patch("/:id/cancel", async (req, res) => {
     }
 });
 
-// ─── PATCH - Return Request ────────────────────────────────────────────────────
-router.patch("/:id/return", async (req, res) => {
+// ─── PATCH - Return Request (Linked to Support Query) ──────────────────────────
+router.patch("/:id/return", auth, async (req, res) => {
     try {
         const { returnType, reason, message } = req.body;
         const order = await Order.findById(req.params.id);
@@ -150,14 +172,29 @@ router.patch("/:id/return", async (req, res) => {
             date: new Date().toLocaleString(),
         };
         await order.save();
+
+        // ✅ AUTO-CREATE SUPPORT TICKET FOR ADMIN
+        const SupportTicket = (await import("../models/SupportTicket.js")).default;
+        await SupportTicket.create({
+            name: order.customerName,
+            email: order.customerEmail,
+            message: `Order #${order.orderId}: ${returnType} requested. Reason: ${reason}. Message: ${message}`,
+            ticketType: returnType === "Exchange" ? "Exchange Request" : "Return Request",
+            issueType: reason === "Wrong Product Received" ? "Wrong Product Received" : (reason === "Damaged Product" ? "Damaged Product" : "Other"),
+            orderId: order.orderId,
+            priority: "High",
+            status: "Pending",
+        });
+
         res.json(order);
     } catch (err) {
+        console.error("Return request error:", err);
         res.status(500).json({ error: "Failed to submit return request." });
     }
 });
 
-// ─── PATCH - Refund Request ────────────────────────────────────────────────────
-router.patch("/:id/refund", async (req, res) => {
+// ─── PATCH - Refund Request (Linked to Support Query) ──────────────────────────
+router.patch("/:id/refund", auth, async (req, res) => {
     try {
         const order = await Order.findById(req.params.id);
         if (!order) return res.status(404).json({ error: "Order not found." });
@@ -165,6 +202,20 @@ router.patch("/:id/refund", async (req, res) => {
         order.refundStatus = "Refund Requested";
         order.refundRequestDate = new Date().toLocaleString();
         await order.save();
+
+        // ✅ AUTO-CREATE SUPPORT TICKET FOR ADMIN
+        const SupportTicket = (await import("../models/SupportTicket.js")).default;
+        await SupportTicket.create({
+            name: order.customerName,
+            email: order.customerEmail,
+            message: `Refund requested for Order #${order.orderId}. Status: Delivered.`,
+            ticketType: "Refund Request",
+            issueType: "Other",
+            orderId: order.orderId,
+            priority: "High",
+            status: "Pending",
+        });
+
         res.json(order);
     } catch (err) {
         res.status(500).json({ error: "Failed to submit refund request." });
@@ -172,10 +223,20 @@ router.patch("/:id/refund", async (req, res) => {
 });
 
 // ─── DELETE - Delete Order (Admin) ────────────────────────────────────────────
-router.delete("/:id", async (req, res) => {
+router.delete("/:id", auth, adminOnly, async (req, res) => {
     try {
         const deleted = await Order.findByIdAndDelete(req.params.id);
         if (!deleted) return res.status(404).json({ error: "Order not found." });
+
+        // ✅ RECORD AUDIT LOG
+        await AuditLog.create({
+            adminId: req.user.id,
+            action: "Delete Order",
+            module: "Orders",
+            details: `Deleted order ${deleted.orderId}`,
+            ipAddress: req.ip || "0.0.0.0"
+        });
+
         res.json({ message: "Order deleted." });
     } catch (err) {
         res.status(500).json({ error: "Failed to delete order." });

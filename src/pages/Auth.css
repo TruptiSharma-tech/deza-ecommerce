@@ -97,6 +97,12 @@
   cursor: not-allowed;
 }
 
+.auth-form select option {
+  background-color: #1a1a1a;
+  color: #ffffff;
+  padding: 10px;
+}
+
 .auth-btn {
   padding: 16px;
   border-radius: 14px;

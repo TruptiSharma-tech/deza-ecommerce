@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
 import "./Checkout.css";
 
 export default function Checkout() {
@@ -37,12 +38,12 @@ export default function Checkout() {
   // Validation
   const validateForm = () => {
     if (!name || name.trim().length === 0 || !/^[a-zA-Z\s]+$/.test(name)) {
-      alert("⚠ Enter a valid full name!");
+      toast.error("Enter a valid full name!");
       return false;
     }
 
     if (!phone || !/^\d{10}$/.test(phone)) {
-      alert("⚠ Enter a valid 10-digit phone number!");
+      toast.error("Enter a valid 10-digit phone number!");
       return false;
     }
 
@@ -52,17 +53,17 @@ export default function Checkout() {
       !address.state || !address.state.trim() ||
       !address.pincode || !address.pincode.trim()
     ) {
-      alert("⚠ Please fill complete shipping address!");
+      toast.error("Please fill complete shipping address!");
       return false;
     }
 
     if (!/^\d{6}$/.test(address.pincode)) {
-      alert("⚠ Enter valid 6-digit pincode!");
+      toast.error("Enter valid 6-digit pincode!");
       return false;
     }
 
     if (cart.length === 0) {
-      alert("⚠ Cart is empty!");
+      toast.error("Cart is empty!");
       return false;
     }
 

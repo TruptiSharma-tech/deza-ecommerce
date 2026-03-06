@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import toast from "react-hot-toast";
 import { useAuth } from "../context/AuthContext";
 import { apiLogin } from "../utils/api";
 import "./Auth.css";
@@ -32,7 +33,7 @@ export default function Login() {
     try {
       const data = await apiLogin({ email: email.trim(), password });
       login(data.user, data.token);
-      alert("✅ Login Successful! Welcome back.");
+      toast.success("Login Successful! Welcome back. ✨");
       navigate("/");
     } catch (err) {
       setError("❌ " + (err.message || "Invalid Credentials!"));

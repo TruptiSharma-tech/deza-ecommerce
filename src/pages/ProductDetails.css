@@ -41,18 +41,65 @@
 }
 
 /* IMAGE */
+.pd-img-container {
+  flex: 0 0 500px;
+  /* Fixed width of 500px */
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 500px;
+}
+
 .pd-img {
-  flex: 1;
+  width: 100%;
+  overflow: hidden;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
 }
 
 .main-image {
-  width: 100%;
-  border-radius: 20px;
-  transition: 0.4s ease;
+  width: 500px;
+  height: 900px;
+  object-fit: cover;
+  transition: 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  display: block;
 }
 
-.main-image:hover {
-  transform: scale(1.05);
+.pd-img:hover .main-image {
+  transform: scale(1.1);
+}
+
+.pd-thumbnails {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin-top: 10px;
+}
+
+.thumb-item {
+  width: 60px;
+  height: 60px;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: 0.3s ease;
+  opacity: 0.6;
+}
+
+.thumb-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.thumb-item:hover,
+.thumb-item.active {
+  opacity: 1;
+  border-color: var(--gold);
+  transform: translateY(-3px);
+  box-shadow: 0 5px 15px rgba(212, 175, 55, 0.3);
 }
 
 /* INFO */
@@ -71,6 +118,121 @@
   font-weight: 800;
   color: var(--gold);
   margin: 15px 0;
+}
+
+/* SIMPLIFIED DEZA CONTENT STYLE */
+.pd-content-wrapper {
+  margin: 30px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+}
+
+.pd-section-group h3 {
+  font-size: 20px;
+  color: var(--gold);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 15px;
+  border-bottom: 2px solid rgba(212, 175, 55, 0.2);
+  padding-bottom: 8px;
+  display: inline-block;
+}
+
+.deza-raw-text {
+  font-size: 16px;
+  line-height: 1.8;
+  color: rgba(255, 255, 255, 0.9);
+  white-space: pre-wrap;
+  /* Preserve line breaks and emojis 💎 */
+  margin: 0;
+}
+
+.fragrance-notes-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.note-item-simple {
+  background: rgba(255, 255, 255, 0.03);
+  padding: 15px;
+  border-radius: 12px;
+  border-left: 4px solid var(--gold);
+}
+
+.note-item-simple b {
+  color: var(--gold);
+  display: block;
+  margin-bottom: 4px;
+}
+
+/* DELIVERY CHECKER */
+.pd-delivery-checker {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 20px;
+  padding: 25px;
+  margin: 40px 0;
+  box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.2);
+}
+
+.pd-delivery-checker h4 {
+  margin: 0 0 10px 0;
+  font-size: 18px;
+  color: var(--gold);
+  font-family: 'Poppins', sans-serif;
+}
+
+.truck-icon {
+  margin-right: 8px;
+}
+
+.est-standard {
+  font-size: 12px;
+  opacity: 0.6;
+  margin-bottom: 15px;
+}
+
+.pincode-wrapper {
+  display: flex;
+  gap: 10px;
+}
+
+.pincode-wrapper input {
+  flex: 1;
+  background: #111;
+  border: 1px solid #333;
+  padding: 10px 15px;
+  border-radius: 8px;
+  color: white;
+  outline: none;
+}
+
+.pincode-wrapper button {
+  background: var(--gold);
+  color: #111;
+  border: none;
+  padding: 0 20px;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: 0.3s ease;
+}
+
+.pincode-wrapper button:hover {
+  background: var(--gold-dark);
+}
+
+.delivery-response {
+  margin-top: 12px;
+  font-size: 14px;
+  color: #25d366;
+  font-weight: 500;
+}
+
+.delivery-response.err {
+  color: #ff4d4d;
 }
 
 /* SIZE */

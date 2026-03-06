@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
 import "./ProductDetails.css";
 import { FaHeart, FaRegHeart, FaShoppingCart, FaStar } from "react-icons/fa";
 import { FaWhatsapp } from "react-icons/fa";
@@ -87,7 +88,7 @@ export default function ProductDetails() {
 
   const checkLogin = () => {
     if (!currentUser) {
-      alert("⚠️ Please Login First to Continue!");
+      toast.error("Please Login First to Continue!");
       navigate("/login");
       return false;
     }
@@ -120,7 +121,7 @@ export default function ProductDetails() {
     localStorage.setItem("deza_cart", JSON.stringify(cart));
     // ✅ Trigger navbar update
     window.dispatchEvent(new Event("cartUpdate"));
-    alert("✅ Added to Cart!");
+    toast.success("Added to Cart! 🛒");
   };
 
   const handleBuyNow = () => {
@@ -165,14 +166,14 @@ Please confirm my order.`;
       );
       localStorage.setItem("deza_wishlist", JSON.stringify(updated));
       setWish(false);
-      alert("💔 Removed from Wishlist!");
+      toast.success("Removed from Wishlist! 💔");
       return;
     }
 
     wishlist.push(product);
     localStorage.setItem("deza_wishlist", JSON.stringify(wishlist));
     setWish(true);
-    alert("❤️ Added to Wishlist!");
+    toast.success("Added to Wishlist! ❤️");
   };
 
   // ⭐ Image Upload
@@ -190,13 +191,13 @@ Please confirm my order.`;
   // ⭐ Submit Review
   const handleReviewSubmit = async () => {
     if (!currentUser) {
-      alert("Please login to submit review");
+      toast.error("Please login to submit review");
       navigate("/login");
       return;
     }
 
     if (stars === 0) {
-      alert("Please select rating");
+      toast.error("Please select rating");
       return;
     }
 
@@ -218,27 +219,28 @@ Please confirm my order.`;
       setComment("");
       setPreviewImage(null);
 
-      alert("⭐ Review Submitted!");
+      toast.success("Review Submitted! ⭐");
     } catch (err) {
       console.error("Review failed:", err);
-      alert("Failed to submit review. Please try again.");
+      toast.error("Failed to submit review. Please try again.");
     }
   };
 
   const checkDelivery = () => {
-    if (!pincode || pincode.length !== 6) {
-      setDeliveryMessage("Please enter valid 6 digit pincode");
+    if (!pincode || pincode.length !== 6 || isNaN(pincode)) {
+      setDeliveryMessage("❌ Please enter a valid 6-digit pincode.");
       return;
     }
 
+    // Dynamic Delivery Estimation Logic
     const firstDigit = pincode[0];
 
     if (["4", "5"].includes(firstDigit)) {
-      setDeliveryMessage("🚀 Fast Delivery: 3 - 5 Business Days");
-    } else if (["6", "7"].includes(firstDigit)) {
-      setDeliveryMessage("Estimated Delivery: 5 - 7 Business Days");
+      setDeliveryMessage("🚚 Fast Delivery: 4 - 6 Business Days");
+    } else if (["1", "2", "3", "6"].includes(firstDigit)) {
+      setDeliveryMessage("📦 Standard Delivery: 6 - 8 Business Days");
     } else {
-      setDeliveryMessage("Estimated Delivery: 7 - 10 Business Days");
+      setDeliveryMessage("🌍 Regional Delivery: 8 - 10 Business Days");
     }
   };
 
@@ -247,12 +249,29 @@ Please confirm my order.`;
       <h1 className="pd-top-title">{product.title}</h1>
 
       <div className="pd-card">
-        <div className="pd-img">
-          <img
-            src={product.images?.[currentImageIndex]}
-            alt={product.title}
-            className="main-image"
-          />
+        <div className="pd-img-container">
+          <div className="pd-img">
+            <img
+              src={product.images?.[currentImageIndex]}
+              alt={product.title}
+              className="main-image"
+            />
+          </div>
+
+          {/* Thumbnails / POV Gallery */}
+          {product.images?.length > 1 && (
+            <div className="pd-thumbnails">
+              {product.images.map((img, idx) => (
+                <div
+                  key={idx}
+                  className={`thumb-item ${currentImageIndex === idx ? "active" : ""}`}
+                  onClick={() => setCurrentImageIndex(idx)}
+                >
+                  <img src={img} alt={`pov-${idx}`} />
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="pd-info">
@@ -270,22 +289,37 @@ Please confirm my order.`;
 
           <p className="pd-price">₹{finalPrice}</p>
 
-          {/* Description */}
-          <div className="pd-section">
-            <h3>Description</h3>
-            <p>
-              {product.description ||
-                "A premium luxury fragrance crafted to leave an unforgettable impression."}
-            </p>
+          {/* Description & Fragrance Notes */}
+          <div className="pd-content-wrapper">
+            <div className="pd-section-group">
+              <h3>Description</h3>
+              <p className="deza-raw-text">
+                {product.description || "A masterfully balanced luxury composition."}
+              </p>
+            </div>
+
+            <div className="pd-section-group">
+              <h3>Fragrance Notes</h3>
+              <p className="deza-raw-text">
+                {product.fragrance || "No notes provided."}
+              </p>
+            </div>
           </div>
 
-          {/* Fragrance Notes */}
-          <div className="pd-section">
-            <h3>Fragrance Notes</h3>
-            <p>
-              {product.fragrance ||
-                "Top Notes: Fresh Citrus | Heart Notes: Floral | Base Notes: Woody & Musk"}
-            </p>
+          {/* Delivery Checker */}
+          <div className="pd-delivery-checker">
+            <h4><span className="truck-icon">🚚</span> Delivery Details</h4>
+            <p className="est-standard">Estimated Delivery: 7 - 10 Days (Standard)</p>
+            <div className="pincode-wrapper">
+              <input
+                type="text"
+                placeholder="Enter Pincode"
+                value={pincode}
+                onChange={(e) => setPincode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+              />
+              <button onClick={checkDelivery}>Check</button>
+            </div>
+            {deliveryMessage && <div className={`delivery-response ${deliveryMessage.includes("❌") ? "err" : ""}`}>{deliveryMessage}</div>}
           </div>
 
           {/* Size */}
