@@ -22,7 +22,7 @@ export default function AdminLogin() {
     }
 
     const adminEmail = "admin@deza.com";
-    const adminPassword = "Deza@123";
+    const adminPassword = "Admin@Deza2026!";
 
     if (
       formData.email.toLowerCase() !== adminEmail.toLowerCase() ||

@@ -1,7 +1,8 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import "./Navbar.css";
-import { FaShoppingCart, FaUserCircle, FaHeart } from "react-icons/fa";
+import { FaUserCircle, FaHeart } from "react-icons/fa";
+import { ShoppingCart } from "lucide-react";
 import AccountSidebar from "./AccountSidebar";
 
 export default function Navbar() {
@@ -78,7 +79,7 @@ export default function Navbar() {
                   onClick={() => navigate("/cart")}
                   title="Cart"
                 >
-                  <FaShoppingCart className="nav-icon" />
+                  <ShoppingCart className="nav-icon" color="white" strokeWidth={1.5} size={26} />
                   {cartCount > 0 && <span className="cart-badge">{cartCount}</span>}
                 </button>
               </>

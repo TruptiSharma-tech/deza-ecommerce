@@ -34,26 +34,17 @@ async function setup() {
     await Review.createCollection();
     console.log("Created reviews collection.");
 
-    // 2. Re-create the 2 admins so you are not locked out
-    const h1 = await bcrypt.hash("Admin@123", 10);
+    // 2. Re-create the single master admin
+    const h1 = await bcrypt.hash("Admin@Deza2026!", 10);
     await User.create({
-        name: "Vanshika",
+        name: "DEZA Admin",
         email: "admin@deza.com",
         password: h1,
         role: "admin",
         verifiedAt: new Date().toISOString(),
     });
 
-    const h2 = await bcrypt.hash("Trupti@1919", 10);
-    await User.create({
-        name: "Trupti",
-        email: "truptisharma1919@gmail.com",
-        password: h2,
-        role: "admin",
-        verifiedAt: new Date().toISOString(),
-    });
-
-    console.log("Created 2 admins so login works. Everything else is EMPTY.");
+    console.log("Created 1 master admin so login works. Everything else is EMPTY.");
     process.exit(0);
 }
 

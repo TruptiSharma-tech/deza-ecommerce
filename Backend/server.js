@@ -7,12 +7,14 @@ import productRoutes from "./routes/products.js";
 import orderRoutes from "./routes/orders.js";
 import queryRoutes from "./routes/queries.js";
 import reviewRoutes from "./routes/reviews.js";
+import compression from "compression";
 
 dotenv.config();
 
 const app = express();
 
 // ─── Middleware ────────────────────────────────────────────────────────────────
+app.use(compression()); // ✅ Reduce API payload size by up to 80% for faster load times!
 app.use(cors({ origin: "*" }));
 app.use(express.json({ limit: "50mb" })); // large base64 images
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));
@@ -37,9 +39,12 @@ if (!MONGO_URI) {
 }
 
 mongoose
-    .connect(MONGO_URI)
+    .connect(MONGO_URI, {
+        serverSelectionTimeoutMS: 5000,
+        maxPoolSize: 50,
+    })
     .then(() => {
-        console.log("✅ MongoDB Connected Successfully!");
+        console.log("✅ MongoDB Atlas Connected Successfully!");
         app.listen(PORT, () => console.log(`🚀 Server running on http://localhost:${PORT}`));
     })
     .catch((err) => {
