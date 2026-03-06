@@ -796,9 +796,12 @@ export default function Admin() {
             {orders.length > 0 && (
               <div className="live-ticker-container">
                 <div className="live-ticker-label">LATEST SALES</div>
-                <marquee className="live-ticker-text">
-                  {recentSalesTicker || "Waiting for new orders..."}
-                </marquee>
+                <div className="live-ticker-wrapper">
+                  <div className="live-ticker-text-move">
+                    {recentSalesTicker || "Waiting for new orders..."}
+                    {recentSalesTicker && ` • ${recentSalesTicker}`}
+                  </div>
+                </div>
               </div>
             )}
 
