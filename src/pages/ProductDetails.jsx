@@ -50,14 +50,23 @@ export default function ProductDetails() {
         }
       }
 
-      // 2. Fetch Reviews
-      const revs = await apiGetProductReviews(id);
-      setReviews(revs || []);
+      // 2. Fetch Reviews (Optional - don't crash if it fails)
+      try {
+        const revs = await apiGetProductReviews(id);
+        setReviews(revs || []);
+      } catch (revErr) {
+        console.error("Failed to load reviews:", revErr);
+        setReviews([]);
+      }
 
-      // 3. Wishlist check
-      const wishlist = JSON.parse(localStorage.getItem("deza_wishlist")) || [];
-      const exists = wishlist.find((x) => String(x._id) === String(id));
-      setWish(!!exists);
+      // 3. Wishlist check (Optional)
+      try {
+        const wishlist = JSON.parse(localStorage.getItem("deza_wishlist")) || [];
+        const exists = wishlist.find((x) => String(x?._id) === String(id));
+        setWish(!!exists);
+      } catch (wishErr) {
+        console.error("Wishlist check failed:", wishErr);
+      }
 
       setCurrentImageIndex(0);
     } catch (err) {

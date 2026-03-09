@@ -11,7 +11,8 @@ router.get("/", async (req, res) => {
         const products = await Product.find().sort({ createdAt: -1 });
         res.json(products);
     } catch (err) {
-        res.status(500).json({ error: "Failed to fetch products." });
+        console.error("DEBUG: Failed to fetch products:", err);
+        res.status(500).json({ error: "Failed to fetch products.", details: err.message });
     }
 });
 
@@ -22,14 +23,19 @@ router.get("/:id", async (req, res) => {
         if (!product) return res.status(404).json({ error: "Product not found." });
         res.json(product);
     } catch (err) {
+        console.error(`DEBUG: Failed to fetch product ${req.params.id}:`, err);
         // try with numeric id as fallback
         try {
             const allProducts = await Product.find();
             const product = allProducts.find(p => String(p._id) === req.params.id);
-            if (!product) return res.status(404).json({ error: "Product not found." });
+            if (!product) {
+                console.log(`DEBUG: Product ${req.params.id} not found even in fallback.`);
+                return res.status(404).json({ error: "Product not found." });
+            }
             res.json(product);
-        } catch {
-            res.status(500).json({ error: "Failed to fetch product." });
+        } catch (fallbackErr) {
+            console.error("DEBUG: Fallback fetch failed:", fallbackErr);
+            res.status(500).json({ error: "Failed to fetch product.", details: fallbackErr.message });
         }
     }
 });

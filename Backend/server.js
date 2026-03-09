@@ -44,7 +44,7 @@ if (!MONGO_URI) {
 
 mongoose
     .connect(MONGO_URI, {
-        serverSelectionTimeoutMS: 5000,
+        serverSelectionTimeoutMS: 30000,
         maxPoolSize: 50,
     })
     .then(() => {
