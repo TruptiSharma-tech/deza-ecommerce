@@ -6,6 +6,15 @@ import { sendEmail, getBrandedTemplate } from "../utils/emailHelper.js";
 
 const router = express.Router();
 
+// Helper for logging
+const logAdminAction = async (adminId, action, module, details, ip) => {
+    try {
+        await AuditLog.create({ adminId, action, module, details, ipAddress: ip || "0.0.0.0" });
+    } catch (err) {
+        console.error(`FAILED TO LOG ${action}:`, err);
+    }
+};
+
 // ─── GET All Tickets (Admin) ───────────────────────────────────────────────────
 router.get("/", auth, adminOnly, async (req, res) => {
     try {
@@ -21,9 +30,10 @@ router.get("/my/:email", auth, async (req, res) => {
     try {
         const searchEmail = req.params.email.toLowerCase().trim();
 
-        // Security check: Match logged-in user email
-        if (req.user.email.toLowerCase() !== searchEmail && req.user.role !== "admin") {
-            return res.status(403).json({ error: "Access denied. You can only view your own tickets." });
+        // Security check
+        const adminRoles = ["superadmin", "manager", "support", "admin"];
+        if (req.user.email.toLowerCase() !== searchEmail && !adminRoles.includes(req.user.role)) {
+            return res.status(403).json({ error: "Access denied." });
         }
 
         const tickets = await SupportTicket.find({ email: searchEmail }).sort({ createdAt: -1 });
@@ -53,19 +63,8 @@ router.post("/", async (req, res) => {
             status: "Pending",
         });
 
-        // Send Confirmation Email
-        const html = getBrandedTemplate("Ticket Received 🎫", `
-            <p>Hello ${name},</p>
-            <p>We have successfully received your support request [${newTicket.ticketType}].</p>
-            <blockquote style="background: #f0f0f0; padding: 15px; border-radius: 5px;">"${message}"</blockquote>
-            <p>Ticket ID: <strong>DZ-TK-${String(newTicket._id).slice(-6).toUpperCase()}</strong></p>
-            <p>Our team will get back to you shortly.</p>
-        `);
-        await sendEmail(email, `🎫 DEZA Support Ticket: ${newTicket.ticketType}`, html);
-
         res.status(201).json(newTicket);
     } catch (err) {
-        console.error("Ticket submission error:", err);
         res.status(500).json({ error: "Failed to submit support ticket." });
     }
 });
@@ -73,29 +72,10 @@ router.post("/", async (req, res) => {
 // ─── PATCH - Update Status (Admin) ─────────────────────────────────────────────
 router.patch("/:id", auth, adminOnly, async (req, res) => {
     try {
-        const ticketBefore = await SupportTicket.findById(req.params.id);
         const updated = await SupportTicket.findByIdAndUpdate(req.params.id, req.body, { new: true });
         if (!updated) return res.status(404).json({ error: "Ticket not found." });
 
-        if (req.body.status && req.body.status !== ticketBefore.status) {
-            const html = getBrandedTemplate(`Ticket Status: ${req.body.status} 📊`, `
-                <p>Hello ${updated.name},</p>
-                <p>The status of your support ticket <strong>DZ-TK-${String(updated._id).slice(-6).toUpperCase()}</strong> has been updated to:</p>
-                <div style="background: #1a1a1a; color: #d4af37; padding: 15px; text-align: center; border-radius: 8px; font-weight: bold; font-size: 20px;">
-                    ${req.body.status.toUpperCase()}
-                </div>
-            `);
-            await sendEmail(updated.email, `📊 Ticket Status Updated: ${req.body.status}`, html);
-        }
-
-        await AuditLog.create({
-            adminId: req.user.id,
-            action: "Update Support Ticket",
-            module: "Support",
-            details: `Updated ticket ${updated._id} status to ${updated.status}`,
-            ipAddress: req.ip || "0.0.0.0"
-        });
-
+        await logAdminAction(req.user.id, "Update Status", "Support", `Updated ticket ${updated._id} to ${updated.status}`, req.ip);
         res.json(updated);
     } catch (err) {
         res.status(500).json({ error: "Failed to update ticket." });
@@ -120,23 +100,7 @@ router.patch("/:id/reply", auth, adminOnly, async (req, res) => {
         );
         if (!updated) return res.status(404).json({ error: "Ticket not found." });
 
-        await AuditLog.create({
-            adminId: req.user.id,
-            action: "Support Reply",
-            module: "Support",
-            details: `Replied to ticket from ${updated.email}`,
-            ipAddress: req.ip || "0.0.0.0"
-        });
-
-        const html = getBrandedTemplate("Support Ticket Resolved ✅", `
-            <p>Hello ${updated.name},</p>
-            <p>Our team has responded to your ticket:</p>
-            <div style="background: #fdfaf0; border-left: 4px solid #d4af37; padding: 15px; margin: 20px 0;">
-                <p>${adminReply}</p>
-            </div>
-        `);
-        await sendEmail(updated.email, "✅ DEZA Support Reply", html);
-
+        await logAdminAction(req.user.id, "Support Reply", "Support", `Replied to ${updated.email}`, req.ip);
         res.json(updated);
     } catch (err) {
         res.status(500).json({ error: "Failed to send reply." });
@@ -153,28 +117,9 @@ router.post("/:id/refund", auth, adminOnly, async (req, res) => {
         ticket.resolved = true;
         await ticket.save();
 
-        // ✅ RECORD AUDIT LOG
-        await AuditLog.create({
-            adminId: req.user.id,
-            action: "Initiate Refund",
-            module: "Finance",
-            details: `Refund processed for ticket ${ticket._id}`,
-            ipAddress: req.ip || "0.0.0.0"
-        });
-
-        // Send Refund Confirmation Email with 24h promise
-        const html = getBrandedTemplate("Refund Initiated 💸", `
-            <p>Hello ${ticket.name},</p>
-            <p>This email is to confirm that a refund has been initiated for your support ticket <strong>DZ-TK-${String(ticket._id).slice(-6).toUpperCase()}</strong>.</p>
-            <p style="font-size: 18px; color: #d4af37; font-weight: bold;">💎 DEZA Promise: 24-Hour Refund Timeline</p>
-            <p>As per our premium service policy, the amount will be credited back to your original payment method within <strong>24 business hours</strong>.</p>
-            <p>Thank you for your patience and for choosing DEZA Luxury.</p>
-        `);
-        await sendEmail(ticket.email, "💸 DEZA Refund Initiated (24-Hour Promise)", html);
-
-        res.json({ message: "Refund initiated and email sent.", ticket });
+        await logAdminAction(req.user.id, "Initiate Refund", "Finance", `Refund for ticket ${ticket._id}`, req.ip);
+        res.json({ message: "Refund initiated.", ticket });
     } catch (err) {
-        console.error("Refund error:", err);
         res.status(500).json({ error: "Failed to process refund." });
     }
 });
@@ -185,14 +130,7 @@ router.delete("/:id", auth, adminOnly, async (req, res) => {
         const deleted = await SupportTicket.findByIdAndDelete(req.params.id);
         if (!deleted) return res.status(404).json({ error: "Ticket not found." });
 
-        await AuditLog.create({
-            adminId: req.user.id,
-            action: "Delete Support Ticket",
-            module: "Support",
-            details: `Deleted ticket from ${deleted.email}`,
-            ipAddress: req.ip || "0.0.0.0"
-        });
-
+        await logAdminAction(req.user.id, "Delete Ticket", "Support", `Deleted ticket from ${deleted.email}`, req.ip);
         res.json({ message: "Ticket deleted." });
     } catch (err) {
         res.status(500).json({ error: "Failed to delete ticket." });

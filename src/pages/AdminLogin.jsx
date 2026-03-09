@@ -2,15 +2,18 @@ import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import "./AdminLogin.css";
 import toast from "react-hot-toast";
+import { apiAdminLogin } from "../utils/api";
+import { useAuth } from "../context/AuthContext";
 
 export default function AdminLogin() {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [formData, setFormData] = useState({ email: "", password: "" });
 
   const handleChange = (e) =>
     setFormData({ ...formData, [e.target.name]: e.target.value });
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -24,30 +27,23 @@ export default function AdminLogin() {
       return;
     }
 
-    const adminEmail = "admin@deza.com";
-    const adminPassword = "Admin@Deza2026!";
+    try {
+      const response = await apiAdminLogin({
+        email: formData.email,
+        password: formData.password
+      });
 
-    if (
-      formData.email.toLowerCase() !== adminEmail.toLowerCase() ||
-      formData.password !== adminPassword
-    ) {
-      toast.error("Invalid Admin Credentials!");
-      return;
+      // ✅ Use AuthContext Login helper
+      login({
+        ...response.user,
+        isAdmin: true
+      }, response.token);
+
+      toast.success("Admin Login Successful! 💎");
+      navigate("/admin");
+    } catch (err) {
+      toast.error(err.message || "Invalid Admin Credentials!");
     }
-
-    // ✅ Save Admin in LocalStorage
-    localStorage.setItem(
-      "currentUser",
-      JSON.stringify({
-        name: "DEZA Admin",
-        email: adminEmail,
-        role: "admin",
-        isAdmin: true, // ⭐ IMPORTANT LINE
-      }),
-    );
-
-    toast.success("Admin Login Successful! 💎");
-    navigate("/admin");
   };
 
   return (

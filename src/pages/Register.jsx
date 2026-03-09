@@ -40,9 +40,9 @@ export default function Register() {
       setUiMessage("❌ Please enter a valid email address!");
       return;
     }
-    const strongPasswordRegex = /^(?=.*[0-9])(?=.*[!@#$%^&*])[a-zA-Z0-9!@#$%^&*]{8,}$/;
+    const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
     if (!formData.password || !strongPasswordRegex.test(formData.password)) {
-      setUiMessage("❌ Password must be min 8 chars with 1 number and 1 special character.");
+      setUiMessage("❌ Password must be min 8 chars with uppercase, lowercase, number, and special character.");
       return;
     }
 
@@ -94,6 +94,36 @@ export default function Register() {
     }
   };
 
+  const generateStrongPassword = () => {
+    const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+~`|}{[]:;?><,./-=";
+    let password = "";
+    // Ensure at least one of each required type
+    password += "ABCDEFGHIJKLMNOPQRSTUVWXYZ"[Math.floor(Math.random() * 26)];
+    password += "abcdefghijklmnopqrstuvwxyz"[Math.floor(Math.random() * 26)];
+    password += "0123456789"[Math.floor(Math.random() * 10)];
+    password += "!@#$%^&*()"[Math.floor(Math.random() * 10)];
+
+    for (let i = 0; i < 12; i++) {
+      password += charset[Math.floor(Math.random() * charset.length)];
+    }
+
+    // Shuffle the characters
+    password = password.split('').sort(() => 0.5 - Math.random()).join('');
+
+    setFormData({ ...formData, password });
+    toast.success("Strong password generated! Make sure to save it.");
+  };
+
+  const getPasswordStrength = (pass) => {
+    if (!pass) return 0;
+    let strength = 0;
+    if (pass.length >= 8) strength++;
+    if (/[A-Z]/.test(pass)) strength++;
+    if (/[0-9]/.test(pass)) strength++;
+    if (/[^A-Za-z0-9]/.test(pass)) strength++;
+    return strength;
+  };
+
   const handleResetOtp = () => {
     if (timerRef.current) clearInterval(timerRef.current);
     setOtpSent(false);
@@ -123,6 +153,10 @@ export default function Register() {
       setLoading(false);
     }
   };
+
+  const strength = getPasswordStrength(formData.password);
+  const strengthColors = ["#666", "#f44336", "#ff9800", "#ffc107", "#4caf50"];
+  const strengthLabels = ["Empty", "Very Weak", "Weak", "Medium", "Strong"];
 
   return (
     <div className="auth-page">
@@ -164,15 +198,56 @@ export default function Register() {
             required
             disabled={otpSent && !otpVerified}
           />
-          <input
-            type="password"
-            name="password"
-            placeholder="Create Password"
-            value={formData.password}
-            onChange={handleChange}
-            required
-            disabled={otpSent && !otpVerified}
-          />
+
+          <div className="password-wrapper" style={{ position: 'relative' }}>
+            <input
+              type="password"
+              name="password"
+              placeholder="Create Password"
+              value={formData.password}
+              onChange={handleChange}
+              required
+              disabled={otpSent && !otpVerified}
+            />
+            <button
+              type="button"
+              className="suggest-pass-btn"
+              onClick={generateStrongPassword}
+              style={{
+                position: 'absolute',
+                right: '10px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                background: 'none',
+                border: 'none',
+                color: '#d4af37',
+                fontSize: '12px',
+                cursor: 'pointer',
+                fontWeight: '600'
+              }}
+            >
+              Suggest ✨
+            </button>
+          </div>
+
+          {formData.password && (
+            <div className="strength-meter" style={{ marginBottom: '15px', marginTop: '-10px' }}>
+              <div style={{ display: 'flex', gap: '4px', marginBottom: '4px' }}>
+                {[1, 2, 3, 4].map(i => (
+                  <div key={i} style={{
+                    height: '4px',
+                    flex: 1,
+                    background: i <= strength ? strengthColors[strength] : '#eee',
+                    borderRadius: '2px',
+                    transition: '0.3s'
+                  }} />
+                ))}
+              </div>
+              <span style={{ fontSize: '11px', color: strengthColors[strength], fontWeight: 'bold' }}>
+                {strengthLabels[strength]}
+              </span>
+            </div>
+          )}
 
           <div className="otp-section">
             <div className="contact-input-wrapper">

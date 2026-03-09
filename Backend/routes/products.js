@@ -5,101 +5,110 @@ import { auth, adminOnly } from "../middleware/auth.js";
 
 const router = express.Router();
 
+// Helper for logging
+const logAdminAction = async (adminId, action, module, details, ip) => {
+    try {
+        await AuditLog.create({ adminId, action, module, details, ipAddress: ip || "0.0.0.0" });
+    } catch (err) {
+        console.error(`FAILED TO LOG ${action}:`, err);
+    }
+};
+
 // ─── GET All Products ──────────────────────────────────────────────────────────
 router.get("/", async (req, res) => {
     try {
-        const products = await Product.find().sort({ createdAt: -1 });
-        res.json(products);
+        const { category, brand, featured } = req.query;
+        let query = { isActive: true };
+
+        if (category) query.category = category;
+        if (brand) query.brand = brand;
+        if (featured) query.isFeatured = featured === "true";
+
+        const products = await Product.find(query)
+            .populate("category brand")
+            .sort({ createdAt: -1 });
+
+        // Map field names for frontend compatibility (e.g., mainImage -> image)
+        const mapped = products.map(p => {
+            const obj = p.toObject();
+            obj.image = obj.mainImage;
+            return obj;
+        });
+
+        res.json(mapped);
     } catch (err) {
-        console.error("DEBUG: Failed to fetch products:", err);
-        res.status(500).json({ error: "Failed to fetch products.", details: err.message });
+        res.status(500).json({ error: "Failed to fetch products." });
     }
 });
 
 // ─── GET Single Product ────────────────────────────────────────────────────────
 router.get("/:id", async (req, res) => {
     try {
-        const product = await Product.findById(req.params.id);
-        if (!product) return res.status(404).json({ error: "Product not found." });
-        res.json(product);
-    } catch (err) {
-        console.error(`DEBUG: Failed to fetch product ${req.params.id}:`, err);
-        // try with numeric id as fallback
-        try {
-            const allProducts = await Product.find();
-            const product = allProducts.find(p => String(p._id) === req.params.id);
-            if (!product) {
-                console.log(`DEBUG: Product ${req.params.id} not found even in fallback.`);
-                return res.status(404).json({ error: "Product not found." });
-            }
-            res.json(product);
-        } catch (fallbackErr) {
-            console.error("DEBUG: Fallback fetch failed:", fallbackErr);
-            res.status(500).json({ error: "Failed to fetch product.", details: fallbackErr.message });
+        const product = await Product.findById(req.params.id).populate("category brand");
+        if (!product) {
+            // Try by slug
+            const bySlug = await Product.findOne({ slug: req.params.id }).populate("category brand");
+            if (!bySlug) return res.status(404).json({ error: "Product not found." });
+            const obj = bySlug.toObject();
+            obj.image = obj.mainImage;
+            return res.json(obj);
         }
+        const obj = product.toObject();
+        obj.image = obj.mainImage;
+        res.json(obj);
+    } catch (err) {
+        res.status(500).json({ error: "Failed to fetch product." });
     }
 });
 
 // ─── POST - Add Product ────────────────────────────────────────────────────────
 router.post("/", auth, adminOnly, async (req, res) => {
     try {
-        const { title, description, fragrance, categories, types, sizePrices, stock, images, image } =
-            req.body;
+        const {
+            title, description, fragrance, category, brand, types,
+            sizePrices, stock, images, image, discountPrice, sku, isFeatured
+        } = req.body;
 
-        if (!title || !categories || !types || !sizePrices) {
-            return res.status(400).json({ error: "Missing required fields." });
+        if (!title || !sizePrices) {
+            return res.status(400).json({ error: "Title and sizePrices are required." });
         }
 
         const newProduct = await Product.create({
             title: title.trim(),
             description: description || "",
+            sku: sku || `DZ-${Date.now()}`,
             fragrance: fragrance || "",
-            categories: categories || [],
+            category: category || null,
+            brand: brand || null,
             types: types || [],
             sizePrices: sizePrices || [],
+            discountPrice: Number(discountPrice) || 0,
             stock: Number(stock) || 0,
-            sold: 0,
             images: images || [],
-            image: image || (images && images[0]) || "",
+            mainImage: image || (images && images[0]) || "",
+            isFeatured: isFeatured || false,
         });
 
-        // ✅ RECORD AUDIT LOG
-        await AuditLog.create({
-            adminId: req.user.id,
-            action: "Add Product",
-            module: "Products",
-            details: `Added new product: ${title}`,
-            ipAddress: req.ip || "0.0.0.0"
-        });
-
+        await logAdminAction(req.user.id, "Add Product", "Products", `Added: ${title}`, req.ip);
         res.status(201).json(newProduct);
     } catch (err) {
         console.error("Add product error:", err);
-        res.status(500).json({ error: "Failed to add product." });
+        res.status(500).json({ error: "Failed to add product.", details: err.message });
     }
 });
 
 // ─── PUT - Update Product ──────────────────────────────────────────────────────
 router.put("/:id", auth, adminOnly, async (req, res) => {
     try {
+        // Map 'image' to 'mainImage' if present
+        if (req.body.image) {
+            req.body.mainImage = req.body.image;
+        }
+
         const updated = await Product.findByIdAndUpdate(req.params.id, req.body, { new: true });
         if (!updated) return res.status(404).json({ error: "Product not found." });
 
-        // ✅ RECORD AUDIT LOG
-        console.log("DEBUG: ATTEMPTING AUDIT LOG FOR UPDATE...", { admin: req.user?.id, email: req.user?.email });
-        try {
-            const logEntry = await AuditLog.create({
-                adminId: req.user.id,
-                action: "Update Product",
-                module: "Products",
-                details: `Updated product: ${updated.title}`,
-                ipAddress: req.ip || "0.0.0.0"
-            });
-            console.log("✅ AUDIT LOG CREATED:", logEntry._id);
-        } catch (logErr) {
-            console.error("❌ AUDIT LOG CREATION FAILED:", logErr);
-        }
-
+        await logAdminAction(req.user.id, "Update Product", "Products", `Updated: ${updated.title}`, req.ip);
         res.json(updated);
     } catch (err) {
         res.status(500).json({ error: "Failed to update product." });
@@ -112,18 +121,11 @@ router.delete("/:id", auth, adminOnly, async (req, res) => {
         const deleted = await Product.findByIdAndDelete(req.params.id);
         if (!deleted) return res.status(404).json({ error: "Product not found." });
 
-        // ✅ RECORD AUDIT LOG
-        await AuditLog.create({
-            adminId: req.user.id,
-            action: "Delete Product",
-            module: "Products",
-            details: `Deleted product: ${deleted.title}`,
-            ipAddress: req.ip || "0.0.0.0"
-        });
-
+        await logAdminAction(req.user.id, "Delete Product", "Products", `Deleted: ${deleted.title}`, req.ip);
         res.json({ message: "Product deleted successfully." });
     } catch (err) {
-        res.status(500).json({ error: "Failed to delete product." });
+        console.error("Delete product error:", err);
+        res.status(500).json({ error: "Failed to delete product. It might be linked to other records." });
     }
 });
 

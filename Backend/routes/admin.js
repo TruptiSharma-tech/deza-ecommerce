@@ -9,6 +9,15 @@ import { auth, adminOnly } from "../middleware/auth.js";
 
 const router = express.Router();
 
+// Helper for logging
+const logAdminAction = async (adminId, action, module, details, ip) => {
+    try {
+        await AuditLog.create({ adminId, action, module, details, ipAddress: ip || "0.0.0.0" });
+    } catch (err) {
+        console.error(`FAILED TO LOG ${action}:`, err);
+    }
+};
+
 // ─── Categories ───────────────────────────────────────────────────────────────
 router.get("/categories", async (req, res) => {
     try {
@@ -23,14 +32,7 @@ router.post("/categories", auth, adminOnly, async (req, res) => {
     try {
         const newCategory = await Category.create(req.body);
 
-        await AuditLog.create({
-            adminId: req.user.id,
-            action: "Add Category",
-            module: "Settings",
-            details: `Added new category: ${newCategory.name}`,
-            ipAddress: req.ip || "0.0.0.0"
-        });
-
+        await logAdminAction(req.user.id, "Add Category", "Settings", `Added: ${newCategory.name}`, req.ip);
         res.status(201).json(newCategory);
     } catch (err) {
         res.status(500).json({ error: "Failed to create category." });
@@ -38,12 +40,10 @@ router.post("/categories", auth, adminOnly, async (req, res) => {
 });
 
 // ─── Hero Settings (Home Page) ────────────────────────────────────────────────
-// GET — public (used by Home page to load hero content)
 router.get("/hero-settings", async (req, res) => {
     try {
         let settings = await HeroSettings.findOne();
         if (!settings) {
-            // Create default settings on first request
             settings = await HeroSettings.create({
                 banners: [],
                 headline: "Luxury Perfumes for Every Mood",
@@ -58,7 +58,6 @@ router.get("/hero-settings", async (req, res) => {
     }
 });
 
-// PUT — admin only (update hero settings)
 router.put("/hero-settings", auth, adminOnly, async (req, res) => {
     try {
         const { banners, headline, subheadline, ctaText, ctaLink } = req.body;
@@ -75,17 +74,9 @@ router.put("/hero-settings", auth, adminOnly, async (req, res) => {
             await settings.save();
         }
 
-        await AuditLog.create({
-            adminId: req.user.id,
-            action: "Update Hero",
-            module: "Settings",
-            details: `Updated hero section — ${banners?.length || 0} banners, headline: "${headline?.slice(0, 40)}"`,
-            ipAddress: req.ip || "0.0.0.0"
-        });
-
+        await logAdminAction(req.user.id, "Update Hero", "Settings", `Updated hero section`, req.ip);
         res.json(settings);
     } catch (err) {
-        console.error("Hero settings update error:", err);
         res.status(500).json({ error: "Failed to update hero settings." });
     }
 });
@@ -113,6 +104,7 @@ router.get("/brands", async (req, res) => {
 router.post("/brands", auth, adminOnly, async (req, res) => {
     try {
         const newBrand = await Brand.create(req.body);
+        await logAdminAction(req.user.id, "Add Brand", "Settings", `Added brand: ${newBrand.name}`, req.ip);
         res.status(201).json(newBrand);
     } catch (err) {
         res.status(500).json({ error: "Failed to create brand." });
@@ -156,6 +148,7 @@ router.get("/coupons", auth, adminOnly, async (req, res) => {
 router.post("/coupons", auth, adminOnly, async (req, res) => {
     try {
         const newCoupon = await Coupon.create(req.body);
+        await logAdminAction(req.user.id, "Add Coupon", "Settings", `Added coupon: ${newCoupon.code}`, req.ip);
         res.status(201).json(newCoupon);
     } catch (err) {
         res.status(500).json({ error: "Failed to create coupon." });

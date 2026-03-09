@@ -20,9 +20,9 @@ export default function ResetPassword() {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        const strongPasswordRegex = /^(?=.*[0-9])(?=.*[!@#$%^&*])[a-zA-Z0-9!@#$%^&*]{8,}$/;
+        const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
         if (!strongPasswordRegex.test(password)) {
-            toast.error("Password must be min 8 chars with 1 number and 1 special character.");
+            toast.error("Password must be at least 8 characters long, include an uppercase letter, a lowercase letter, a number, and a special character.");
             return;
         }
 

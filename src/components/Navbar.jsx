@@ -35,7 +35,7 @@ export default function Navbar() {
     };
   }, []);
 
-  const isAdmin = currentUser?.isAdmin === true;
+  const isAdmin = currentUser?.isAdmin === true || ["superadmin", "manager", "support", "admin"].includes(currentUser?.role);
 
   return (
     <>

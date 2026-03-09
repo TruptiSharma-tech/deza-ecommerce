@@ -8,7 +8,18 @@ const userSchema = new mongoose.Schema(
         contact: { type: String, default: "" },
         gender: { type: String, default: "" },
         dob: { type: Date, default: null },          // ✅ Fixed: Date type not String
-        role: { type: String, enum: ["user", "admin"], default: "user" },
+        role: { type: String, enum: ["user"], default: "user" },
+        addresses: {
+            type: [{
+                street: String,
+                city: String,
+                state: String,
+                pincode: String,
+                isDefault: { type: Boolean, default: false }
+            }],
+            default: []
+        },
+        wishlist: [{ type: mongoose.Schema.Types.ObjectId, ref: "Product" }],
         verifiedAt: { type: Date, default: null },   // ✅ Fixed: Date type not String
 
         // ✅ Secure password reset — stores a hashed token, not plaintext

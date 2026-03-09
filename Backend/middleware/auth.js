@@ -17,7 +17,12 @@ export const auth = (req, res, next) => {
 };
 
 export const adminOnly = (req, res, next) => {
-    if (req.user && req.user.role === "admin") {
+    const adminRoles = ["superadmin", "manager", "support", "admin"];
+
+    // Check for professional role OR the legacy isAdmin flag inside the token
+    const isAuthorized = req.user && (adminRoles.includes(req.user.role) || req.user.isAdmin === true);
+
+    if (isAuthorized) {
         next();
     } else {
         res.status(403).json({ error: "Access denied. Admins only." });

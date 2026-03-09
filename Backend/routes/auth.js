@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import User from "../models/User.js";
+import Admin from "../models/Admin.js";
 import { sendEmail, getBrandedTemplate } from "../utils/emailHelper.js";
 import { auth, adminOnly } from "../middleware/auth.js";
 
@@ -17,9 +18,9 @@ router.post("/register", async (req, res) => {
             return res.status(400).json({ error: "Name, email, and password are required." });
         }
 
-        const strongPasswordRegex = /^(?=.*[0-9])(?=.*[!@#$%^&*])[a-zA-Z0-9!@#$%^&*]{8,}$/;
+        const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
         if (!strongPasswordRegex.test(password)) {
-            return res.status(400).json({ error: "Password must be min 8 chars with 1 number and 1 special character." });
+            return res.status(400).json({ error: "Password must be at least 8 characters long, include an uppercase letter, a lowercase letter, a number, and a special character." });
         }
 
         const existing = await User.findOne({ email: email.toLowerCase() });
@@ -118,26 +119,30 @@ router.post("/admin-login", async (req, res) => {
             return res.status(400).json({ error: "Email and password are required." });
         }
 
-        const user = await User.findOne({ email: email.toLowerCase(), role: "admin" });
-        if (!user) {
+        const admin = await Admin.findOne({ email: email.toLowerCase() });
+        if (!admin) {
             return res.status(401).json({ error: "Invalid admin credentials." });
         }
 
-        const isMatch = await bcrypt.compare(password, user.password);
+        const isMatch = await bcrypt.compare(password, admin.password);
         if (!isMatch) {
             return res.status(401).json({ error: "Invalid admin credentials." });
         }
 
         const token = jwt.sign(
-            { id: user._id, email: user.email, role: user.role },
+            { id: admin._id, email: admin.email, role: admin.role, isAdmin: true },
             process.env.JWT_SECRET,
             { expiresIn: "1d" }
         );
 
+        // Update last login
+        admin.lastLogin = new Date();
+        await admin.save();
+
         res.json({
             message: "Admin login successful!",
             token,
-            user: { _id: user._id, name: user.name, email: user.email, role: user.role },
+            user: { _id: admin._id, name: admin.name, email: admin.email, role: admin.role },
         });
     } catch (err) {
         res.status(500).json({ error: "Server error during admin login." });
@@ -155,17 +160,23 @@ router.post("/create-admin", async (req, res) => {
             return res.status(403).json({ error: "Invalid secret key." });
         }
 
-        const existing = await User.findOne({ email: email.toLowerCase() });
+        const existing = await Admin.findOne({ email: email.toLowerCase() });
         if (existing) {
             return res.status(409).json({ error: "Admin already exists." });
         }
 
+        const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+        if (!strongPasswordRegex.test(password)) {
+            return res.status(400).json({ error: "Password must be at least 8 characters long, include an uppercase letter, a lowercase letter, a number, and a special character." });
+        }
+
         const hashedPassword = await bcrypt.hash(password, 12);
-        const admin = await User.create({
+        const admin = await Admin.create({
             name: name || "Admin",
             email: email.toLowerCase(),
             password: hashedPassword,
-            role: "admin",
+            role: "superadmin",
+            permissions: ["all"]
         });
 
         res.status(201).json({ message: "Admin created successfully!", admin: { email: admin.email } });
@@ -229,9 +240,9 @@ router.post("/reset-password", async (req, res) => {
             return res.status(400).json({ error: "Reset token and email are required." });
         }
 
-        const strongPasswordRegex = /^(?=.*[0-9])(?=.*[!@#$%^&*])[a-zA-Z0-9!@#$%^&*]{8,}$/;
+        const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
         if (!newPassword || !strongPasswordRegex.test(newPassword)) {
-            return res.status(400).json({ error: "New password must be min 8 chars with 1 number and 1 special character." });
+            return res.status(400).json({ error: "New password must be at least 8 characters long, include an uppercase letter, a lowercase letter, a number, and a special character." });
         }
 
         // Hash the incoming token and compare to stored hash

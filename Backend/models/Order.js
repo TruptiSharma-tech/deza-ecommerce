@@ -34,33 +34,46 @@ const returnRequestSchema = new mongoose.Schema(
     { _id: false }
 );
 
+const statusHistorySchema = new mongoose.Schema(
+    {
+        status: String,
+        timestamp: { type: Date, default: Date.now },
+        comment: String,
+    },
+    { _id: false }
+);
+
 const orderSchema = new mongoose.Schema(
     {
-        orderId: { type: String, unique: true },
-        customerId: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
-        customerName: { type: String, default: "" },
-        customerPhone: { type: String, default: "" },
-        customerEmail: { type: String, default: "" },
-        address: { type: addressSchema, default: {} },
-        items: { type: [orderItemSchema], default: [] },
-        totalPrice: { type: Number, default: 0 },
-        paymentMethod: { type: String, default: "Cash On Delivery" },
-        paymentId: { type: String, default: "" },
-        paymentStatus: { type: String, default: "Pending" },
-        status: {
+        orderNumber: { type: String, unique: true }, // Human readable order number
+        customerId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+        items: { type: [orderItemSchema], required: true },
+        shippingAddress: { type: addressSchema, required: true },
+        billingAddress: { type: addressSchema },
+        totalAmount: { type: Number, required: true },
+        taxAmount: { type: Number, default: 0 },
+        shippingFee: { type: Number, default: 0 },
+        paymentMethod: { type: String, required: true },
+        paymentStatus: { type: String, enum: ["Pending", "Paid", "Failed", "Refunded"], default: "Pending" },
+        paymentDetails: mongoose.Schema.Types.Mixed,
+        orderStatus: {
             type: String,
-            enum: ["Pending", "Packed", "Shipped", "Out for Delivery", "Delivered", "Cancelled"],
-            default: "Pending",
+            enum: ["Processing", "Packed", "Shipped", "Delivered", "Cancelled", "Returned"],
+            default: "Processing",
         },
-        returnStatus: { type: String, default: "Not Requested" },
-        refundStatus: { type: String, default: "Not Requested" },
-        returnRequest: { type: returnRequestSchema, default: null },
-        refundRequestDate: { type: Date, default: null }, // ✅ Fixed: Date type
-        category: { type: String, default: "" },
-        type: { type: String, default: "" },
-        deliveredAt: { type: Date, default: null },
+        statusHistory: [statusHistorySchema],
+        trackingNumber: { type: String, default: "" },
+        deliveryCompany: { type: String, default: "" },
+        estimatedDeliveryDate: { type: Date },
+        deliveredAt: { type: Date },
+        cancelledAt: { type: Date },
+        returnDetails: {
+            reason: String,
+            requestDate: Date,
+            status: { type: String, enum: ["None", "Pending", "Approved", "Rejected"], default: "None" },
+        }
     },
-    { timestamps: true } // ✅ createdAt / updatedAt auto-managed — no manual date field needed
+    { timestamps: true }
 );
 
 export default mongoose.model("Order", orderSchema);
