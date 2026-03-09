@@ -1,8 +1,10 @@
 import express from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import crypto from "crypto";
 import User from "../models/User.js";
 import { sendEmail, getBrandedTemplate } from "../utils/emailHelper.js";
+import { auth, adminOnly } from "../middleware/auth.js";
 
 const router = express.Router();
 
@@ -25,7 +27,7 @@ router.post("/register", async (req, res) => {
             return res.status(409).json({ error: "Account already exists with this email." });
         }
 
-        const hashedPassword = await bcrypt.hash(password, 10);
+        const hashedPassword = await bcrypt.hash(password, 12);
 
         const newUser = await User.create({
             name: name.trim(),
@@ -33,9 +35,9 @@ router.post("/register", async (req, res) => {
             password: hashedPassword,
             contact: contact || "",
             gender: gender || "",
-            dob: dob || "",
+            dob: dob ? new Date(dob) : null,
             role: "user",
-            verifiedAt: new Date().toISOString(),
+            verifiedAt: new Date(),
         });
 
         const token = jwt.sign(
@@ -112,9 +114,13 @@ router.post("/admin-login", async (req, res) => {
     try {
         const { email, password } = req.body;
 
+        if (!email || !password) {
+            return res.status(400).json({ error: "Email and password are required." });
+        }
+
         const user = await User.findOne({ email: email.toLowerCase(), role: "admin" });
         if (!user) {
-            return res.status(401).json({ error: "Admin not found." });
+            return res.status(401).json({ error: "Invalid admin credentials." });
         }
 
         const isMatch = await bcrypt.compare(password, user.password);
@@ -139,11 +145,13 @@ router.post("/admin-login", async (req, res) => {
 });
 
 // ─── Create Admin (Bootstrap) ─────────────────────────────────────────────────
+// Secret is now read from environment variable — NOT hardcoded in source
 router.post("/create-admin", async (req, res) => {
     try {
         const { name, email, password, secret } = req.body;
 
-        if (secret !== "DEZA_ADMIN_SECRET_2024") {
+        const adminSecret = process.env.ADMIN_BOOTSTRAP_SECRET;
+        if (!adminSecret || secret !== adminSecret) {
             return res.status(403).json({ error: "Invalid secret key." });
         }
 
@@ -152,7 +160,7 @@ router.post("/create-admin", async (req, res) => {
             return res.status(409).json({ error: "Admin already exists." });
         }
 
-        const hashedPassword = await bcrypt.hash(password, 10);
+        const hashedPassword = await bcrypt.hash(password, 12);
         const admin = await User.create({
             name: name || "Admin",
             email: email.toLowerCase(),
@@ -166,14 +174,29 @@ router.post("/create-admin", async (req, res) => {
     }
 });
 
-// ─── Forgot Password (SMTP Recovery) ─────────────────────────────────────────
+// ─── Forgot Password — sends a signed, time-limited reset token ───────────────
 router.post("/forgot-password", async (req, res) => {
     try {
         const { email } = req.body;
-        const user = await User.findOne({ email: email.toLowerCase() });
-        if (!user) return res.status(404).json({ error: "No account found." });
+        if (!email) return res.status(400).json({ error: "Email is required." });
 
-        const resetLink = `http://localhost:5173/reset-password?email=${encodeURIComponent(email)}`;
+        const user = await User.findOne({ email: email.toLowerCase() });
+        // Always respond with success to prevent email enumeration attacks
+        if (!user) {
+            return res.json({ message: "If an account exists, a recovery email has been sent." });
+        }
+
+        // Generate a secure random token (not just the email!)
+        const resetToken = crypto.randomBytes(32).toString("hex");
+        const resetTokenHash = crypto.createHash("sha256").update(resetToken).digest("hex");
+
+        user.resetPasswordToken = resetTokenHash;
+        user.resetPasswordExpires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour expiry
+        await user.save();
+
+        // Build the reset link with the actual random token
+        const clientUrl = process.env.CLIENT_URL || "http://localhost:5173";
+        const resetLink = `${clientUrl}/reset-password?token=${resetToken}&email=${encodeURIComponent(email)}`;
 
         const html = getBrandedTemplate("Password Recovery", `
             <p>We received a request to access your DEZA account. Click the button below to restore your access:</p>
@@ -185,32 +208,48 @@ router.post("/forgot-password", async (req, res) => {
             <p style="font-size: 14px; color: #666;">This link is valid for 1 hour. If you did not request this, please ignore this email.</p>
         `);
 
-        const success = await sendEmail(email, "🔑 Secure Reset Link", html);
+        const success = await sendEmail(email, "🔑 Secure Reset Link — DEZA", html);
 
         if (!success) {
-            return res.status(500).json({ error: "Failed to connect to email server. Please try again." });
+            return res.status(500).json({ error: "Failed to send email. Please try again." });
         }
-        res.json({ message: "Recovery email sent! Please check your inbox." });
+        res.json({ message: "If an account exists, a recovery email has been sent." });
     } catch (err) {
+        console.error("Forgot password error:", err);
         res.status(500).json({ error: "Failed to send email." });
     }
 });
 
-// ─── Reset Password ───────────────────────────────────────────────────────────
+// ─── Reset Password — validates token before allowing reset ───────────────────
 router.post("/reset-password", async (req, res) => {
     try {
-        const { email, newPassword } = req.body;
+        const { email, token, newPassword } = req.body;
 
-        // Validation
+        if (!token || !email) {
+            return res.status(400).json({ error: "Reset token and email are required." });
+        }
+
         const strongPasswordRegex = /^(?=.*[0-9])(?=.*[!@#$%^&*])[a-zA-Z0-9!@#$%^&*]{8,}$/;
         if (!newPassword || !strongPasswordRegex.test(newPassword)) {
             return res.status(400).json({ error: "New password must be min 8 chars with 1 number and 1 special character." });
         }
 
-        const user = await User.findOne({ email: email.toLowerCase() });
-        if (!user) return res.status(404).json({ error: "User not found." });
+        // Hash the incoming token and compare to stored hash
+        const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
 
-        user.password = await bcrypt.hash(newPassword, 10);
+        const user = await User.findOne({
+            email: email.toLowerCase(),
+            resetPasswordToken: tokenHash,
+            resetPasswordExpires: { $gt: new Date() }, // Must not be expired
+        });
+
+        if (!user) {
+            return res.status(400).json({ error: "Invalid or expired reset link. Please request a new one." });
+        }
+
+        user.password = await bcrypt.hash(newPassword, 12);
+        user.resetPasswordToken = undefined;
+        user.resetPasswordExpires = undefined;
         await user.save();
 
         const html = getBrandedTemplate("Password Updated", `
@@ -221,24 +260,27 @@ router.post("/reset-password", async (req, res) => {
 
         res.json({ message: "Password reset successful! You can now login." });
     } catch (err) {
+        console.error("Reset password error:", err);
         res.status(500).json({ error: "Server error during reset." });
     }
 });
 
-// ─── ADMIN: User Management ───────────────────────────────────────────────────
-router.get("/users", async (req, res) => {
+// ─── ADMIN: User Management (protected) ──────────────────────────────────────
+router.get("/users", auth, adminOnly, async (req, res) => {
     try {
-        console.log("🔍 FETCHING ALL USERS FROM DB...");
-        const users = await User.find().select("-password").sort({ createdAt: -1 });
-        console.log(`✅ FOUND ${users.length} USERS`);
+        const users = await User.find().select("-password -resetPasswordToken -resetPasswordExpires").sort({ createdAt: -1 });
         res.json(users);
     } catch (err) {
         res.status(500).json({ error: "Failed to fetch users." });
     }
 });
 
-router.delete("/users/:id", async (req, res) => {
+router.delete("/users/:id", auth, adminOnly, async (req, res) => {
     try {
+        // Prevent deleting yourself
+        if (req.params.id === req.user.id) {
+            return res.status(400).json({ error: "You cannot delete your own admin account." });
+        }
         const deleted = await User.findByIdAndDelete(req.params.id);
         if (!deleted) return res.status(404).json({ error: "User not found." });
         res.json({ message: "User account deleted." });

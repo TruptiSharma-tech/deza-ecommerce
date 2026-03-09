@@ -13,7 +13,7 @@ import {
   apiGetBrands, apiAddBrand,
   apiGetSubscribers,
   apiGetCoupons, apiAddCoupon,
-  apiGetAuditLogs,
+  apiGetAuditLogs, apiGetHeroSettings
 } from "../utils/api";
 import { Line, Pie, Bar } from "react-chartjs-2";
 import {
@@ -31,6 +31,7 @@ import {
 import { CSVLink } from "react-csv";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
+import AdminHeroEditor from "../components/AdminHeroEditor";
 
 // Register ChartJS
 ChartJS.register(
@@ -172,7 +173,7 @@ export default function Admin() {
   const loadAll = async (silent = false) => {
     if (!silent) setLoading(true);
     try {
-      const [prods, ords, qrys, revs, cats, brnds, subs, cpns, logs, usrs] = await Promise.all([
+      const [prods, ords, qrys, revs, cats, brnds, subs, cpns, logs, usrs, hro] = await Promise.all([
         apiGetProducts().catch(e => { console.error("Products error:", e); return []; }),
         apiGetOrders().catch(e => { console.error("Orders error:", e); return []; }),
         apiGetQueries().catch(e => { console.error("Queries error:", e); return []; }),
@@ -183,9 +184,10 @@ export default function Admin() {
         apiGetCoupons().catch(e => { console.error("Coupons error:", e); return []; }),
         apiGetAuditLogs().catch(e => { console.error("AuditLogs error:", e); return []; }),
         apiGetUsers().catch(e => { console.error("Users error:", e); return []; }),
+        apiGetHeroSettings().catch(e => { console.error("Hero error:", e); return null; }),
       ]);
 
-      console.log("Admin Data Loaded:", { prods: prods.length, ords: ords.length, qrys: qrys.length, cats: cats.length });
+      console.log(`[⚡ Admin Sync] Data fetched at ${new Date().toLocaleTimeString()}`);
 
       // ✅ New Order Notification Logic
       if (!firstLoadRef.current && ords.length > prevOrderRef.current) {
@@ -237,7 +239,13 @@ export default function Admin() {
       setError(null);
     } catch (err) {
       console.error("Critical Admin Load Error:", err);
-      setError("Failed to connect to server. Check if backend is running.");
+      // If unauthorized, redirect to login
+      if (err.message?.includes("401") || err.message?.includes("Unauthorized")) {
+        toast.error("Session expired. Please login again.");
+        handleLogout();
+      } else {
+        setError("Failed to connect to server. Real-time sync might be interrupted.");
+      }
     } finally {
       setLoading(false);
     }
@@ -826,6 +834,13 @@ export default function Admin() {
           onClick={() => setActiveTab("audit")}
         >
           📜 Audit Logs
+        </button>
+
+        <button
+          className={activeTab === "hero" ? "active" : ""}
+          onClick={() => setActiveTab("hero")}
+        >
+          🏠 Hero Section
         </button>
 
         <button className="logout-btn" onClick={handleLogout}>
@@ -1749,6 +1764,13 @@ export default function Admin() {
                 </tbody>
               </table>
             </div>
+          </div>
+        )}
+
+        {/* HERO SECTION EDITOR */}
+        {activeTab === "hero" && (
+          <div className="admin-section">
+            <AdminHeroEditor />
           </div>
         )}
       </div>

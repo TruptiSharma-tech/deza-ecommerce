@@ -29,14 +29,14 @@ const returnRequestSchema = new mongoose.Schema(
         type: String,
         reason: String,
         message: String,
-        date: String,
+        date: { type: Date, default: Date.now }, // ✅ Fixed: Date type
     },
     { _id: false }
 );
 
 const orderSchema = new mongoose.Schema(
     {
-        orderId: { type: String, unique: true }, // Custom ID field
+        orderId: { type: String, unique: true },
         customerId: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
         customerName: { type: String, default: "" },
         customerPhone: { type: String, default: "" },
@@ -55,13 +55,12 @@ const orderSchema = new mongoose.Schema(
         returnStatus: { type: String, default: "Not Requested" },
         refundStatus: { type: String, default: "Not Requested" },
         returnRequest: { type: returnRequestSchema, default: null },
-        refundRequestDate: { type: String, default: "" },
+        refundRequestDate: { type: Date, default: null }, // ✅ Fixed: Date type
         category: { type: String, default: "" },
         type: { type: String, default: "" },
-        date: { type: String, default: () => new Date().toLocaleString() },
         deliveredAt: { type: Date, default: null },
     },
-    { timestamps: true }
+    { timestamps: true } // ✅ createdAt / updatedAt auto-managed — no manual date field needed
 );
 
 export default mongoose.model("Order", orderSchema);

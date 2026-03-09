@@ -31,6 +31,7 @@ const ReturnRefund = lazy(() => import("./pages/ReturnRefund"));
 // ADMIN
 const AdminLogin = lazy(() => import("./pages/AdminLogin"));
 const Admin = lazy(() => import("./pages/Admin"));
+const NotFound = lazy(() => import("./pages/NotFound"));
 import AdminProtectedRoute from "./components/AdminProtectedRoute";
 import { Toaster } from "react-hot-toast";
 
@@ -118,6 +119,9 @@ export default function App() {
               </AdminProtectedRoute>
             }
           />
+
+          {/* 404 CATCH-ALL */}
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </Suspense>
 

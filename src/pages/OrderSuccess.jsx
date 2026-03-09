@@ -1,19 +1,69 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import "./OrderSucess.css";
 import { useNavigate } from "react-router-dom";
+import Confetti from "react-confetti";
 
 export default function OrderSuccess() {
   const navigate = useNavigate();
+  const [order, setOrder] = useState(null);
+  const [showConfetti, setShowConfetti] = useState(true);
+
+  useEffect(() => {
+    // Read the order details stored during checkout
+    const lastOrder = JSON.parse(localStorage.getItem("lastOrder"));
+    if (lastOrder) {
+      setOrder(lastOrder);
+      // Clear it after reading so it doesn't show on next visit
+      localStorage.removeItem("lastOrder");
+    }
+
+    // Stop confetti after 5 seconds
+    const timer = setTimeout(() => setShowConfetti(false), 5000);
+    return () => clearTimeout(timer);
+  }, []);
 
   return (
     <div className="success-page">
+      {showConfetti && <Confetti numberOfPieces={200} recycle={false} colors={["#d4af37", "#fff", "#1a1a1a", "#ffd369"]} />}
+
       <div className="success-card">
-        <h1>🎉 Order Placed Successfully!</h1>
-        <p>Your luxury fragrance is on the way 💛</p>
+        <div style={{ fontSize: "64px", marginBottom: "16px" }}>🎉</div>
+        <h1>Order Placed Successfully!</h1>
+        <p style={{ color: "rgba(255,255,255,0.75)", marginBottom: "24px" }}>
+          Your luxury fragrance is on the way 💛
+        </p>
+
+        {order && (
+          <div style={{
+            background: "rgba(212,175,55,0.1)",
+            border: "1px solid rgba(212,175,55,0.3)",
+            borderRadius: "12px",
+            padding: "20px",
+            marginBottom: "24px",
+            textAlign: "left",
+          }}>
+            <p style={{ margin: "0 0 8px", fontSize: "13px", opacity: 0.7 }}>ORDER DETAILS</p>
+            <p style={{ margin: "4px 0", fontWeight: "bold", color: "#d4af37", fontSize: "18px" }}>
+              {order.orderId}
+            </p>
+            <p style={{ margin: "4px 0", fontSize: "14px" }}>
+              <b>Total:</b> ₹{order.totalPrice?.toLocaleString("en-IN")}
+            </p>
+            <p style={{ margin: "4px 0", fontSize: "14px" }}>
+              <b>Payment:</b> {order.paymentMethod}
+            </p>
+            <p style={{ margin: "4px 0", fontSize: "14px" }}>
+              <b>Estimated Delivery:</b> 7–10 Business Days
+            </p>
+          </div>
+        )}
+
+        <p style={{ fontSize: "13px", opacity: 0.6, marginBottom: "24px" }}>
+          A confirmation email has been sent to your registered email address.
+        </p>
 
         <div className="success-btns">
-          <button onClick={() => navigate("/Orders")}>View My Orders</button>
-
+          <button onClick={() => navigate("/orders")}>View My Orders</button>
           <button className="home-btn" onClick={() => navigate("/")}>
             Back to Home
           </button>

@@ -1,7 +1,8 @@
 // Central API utility for DEZA e-commerce
 // All API calls go through this file to the Express + MongoDB backend
 
-const BASE_URL = "http://localhost:5000/api";
+const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+
 
 // ── Helper ─────────────────────────────────────────────────────────────────────
 const getToken = () => localStorage.getItem("deza_token");
@@ -143,6 +144,13 @@ export const apiAddCoupon = (payload) =>
 export const apiGetAuditLogs = () => request("/admin/audit-logs");
 
 // ══════════════════════════════════════════════════════════════
+//  HERO SETTINGS (Home Page — Admin editable)
+// ══════════════════════════════════════════════════════════════
+export const apiGetHeroSettings = () => request("/admin/hero-settings");
+export const apiUpdateHeroSettings = (payload) =>
+    request("/admin/hero-settings", { method: "PUT", body: JSON.stringify(payload) });
+
+// ══════════════════════════════════════════════════════════════
 //  PAYMENTS (Razorpay)
 // ══════════════════════════════════════════════════════════════
 export const apiCreateRazorpayOrder = (payload) =>
@@ -150,3 +158,4 @@ export const apiCreateRazorpayOrder = (payload) =>
 
 export const apiVerifyRazorpayPayment = (payload) =>
     request("/payments/verify-payment", { method: "POST", body: JSON.stringify(payload) });
+

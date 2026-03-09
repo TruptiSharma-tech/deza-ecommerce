@@ -1,4 +1,5 @@
 import express from "express";
+import { nanoid } from "nanoid";
 import Order from "../models/Order.js";
 import AuditLog from "../models/AuditLog.js";
 import { auth, adminOnly } from "../middleware/auth.js";
@@ -6,8 +7,8 @@ import { sendEmail, getBrandedTemplate } from "../utils/emailHelper.js";
 
 const router = express.Router();
 
-// ─── GET All Orders (Admin) ────────────────────────────────────────────────────
-router.get("/", async (req, res) => {
+// ─── GET All Orders (Admin only) ──────────────────────────────────────────────
+router.get("/", auth, adminOnly, async (req, res) => {
     try {
         const orders = await Order.find().sort({ createdAt: -1 });
         res.json(orders);
@@ -31,6 +32,24 @@ router.get("/my/:email", auth, async (req, res) => {
     }
 });
 
+// ─── GET Single Order by orderId string (for TrackOrder page) ─────────────────
+router.get("/track/:orderId", auth, async (req, res) => {
+    try {
+        const order = await Order.findOne({ orderId: req.params.orderId });
+        if (!order) return res.status(404).json({ error: "Order not found." });
+
+        // Only allow users to track their own orders (admins can track all)
+        if (req.user.role !== "admin" && order.customerEmail.toLowerCase() !== req.user.email.toLowerCase()) {
+            return res.status(403).json({ error: "Access denied." });
+        }
+
+        res.json(order);
+    } catch (err) {
+        res.status(500).json({ error: "Failed to fetch order." });
+    }
+});
+
+
 // ─── POST - Create Order ───────────────────────────────────────────────────────
 router.post("/", async (req, res) => {
     try {
@@ -50,7 +69,8 @@ router.post("/", async (req, res) => {
             type,
         } = req.body;
 
-        const orderId = `DZ-${Math.floor(1000000 + Math.random() * 9000000)}`;
+        // ✅ nanoid generates collision-proof unique IDs
+        const orderId = `DZ-${nanoid(10).toUpperCase()}`;
 
         const newOrder = await Order.create({
             orderId,
@@ -65,7 +85,6 @@ router.post("/", async (req, res) => {
             paymentId: paymentId || "",
             paymentStatus: paymentStatus || "Pending",
             status: status || "Pending",
-            date: new Date().toISOString(),
             category: category || "",
             type: type || "",
         });

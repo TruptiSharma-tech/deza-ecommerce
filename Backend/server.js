@@ -2,6 +2,7 @@ import express from "express";
 import mongoose from "mongoose";
 import cors from "cors";
 import dotenv from "dotenv";
+import rateLimit from "express-rate-limit";
 import authRoutes from "./routes/auth.js";
 import productRoutes from "./routes/products.js";
 import orderRoutes from "./routes/orders.js";
@@ -15,14 +16,51 @@ dotenv.config();
 
 const app = express();
 
+// ─── Rate Limiters ──────────────────────────────────────────────────────────────
+// Global limiter — 200 requests per 15 minutes per IP
+const globalLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 200,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: "Too many requests, please try again later." },
+});
+
+// Strict limiter for auth routes — 10 attempts per 15 minutes per IP
+const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 10,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: "Too many auth attempts, please try again in 15 minutes." },
+});
+
 // ─── Middleware ────────────────────────────────────────────────────────────────
-app.use(compression()); // ✅ Reduce API payload size by up to 80% for faster load times!
-app.use(cors({ origin: "*" }));
-app.use(express.json({ limit: "50mb" })); // large base64 images
+app.use(compression());
+app.use(globalLimiter);
+
+// CORS — locked down to configured origin in production
+const allowedOrigins = process.env.ALLOWED_ORIGIN
+    ? process.env.ALLOWED_ORIGIN.split(",").map((o) => o.trim())
+    : ["http://localhost:5173", "http://localhost:4173"];
+
+app.use(
+    cors({
+        origin: (origin, callback) => {
+            // Allow requests with no origin (eg. mobile apps, Postman)
+            if (!origin) return callback(null, true);
+            if (allowedOrigins.includes(origin)) return callback(null, true);
+            return callback(new Error(`CORS policy: origin ${origin} not allowed`));
+        },
+        credentials: true,
+    })
+);
+
+app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 
 // ─── Routes ───────────────────────────────────────────────────────────────────
-app.use("/api/auth", authRoutes);
+app.use("/api/auth", authLimiter, authRoutes);  // ✅ strict rate limit on all auth
 app.use("/api/products", productRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/queries", queryRoutes);
@@ -32,6 +70,20 @@ app.use("/api/payments", paymentRoutes);
 
 // Health check
 app.get("/", (req, res) => res.json({ message: "DEZA API is running 🚀" }));
+
+// ─── 404 Handler ─────────────────────────────────────────────────────────────
+app.use((req, res) => {
+    res.status(404).json({ error: `Route ${req.method} ${req.path} not found.` });
+});
+
+// ─── Global Error Handler ─────────────────────────────────────────────────────
+app.use((err, req, res, next) => {
+    console.error("Unhandled error:", err.message);
+    if (err.message.startsWith("CORS policy")) {
+        return res.status(403).json({ error: err.message });
+    }
+    res.status(500).json({ error: "Internal server error." });
+});
 
 // ─── MongoDB Connection ────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 5000;

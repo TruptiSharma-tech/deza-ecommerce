@@ -34,7 +34,7 @@ export default function PaymentGateway() {
 
   const saveOrder = async (paymentMethod, paymentStatus, paymentId = "") => {
     try {
-      await apiCreateOrder({
+      const createdOrder = await apiCreateOrder({
         customerId: currentUser?._id || null,
         customerName: name || currentUser?.name || "Guest",
         customerPhone: "+91" + (cleanPhone || phone || ""),
@@ -46,11 +46,13 @@ export default function PaymentGateway() {
         paymentId,
         paymentStatus,
         status: "Pending",
-        date: new Date().toISOString(),
       });
+      // ✅ Save the created order details so OrderSuccess can display them
+      localStorage.setItem("lastOrder", JSON.stringify(createdOrder));
       // Clear cart
       localStorage.removeItem("deza_cart");
       localStorage.removeItem("checkoutInfo");
+      window.dispatchEvent(new Event("cartUpdate"));
     } catch (err) {
       console.error("Failed to save order:", err);
       alert("⚠ Order placed but failed to save to database. Contact support.");
@@ -70,7 +72,7 @@ export default function PaymentGateway() {
       const order = await apiCreateRazorpayOrder({ amount: total });
 
       const options = {
-        key: "rzp_test_1DP5mmOlF5G5ag", // Key ID
+        key: import.meta.env.VITE_RAZORPAY_KEY_ID || "rzp_test_1DP5mmOlF5G5ag",
         amount: order.amount,
         currency: order.currency,
         name: "DEZA Luxury Store",
