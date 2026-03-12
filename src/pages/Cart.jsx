@@ -11,8 +11,7 @@ export default function Cart() {
 
   useEffect(() => {
     if (!currentUser) {
-      alert("⚠️ Please Login First!");
-      navigate("/login");
+      setCart([]);
       return;
     }
 
@@ -68,7 +67,14 @@ export default function Cart() {
     <div className="cart-page">
       <h1 className="cart-title">🛒 Shopping Bag</h1>
 
-      {cart.length === 0 ? (
+      {!currentUser ? (
+        <div className="cart-empty">
+          <p className="empty-msg">Please login to view your cart 💛</p>
+          <button className="back-shop-btn" onClick={() => navigate("/login")}>
+            Login
+          </button>
+        </div>
+      ) : cart.length === 0 ? (
         <div className="cart-empty">
           <p className="empty-msg">Your cart is empty 💛</p>
           <button className="back-shop-btn" onClick={() => navigate("/shop")}>

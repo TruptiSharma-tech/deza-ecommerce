@@ -29,7 +29,7 @@ export default function OrderSuccess() {
       <div className="success-card">
         <div style={{ fontSize: "64px", marginBottom: "16px" }}>🎉</div>
         <h1>Order Placed Successfully!</h1>
-        <p style={{ color: "rgba(255,255,255,0.75)", marginBottom: "24px" }}>
+        <p className="order-success-sub">
           Your luxury fragrance is on the way 💛
         </p>
 
@@ -44,7 +44,7 @@ export default function OrderSuccess() {
           }}>
             <p style={{ margin: "0 0 8px", fontSize: "13px", opacity: 0.7 }}>ORDER DETAILS</p>
             <p style={{ margin: "4px 0", fontWeight: "bold", color: "#d4af37", fontSize: "18px" }}>
-              {order.orderId}
+              {order.orderId || "DZ-" + String(order._id).slice(-6).toUpperCase()}
             </p>
             <p style={{ margin: "4px 0", fontSize: "14px" }}>
               <b>Total:</b> ₹{order.totalPrice?.toLocaleString("en-IN")}
@@ -58,7 +58,7 @@ export default function OrderSuccess() {
           </div>
         )}
 
-        <p style={{ fontSize: "13px", opacity: 0.6, marginBottom: "24px" }}>
+        <p className="order-success-footer">
           A confirmation email has been sent to your registered email address.
         </p>
 

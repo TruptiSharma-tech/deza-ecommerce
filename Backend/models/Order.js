@@ -46,20 +46,22 @@ const statusHistorySchema = new mongoose.Schema(
 const orderSchema = new mongoose.Schema(
     {
         orderNumber: { type: String, unique: true }, // Human readable order number
-        customerId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+        customerId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: false },
+        customerName: { type: String, default: "" },
+        customerEmail: { type: String, default: "" },
+        customerPhone: { type: String, default: "" },
         items: { type: [orderItemSchema], required: true },
-        shippingAddress: { type: addressSchema, required: true },
-        billingAddress: { type: addressSchema },
+        shippingAddress: { type: mongoose.Schema.Types.Mixed, required: true },
+        billingAddress: { type: mongoose.Schema.Types.Mixed },
         totalAmount: { type: Number, required: true },
         taxAmount: { type: Number, default: 0 },
         shippingFee: { type: Number, default: 0 },
         paymentMethod: { type: String, required: true },
-        paymentStatus: { type: String, enum: ["Pending", "Paid", "Failed", "Refunded"], default: "Pending" },
+        paymentStatus: { type: String, default: "Pending" },
         paymentDetails: mongoose.Schema.Types.Mixed,
         orderStatus: {
             type: String,
-            enum: ["Processing", "Packed", "Shipped", "Delivered", "Cancelled", "Returned"],
-            default: "Processing",
+            default: "Pending",
         },
         statusHistory: [statusHistorySchema],
         trackingNumber: { type: String, default: "" },

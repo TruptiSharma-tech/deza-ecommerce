@@ -123,9 +123,14 @@ export default function PaymentGateway() {
   };
 
   const handleCOD = async () => {
-    await saveOrder("Cash On Delivery", "Pending");
-    setPaymentDone(true);
-    setTimeout(() => navigate("/checkout/success"), 2000);
+    setLoading(true);
+    try {
+      await saveOrder("Cash On Delivery", "Pending");
+      setPaymentDone(true);
+      setTimeout(() => navigate("/checkout/success"), 400);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

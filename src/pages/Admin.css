@@ -291,10 +291,18 @@
 .activity-panel h3,
 .quick-stats-panel h3 {
   font-size: 16px;
-  margin-bottom: 20px;
   font-weight: 800;
   color: #d4af37;
+  margin-bottom: 0px;
 }
+
+.flex-between {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 18px;
+}
+
 
 .notify-item {
   padding: 14px 18px;
@@ -587,6 +595,28 @@
 
 .delete-btn:hover {
   background: rgba(255, 70, 70, 0.35);
+  transform: scale(1.04);
+}
+
+.archive-btn {
+  background: rgba(243, 156, 18, 0.15);
+  color: #f39c12;
+  border: 1px solid rgba(243, 156, 18, 0.4);
+}
+
+.archive-btn:hover {
+  background: rgba(243, 156, 18, 0.25);
+  transform: scale(1.04);
+}
+
+.unarchive-btn {
+  background: rgba(46, 204, 113, 0.15);
+  color: #2ecc71;
+  border: 1px solid rgba(46, 204, 113, 0.4);
+}
+
+.unarchive-btn:hover {
+  background: rgba(46, 204, 113, 0.25);
   transform: scale(1.04);
 }
 

@@ -7,12 +7,12 @@ const supportTicketSchema = new mongoose.Schema(
         orderId: { type: String, default: "" }, // Linking to specific order if applicable
         ticketType: {
             type: String,
-            enum: ["General Query", "Return Request", "Refund Request", "Exchange Request"],
+            enum: ["General Query", "Return Request", "Refund Request", "Exchange Request", "General Support"],
             default: "General Query"
         },
         issueType: {
             type: String,
-            enum: ["Delayed Delivery", "Wrong Product Received", "Damaged Product", "Payment Failed", "Other"],
+            // enum: ["Delayed Delivery", "Wrong Product Received", "Damaged Product", "Payment Failed", "Other"],
             default: "Other"
         },
         message: { type: String, required: true },

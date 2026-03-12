@@ -15,6 +15,11 @@ export default function Navbar() {
   const currentUser = JSON.parse(localStorage.getItem("currentUser"));
 
   const updateCartCount = () => {
+    const user = JSON.parse(localStorage.getItem("currentUser"));
+    if (!user) {
+      setCartCount(0);
+      return;
+    }
     const cart = JSON.parse(localStorage.getItem("deza_cart")) || [];
     const count = cart.reduce((total, item) => total + item.qty, 0);
     setCartCount(count);

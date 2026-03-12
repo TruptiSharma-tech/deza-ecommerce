@@ -13,6 +13,7 @@ export default function Support() {
   const [myQueries, setMyQueries] = useState([]);
   const [loading, setLoading] = useState(false);
   const [queryType, setQueryType] = useState("General Support");
+  const [orderIdInput, setOrderIdInput] = useState("");
 
   const queryTypes = [
     "General Support",
@@ -33,10 +34,16 @@ export default function Support() {
 
   const loadMyQueries = async (email) => {
     try {
+      const token = localStorage.getItem("deza_token");
+      if (!token) {
+        setMyQueries([]);
+        return;
+      }
       const data = await apiGetMyQueries(email);
-      setMyQueries(data);
+      setMyQueries(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error("Failed to load queries:", err);
+      setMyQueries([]);
     }
   };
 
@@ -79,6 +86,7 @@ export default function Support() {
         image,
         ticketType,
         issueType: queryType,
+        orderId: orderIdInput,
       });
 
       toast.success("Ticket submitted! Our luxury concierge will assist you shortly. ✨");
@@ -87,6 +95,7 @@ export default function Support() {
       setEmail(currentUser?.email || "");
       setMessage("");
       setImage(null);
+      setOrderIdInput("");
 
       setMyQueries((prev) => [newQuery, ...prev]);
     } catch (err) {
@@ -136,6 +145,16 @@ export default function Support() {
           </label>
 
           <label>
+            Order ID (Optional)
+            <input
+              type="text"
+              placeholder="e.g. DZ-12345678"
+              value={orderIdInput}
+              onChange={(e) => setOrderIdInput(e.target.value)}
+            />
+          </label>
+
+          <label>
             Your Message
             <textarea
               placeholder="Please provide details about your issue..."
@@ -162,8 +181,13 @@ export default function Support() {
             {myQueries.map((q) => (
               <div key={q._id} className="query-card">
                 <p>
-                  <strong>ID:</strong> {q._id}
+                  <strong>Ticket ID:</strong> DZ-TK-{String(q._id).slice(-6).toUpperCase()}
                 </p>
+                {q.orderId && (
+                  <p>
+                    <strong>Order ID:</strong> {q.orderId}
+                  </p>
+                )}
 
                 <p>
                   <strong>Status:</strong>{" "}

@@ -32,6 +32,13 @@ export default function AdminHeroEditor() {
     };
 
     const handleSave = async () => {
+        // Validation: Ensure all banners have images
+        const emptyImageBanner = banners.find(b => !b.image);
+        if (emptyImageBanner) {
+            toast.error("All banners must have an image! Please upload images for all banners.");
+            return;
+        }
+
         setSaving(true);
         try {
             await apiUpdateHeroSettings({

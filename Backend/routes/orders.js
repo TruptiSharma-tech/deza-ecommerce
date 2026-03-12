@@ -1,6 +1,7 @@
 import express from "express";
 import { nanoid } from "nanoid";
 import Order from "../models/Order.js";
+import Product from "../models/Product.js";
 import AuditLog from "../models/AuditLog.js";
 import { auth, adminOnly } from "../middleware/auth.js";
 import { sendEmail, getBrandedTemplate } from "../utils/emailHelper.js";
@@ -32,10 +33,16 @@ router.get("/", auth, adminOnly, async (req, res) => {
     }
 });
 
-// ─── GET My Orders ────────────────────────────────────────────────────────────
-router.get("/my", auth, async (req, res) => {
+// ─── GET My Orders (by Email) ────────────────────────────────────────────────
+router.get("/my/:email", auth, async (req, res) => {
     try {
-        const orders = await Order.find({ customerId: req.user.id }).sort({ createdAt: -1 });
+        const searchEmail = req.params.email.toLowerCase().trim();
+        // Check if user is viewing their own orders or if admin
+        if (req.user.email.toLowerCase() !== searchEmail && req.user.role !== "admin") {
+            return res.status(403).json({ error: "Unauthorized access." });
+        }
+
+        const orders = await Order.find({ customerEmail: searchEmail }).sort({ createdAt: -1 });
         const mapped = orders.map(o => ({
             ...o.toObject(),
             totalPrice: o.totalAmount,
@@ -44,7 +51,7 @@ router.get("/my", auth, async (req, res) => {
         }));
         res.json(mapped);
     } catch (err) {
-        res.status(500).json({ error: "Failed to fetch your orders." });
+        res.status(500).json({ error: "Failed to fetch orders." });
     }
 });
 
@@ -67,27 +74,67 @@ router.get("/track/:orderNumber", async (req, res) => {
 router.post("/", async (req, res) => {
     try {
         const {
-            customerId,
-            items,
-            shippingAddress,
-            totalAmount,
-            paymentMethod,
-            paymentDetails,
+            customerId, customerName, customerPhone, customerEmail,
+            items, address, totalPrice, paymentMethod, paymentId, paymentStatus
         } = req.body;
 
         const orderNumber = `DZ-${nanoid(10).toUpperCase()}`;
+        // ✅ Map item _id to id for schema compatibility
+        const mappedItems = (items || []).map(item => ({
+            id: item._id || item.id || item.productId,
+            name: item.name,
+            image: item.image,
+            selectedSize: item.selectedSize,
+            price: item.price,
+            qty: item.qty || 1,
+        }));
 
         const newOrder = await Order.create({
             orderNumber,
             customerId: customerId || null,
-            items: items || [],
-            shippingAddress: shippingAddress || {},
-            totalAmount: Number(totalAmount) || 0,
+            customerName: customerName || "Guest",
+            customerPhone: customerPhone || "",
+            customerEmail: customerEmail || "",
+            items: mappedItems,
+            shippingAddress: address || {},
+            totalAmount: Number(totalPrice) || 0,
             paymentMethod: paymentMethod || "Cash On Delivery",
-            paymentDetails: paymentDetails || {},
+            paymentStatus: paymentStatus || "Pending",
+            paymentDetails: { paymentId },
             orderStatus: "Processing",
             statusHistory: [{ status: "Processing", comment: "Order placed successfully." }]
         });
+
+        // ✅ REDUCE STOCK FOR EACH ITEM
+        for (const item of mappedItems) {
+            if (item.id) {
+                try {
+                    await Product.findByIdAndUpdate(item.id, {
+                        $inc: { stock: -(item.qty || 1), sold: (item.qty || 1) }
+                    });
+                } catch (stockErr) {
+                    console.error(`Failed to update stock for product ${item.id}:`, stockErr);
+                }
+            }
+        }
+
+        // Send Email Confirmation
+        if (customerEmail) {
+            const body = `
+                <h3>Order Confirmation</h3>
+                <p>Hello ${customerName},</p>
+                <p>Thank you for choosing DEZA Luxury. Your order <b>${orderNumber}</b> has been received and is being processed.</p>
+                <p><b>Order Details:</b></p>
+                <ul>
+                    ${items.map(i => `<li>${i.name} (x${i.qty}) - ₹${i.price * i.qty}</li>`).join('')}
+                </ul>
+                <p><b>Total Amount:</b> ₹${totalPrice}</p>
+                <p><b>Shipping to:</b> ${typeof address === 'string' ? address : (address.street + ', ' + address.city)}</p>
+                <p>We will notify you once your signature scent is shipped.</p>
+            `;
+            const template = getBrandedTemplate("Order Placed Successfully", body);
+            await sendEmail(customerEmail, `DEZA Luxury - Order Confirmation #${orderNumber}`, template);
+        }
 
         res.status(201).json(newOrder);
     } catch (err) {
@@ -132,6 +179,83 @@ router.delete("/:id", auth, adminOnly, async (req, res) => {
         res.json({ message: "Order deleted." });
     } catch (err) {
         res.status(500).json({ error: "Failed to delete order." });
+    }
+});
+
+// ─── USER ACTIONS (Cancel, Return, Refund) ───────────────────────────────────
+
+router.patch("/:id/cancel", async (req, res) => {
+    try {
+        const order = await Order.findById(req.params.id);
+        if (!order) return res.status(404).json({ error: "Order not found." });
+
+        if (order.orderStatus === "Delivered" || order.orderStatus === "Cancelled") {
+            return res.status(400).json({ error: "Order cannot be cancelled at this stage." });
+        }
+
+        order.orderStatus = "Cancelled";
+        order.cancelledAt = new Date();
+        order.statusHistory.push({ status: "Cancelled", comment: "Cancelled by User" });
+
+        await order.save();
+
+        // Always return mapped structure
+        res.json({
+            ...order.toObject(),
+            totalPrice: order.totalAmount,
+            status: order.orderStatus,
+            orderId: order.orderNumber
+        });
+    } catch (err) {
+        res.status(500).json({ error: "Failed to cancel order." });
+    }
+});
+
+router.patch("/:id/return", auth, async (req, res) => {
+    try {
+        const order = await Order.findById(req.params.id);
+        if (!order) return res.status(404).json({ error: "Order not found." });
+
+        const { returnType, reason, message } = req.body;
+        order.returnDetails = {
+            reason,
+            requestDate: new Date(),
+            status: "Pending"
+        };
+        // Add to history
+        order.statusHistory.push({ status: "Return Requested", comment: message });
+
+        await order.save();
+
+        res.json({
+            ...order.toObject(),
+            totalPrice: order.totalAmount,
+            status: order.orderStatus,
+            orderId: order.orderNumber
+        });
+    } catch (err) {
+        res.status(500).json({ error: "Failed to submit return request." });
+    }
+});
+
+router.patch("/:id/refund", auth, async (req, res) => {
+    try {
+        const order = await Order.findById(req.params.id);
+        if (!order) return res.status(404).json({ error: "Order not found." });
+
+        order.refundStatus = "Refund Requested";
+        order.statusHistory.push({ status: "Refund Requested", comment: "Refund requested by User" });
+
+        await order.save();
+
+        res.json({
+            ...order.toObject(),
+            totalPrice: order.totalAmount,
+            status: order.orderStatus,
+            orderId: order.orderNumber
+        });
+    } catch (err) {
+        res.status(500).json({ error: "Failed to request refund." });
     }
 });
 

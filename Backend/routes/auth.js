@@ -18,9 +18,29 @@ router.post("/register", async (req, res) => {
             return res.status(400).json({ error: "Name, email, and password are required." });
         }
 
+        // ✅ Exact Email format — Only allow letters, numbers, dot, and @
+        const strictEmailRegex = /^[a-zA-Z0-9.]+@[a-zA-Z0-9]+\.[a-zA-Z0-9.]+$/;
+        if (!strictEmailRegex.test(email)) {
+            return res.status(400).json({ error: "Email address should only contain letters, numbers, @, and ." });
+        }
+
         const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
         if (!strongPasswordRegex.test(password)) {
             return res.status(400).json({ error: "Password must be at least 8 characters long, include an uppercase letter, a lowercase letter, a number, and a special character." });
+        }
+
+        // ✅ DOB validation — must be at least 10 years old
+        if (dob) {
+            const birthDate = new Date(dob);
+            const today = new Date();
+            let age = today.getFullYear() - birthDate.getFullYear();
+            const m = today.getMonth() - birthDate.getMonth();
+            if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+                age--;
+            }
+            if (age < 10) {
+                return res.status(400).json({ error: "You must be at least 10 years old to register." });
+            }
         }
 
         const existing = await User.findOne({ email: email.toLowerCase() });

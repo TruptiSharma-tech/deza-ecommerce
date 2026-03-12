@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
+import ScrollToTop from "./components/ScrollToTop";
 
 // ✅ LAZY LOADED PAGES FOR FASTER INITIAL LOAD TIME
 const Home = lazy(() => import("./pages/Home"));
@@ -71,6 +72,7 @@ export default function App() {
           },
         }}
       />
+      <ScrollToTop />
       <Navbar />
 
       <Suspense fallback={<LoadingScreen />}>

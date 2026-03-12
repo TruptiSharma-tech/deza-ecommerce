@@ -23,6 +23,9 @@ export function AuthProvider({ children }) {
     setUser(null);
     localStorage.removeItem("currentUser");
     localStorage.removeItem("deza_token");
+    localStorage.removeItem("deza_cart");
+    localStorage.removeItem("deza_wishlist");
+    window.dispatchEvent(new Event("cartUpdate"));
   };
 
   return (

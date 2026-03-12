@@ -35,11 +35,13 @@ export default function Register() {
       setUiMessage("❌ Full name is required and should be at least 3 chars!");
       return;
     }
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!formData.email || !emailRegex.test(formData.email)) {
-      setUiMessage("❌ Please enter a valid email address!");
+    // Allows only alphanumeric chars, @ and .
+    const strictEmailRegex = /^[a-zA-Z0-9.]+@[a-zA-Z0-9]+\.[a-zA-Z0-9.]+$/;
+    if (!formData.email || !strictEmailRegex.test(formData.email) || formData.email.includes(',')) {
+      setUiMessage("❌ Please enter a valid email address (Only letters, numbers, @ and . are allowed)!");
       return;
     }
+
     const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
     if (!formData.password || !strongPasswordRegex.test(formData.password)) {
       setUiMessage("❌ Password must be min 8 chars with uppercase, lowercase, number, and special character.");
@@ -141,6 +143,24 @@ export default function Register() {
       return;
     }
 
+    if (!formData.dob) {
+      setUiMessage("❌ Please select your Date of Birth!");
+      return;
+    }
+
+    const birthDate = new Date(formData.dob);
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const m = today.getMonth() - birthDate.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+
+    if (age < 10) {
+      setUiMessage("❌ You must be at least 10 years old to register!");
+      return;
+    }
+
     setLoading(true);
     try {
       const data = await apiRegister(formData);
@@ -173,9 +193,46 @@ export default function Register() {
               fontWeight: '600',
               background: uiMessage.includes('✅') || uiMessage.includes('📩') ? 'rgba(212, 175, 55, 0.1)' : 'rgba(255, 0, 0, 0.1)',
               color: uiMessage.includes('✅') || uiMessage.includes('📩') ? '#d4af37' : '#ff4d4d',
-              border: `1px solid ${uiMessage.includes('✅') || uiMessage.includes('📩') ? 'rgba(212, 175, 55, 0.3)' : 'rgba(255, 0, 0, 0.3)'}`
+              border: `1px solid ${uiMessage.includes('✅') || uiMessage.includes('📩') ? 'rgba(212, 175, 55, 0.3)' : 'rgba(255, 0, 0, 0.3)'}`,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '10px'
             }}>
-            {uiMessage}
+            <div>{uiMessage}</div>
+            {(uiMessage.includes('❌') || uiMessage.includes('⚠️')) && (
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <button
+                  type="button"
+                  onClick={() => setUiMessage("")}
+                  style={{
+                    padding: '4px 12px',
+                    borderRadius: '6px',
+                    border: '1px solid currentColor',
+                    background: 'transparent',
+                    color: 'inherit',
+                    fontSize: '12px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Try Again 🔄
+                </button>
+                <button
+                  type="button"
+                  onClick={() => window.location.reload()}
+                  style={{
+                    padding: '4px 12px',
+                    borderRadius: '6px',
+                    border: '1px solid currentColor',
+                    background: 'transparent',
+                    color: 'inherit',
+                    fontSize: '12px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Refresh Page 🔃
+                </button>
+              </div>
+            )}
           </div>
         )}
 

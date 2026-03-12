@@ -141,10 +141,22 @@ export const apiDeleteReview = (id) =>
 export const apiGetCategories = () => request("/admin/categories");
 export const apiAddCategory = (payload) =>
     request("/admin/categories", { method: "POST", body: JSON.stringify(payload) });
+export const apiDeleteCategory = (id) =>
+    request(`/admin/categories/${id}`, { method: "DELETE" });
+export const apiArchiveCategory = (id) =>
+    request(`/admin/categories/${id}/archive`, { method: "PATCH" });
+export const apiUnarchiveCategory = (id) =>
+    request(`/admin/categories/${id}/unarchive`, { method: "PATCH" });
 
 export const apiGetBrands = () => request("/admin/brands");
 export const apiAddBrand = (payload) =>
     request("/admin/brands", { method: "POST", body: JSON.stringify(payload) });
+export const apiDeleteBrand = (id) =>
+    request(`/admin/brands/${id}`, { method: "DELETE" });
+export const apiArchiveBrand = (id) =>
+    request(`/admin/brands/${id}/archive`, { method: "PATCH" });
+export const apiUnarchiveBrand = (id) =>
+    request(`/admin/brands/${id}/unarchive`, { method: "PATCH" });
 
 export const apiGetSubscribers = () => request("/admin/subscribers");
 export const apiSubscribe = (email) =>

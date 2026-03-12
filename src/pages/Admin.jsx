@@ -9,8 +9,8 @@ import {
   apiGetQueries, apiUpdateQuery, apiReplyQuery, apiInitiateRefund,
   apiGetReviews, apiDeleteReview,
   apiGetUsers, apiDeleteUser,
-  apiGetCategories, apiAddCategory,
-  apiGetBrands, apiAddBrand,
+  apiGetCategories, apiAddCategory, apiDeleteCategory, apiArchiveCategory, apiUnarchiveCategory,
+  apiGetBrands, apiAddBrand, apiDeleteBrand, apiArchiveBrand, apiUnarchiveBrand,
   apiGetSubscribers, apiSendNewsletter,
   apiGetCoupons, apiAddCoupon,
   apiGetAuditLogs, apiGetHeroSettings
@@ -1905,13 +1905,62 @@ export default function Admin() {
                   <tr>
                     <th>Name</th>
                     <th>Status</th>
+                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {categoriesList.map((cat) => (
                     <tr key={cat._id}>
-                      <td>{cat.name}</td>
-                      <td>{cat.active ? "✅ Active" : "❌ Inactive"}</td>
+                      <td style={{ fontWeight: "600" }}>{cat.name}</td>
+                      <td>
+                        <span style={{
+                          color: cat.active ? "#4CAF50" : "#f44336",
+                          fontWeight: "600"
+                        }}>
+                          {cat.active ? "✅ Active" : "📦 Archived"}
+                        </span>
+                      </td>
+                      <td>
+                        <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                          {cat.active ? (
+                            <button
+                              className="small-btn"
+                              style={{ background: "#f39c12", border: "1px solid #e67e22", color: "#fff" }}
+                              onClick={async () => {
+                                if (!window.confirm(`Archive "${cat.name}"? It will be hidden from product selection.`)) return;
+                                try {
+                                  await apiArchiveCategory(cat._id);
+                                  setCategoriesList(categoriesList.map(c => c._id === cat._id ? { ...c, active: false } : c));
+                                  toast.success(`"${cat.name}" archived 📦`);
+                                } catch (e) { toast.error("Failed to archive category"); }
+                              }}
+                            >📦 Archive</button>
+                          ) : (
+                            <button
+                              className="small-btn edit-btn"
+                              onClick={async () => {
+                                if (!window.confirm(`Restore "${cat.name}" to active?`)) return;
+                                try {
+                                  await apiUnarchiveCategory(cat._id);
+                                  setCategoriesList(categoriesList.map(c => c._id === cat._id ? { ...c, active: true } : c));
+                                  toast.success(`"${cat.name}" restored ✅`);
+                                } catch (e) { toast.error("Failed to restore category"); }
+                              }}
+                            >✅ Restore</button>
+                          )}
+                          <button
+                            className="small-btn delete-btn"
+                            onClick={async () => {
+                              if (!window.confirm(`PERMANENTLY DELETE "${cat.name}"? This cannot be undone!`)) return;
+                              try {
+                                await apiDeleteCategory(cat._id);
+                                setCategoriesList(categoriesList.filter(c => c._id !== cat._id));
+                                toast.success(`"${cat.name}" deleted permanently 🗑️`);
+                              } catch (e) { toast.error("Failed to delete category"); }
+                            }}
+                          >🗑️ Delete</button>
+                        </div>
+                      </td>
                     </tr>
                   ))}
                   {categoriesList.length === 0 && (
@@ -1945,7 +1994,9 @@ export default function Admin() {
                   <tr>
                     <th>Brand Name</th>
                     <th>Origin</th>
-                    <th>Collection Count</th>
+                    <th>Products</th>
+                    <th>Status</th>
+                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1954,10 +2005,59 @@ export default function Admin() {
                       <td style={{ fontWeight: "800", color: "#D4AF37" }}>{b.name}</td>
                       <td>{b.origin || "International"}</td>
                       <td>{products.filter(p => p.types?.includes(b.name)).length} Products</td>
+                      <td>
+                        <span style={{
+                          color: b.isActive !== false ? "#4CAF50" : "#f44336",
+                          fontWeight: "600"
+                        }}>
+                          {b.isActive !== false ? "✅ Active" : "📦 Archived"}
+                        </span>
+                      </td>
+                      <td>
+                        <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                          {b.isActive !== false ? (
+                            <button
+                              className="small-btn"
+                              style={{ background: "#f39c12", border: "1px solid #e67e22", color: "#fff" }}
+                              onClick={async () => {
+                                if (!window.confirm(`Archive brand "${b.name}"? It will be hidden from product selection.`)) return;
+                                try {
+                                  await apiArchiveBrand(b._id);
+                                  setBrandsList(brandsList.map(br => br._id === b._id ? { ...br, isActive: false } : br));
+                                  toast.success(`"${b.name}" archived 📦`);
+                                } catch (e) { toast.error("Failed to archive brand"); }
+                              }}
+                            >📦 Archive</button>
+                          ) : (
+                            <button
+                              className="small-btn edit-btn"
+                              onClick={async () => {
+                                if (!window.confirm(`Restore brand "${b.name}" to active?`)) return;
+                                try {
+                                  await apiUnarchiveBrand(b._id);
+                                  setBrandsList(brandsList.map(br => br._id === b._id ? { ...br, isActive: true } : br));
+                                  toast.success(`"${b.name}" restored ✅`);
+                                } catch (e) { toast.error("Failed to restore brand"); }
+                              }}
+                            >✅ Restore</button>
+                          )}
+                          <button
+                            className="small-btn delete-btn"
+                            onClick={async () => {
+                              if (!window.confirm(`PERMANENTLY DELETE brand "${b.name}"? This cannot be undone!`)) return;
+                              try {
+                                await apiDeleteBrand(b._id);
+                                setBrandsList(brandsList.filter(br => br._id !== b._id));
+                                toast.success(`"${b.name}" deleted permanently 🗑️`);
+                              } catch (e) { toast.error("Failed to delete brand"); }
+                            }}
+                          >🗑️ Delete</button>
+                        </div>
+                      </td>
                     </tr>
                   ))}
                   {brandsList.length === 0 && (
-                    <tr><td colSpan="3" style={{ textAlign: "center" }}>No brands registered.</td></tr>
+                    <tr><td colSpan="5" style={{ textAlign: "center" }}>No brands registered.</td></tr>
                   )}
                 </tbody>
               </table>

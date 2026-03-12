@@ -14,8 +14,17 @@ export default function Orders() {
   const [returnType, setReturnType] = useState("Refund");
   const [returnReason, setReturnReason] = useState("Wrong Product Received");
   const [returnMessage, setReturnMessage] = useState("");
+  const [gpsTick, setGpsTick] = useState(0);
 
   const currentUser = JSON.parse(localStorage.getItem("currentUser"));
+
+  // Simulated GPS Movement Effect
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setGpsTick(prev => (prev + 0.5) % 100);
+    }, 3000);
+    return () => clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     loadOrders();
@@ -54,10 +63,12 @@ export default function Orders() {
   // ⭐ Progress Bar Steps
   const getProgressStep = (status) => {
     switch (status) {
+      case "Processing": return 1;
       case "Packed": return 2;
       case "Shipped": return 3;
       case "Out for Delivery": return 4;
       case "Delivered": return 5;
+      case "Cancelled": return 0;
       default: return 1;
     }
   };
@@ -163,15 +174,61 @@ export default function Orders() {
                 </span>
               </p>
 
-              {/* Live Tracking Mock */}
-              {(o.status === "Shipped" || o.status === "Out for Delivery") && (
-                <div className="order-gps-tracking">
-                  <div className="gps-header">📡 Live GPS Tracking (Active)</div>
-                  <div className="gps-map-mock">
-                    <div className="truck-marker" style={{ left: o.status === "Shipped" ? "40%" : "80%" }}>🚚</div>
-                    <div className="gps-line"></div>
+              {/* Enhanced Real-Time GPS Tracking - Show for all active states */}
+              {(o.status !== "Delivered" && o.status !== "Cancelled" && !o.status?.includes("Return")) && (
+                <div className="order-gps-tracking deluxe-gps">
+                  <div className="gps-header">
+                    <span className="dot pulse" style={{ background: (o.status === "Processing" || o.status === "Packed") ? "#f1c40f" : "#ff3e3e" }}></span>
+                    {(o.status === "Processing" || o.status === "Packed") ? "📡 ORDER PREPARATION: ACTIVE" : "📡 LIVE GPS TRACE: ACTIVE"}
                   </div>
-                  <p className="gps-note">Your luxury parcel is currently in transit.</p>
+
+                  <div className="gps-map-container">
+                    <div className="gps-path-line"></div>
+                    <div
+                      className="gps-covered-line"
+                      style={{
+                        width: o.status === "Processing" ? `${5 + (gpsTick * 0.05)}%` :
+                          o.status === "Packed" ? `${25 + (gpsTick * 0.05)}%` :
+                            o.status === "Shipped" ? `${45 + (gpsTick * 0.1)}%` : `${85 + (gpsTick * 0.05)}%`
+                      }}
+                    ></div>
+
+                    <div
+                      className="truck-marker-fancy"
+                      style={{
+                        left: o.status === "Processing" ? `${5 + (gpsTick * 0.05)}%` :
+                          o.status === "Packed" ? `${25 + (gpsTick * 0.05)}%` :
+                            o.status === "Shipped" ? `${45 + (gpsTick * 0.1)}%` : `${85 + (gpsTick * 0.05)}%`
+                      }}
+                    >
+                      <div className="truck-icon">{(o.status === "Shipped" || o.status === "Out for Delivery") ? "🚚" : "📦"}</div>
+                      <div className="truck-ping"></div>
+                    </div>
+
+                    <div className="checkpoint start">🏢 Warehouse</div>
+                    <div className="checkpoint end">🏠 You</div>
+                  </div>
+
+                  <div className="gps-info-grid">
+                    <div className="info-box">
+                      <small>Stage</small>
+                      <p>
+                        {o.status === "Processing" ? "Quality Check Running" :
+                          o.status === "Packed" ? "Securely Boxed" :
+                            o.status === "Shipped" ? "In Transit (Main Highway)" : "Local Distribution Centre"}
+                      </p>
+                    </div>
+                    <div className="info-box">
+                      <small>Expected Movement</small>
+                      <p>
+                        {o.status === "Processing" ? "Next: Packing" :
+                          o.status === "Packed" ? "Next: Courier Pickup" :
+                            o.status === "Shipped" ? "Next: Dist. Centre" : "Next: Doorstep Delivery"}
+                      </p>
+                    </div>
+                  </div>
+
+                  <p className="gps-disclaimer">Real-time status refreshed 3s ago • Precision Tracking Active</p>
                 </div>
               )}
 

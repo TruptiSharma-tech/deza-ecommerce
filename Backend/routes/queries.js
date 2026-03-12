@@ -63,6 +63,40 @@ router.post("/", async (req, res) => {
             status: "Pending",
         });
 
+        // ✅ Send confirmation email to the user
+        try {
+            const emailBody = `
+                <div style="font-family: 'Times New Roman', serif; line-height: 1.6; color: #333; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee;">
+                    <h2 style="color: #d4af37; text-align: center; border-bottom: 2px solid #d4af37; padding-bottom: 10px;">DEZA Luxury Concierge</h2>
+                    
+                    <p>Dear ${name.trim()},</p>
+                    
+                    <p>Thank you for reaching out to DEZA Luxury Support. We have formally received your communication regarding your recent inquiry.</p>
+                    
+                    <div style="background: #fdfdfd; padding: 15px; border-radius: 8px; margin: 20px 0; border: 1px solid #f0f0f0;">
+                        <p style="margin: 5px 0;"><strong>Case Reference:</strong> DZ-TK-${String(newTicket._id).slice(-6).toUpperCase()}</p>
+                        <p style="margin: 5px 0;"><strong>Status:</strong> Under Review</p>
+                    </div>
+
+                    <p>Our dedicated support specialists are currently reviewing the details you provided:</p>
+                    
+                    <div style="border-left: 4px solid #d4af37; padding: 15px; background: #fafafa; margin: 15px 0; font-style: italic;">
+                        "${message.trim()}"
+                    </div>
+
+                    <p>Please rest assured that your satisfaction is our highest priority. One of our concierge representatives will provide a personalized response within the next 24 to 48 business hours.</p>
+                    
+                    <p style="margin-top: 30px;">Sincerely,</p>
+                    <p><strong>The DEZA Concierge Team</strong><br/>
+                    <span style="font-size: 12px; color: #888;">Luxury Fragrances & Boutique Experience</span></p>
+                </div>
+            `;
+            const template = getBrandedTemplate("We've Received Your Inquiry", emailBody);
+            await sendEmail(email.toLowerCase().trim(), `[DEZA Support] Inquiry Received - Case #DZ-TK-${String(newTicket._id).slice(-6).toUpperCase()}`, template);
+        } catch (emailErr) {
+            console.error("Failed to send support confirmation email:", emailErr);
+        }
+
         res.status(201).json(newTicket);
     } catch (err) {
         res.status(500).json({ error: "Failed to submit support ticket." });
@@ -113,12 +147,48 @@ router.post("/:id/refund", auth, adminOnly, async (req, res) => {
         const ticket = await SupportTicket.findById(req.params.id);
         if (!ticket) return res.status(404).json({ error: "Ticket not found." });
 
+        // Update ticket status
         ticket.status = "Resolved";
         ticket.resolved = true;
         await ticket.save();
 
-        await logAdminAction(req.user.id, "Initiate Refund", "Finance", `Refund for ticket ${ticket._id}`, req.ip);
-        res.json({ message: "Refund initiated.", ticket });
+        // Send Professional Refund Email
+        try {
+            const emailBody = `
+                <div style="font-family: 'Times New Roman', serif; line-height: 1.8; color: #1a1a1a;">
+                    <p>Dear ${ticket.name},</p>
+                    
+                    <p>We are writing to inform you that your refund request regarding Case <b>#DZ-TK-${String(ticket._id).slice(-6).toUpperCase()}</b> has been formally approved and initiated by our finance department.</p>
+                    
+                    <div style="background: #f9f7f2; border: 1px solid #d4af37; padding: 20px; border-radius: 10px; margin: 25px 0;">
+                        <h3 style="color: #d4af37; margin-top: 0; text-transform: uppercase; letter-spacing: 2px; font-size: 14px;">Refund Details</h3>
+                        <p style="margin: 5px 0;"><b>Reference ID:</b> DZ-RFND-${Date.now().toString().slice(-6)}</p>
+                        <p style="margin: 5px 0;"><b>Order ID:</b> ${ticket.orderId || "N/A"}</p>
+                        <p style="margin: 5px 0;"><b>Processing Period:</b> Within 24 Business Hours</p>
+                    </div>
+
+                    <p><b>Important Information:</b></p>
+                    <ul>
+                        <li>The pickup of your fragrance will be scheduled within the next 48 hours if not already completed.</li>
+                        <li>Post pickup, the amount will be credited back to your original payment method (Account/Card/UPI) within our promised 24-hour window.</li>
+                        <li>You will receive a final confirmation from your bank once the credit is successful.</li>
+                    </ul>
+
+                    <p>We sincerely apologize for any inconvenience caused and hope to serve you with a perfect signature scent in the future.</p>
+                    
+                    <p style="margin-top: 40px;">Warm regards,</p>
+                    <p><b>Finance Concierge</b><br/>
+                    DEZA Luxury Fragrances</p>
+                </div>
+            `;
+            const template = getBrandedTemplate("Refund Initiated - DEZA Luxury", emailBody);
+            await sendEmail(ticket.email, `[DEZA Luxury] Refund Notification - Case #DZ-TK-${String(ticket._id).slice(-6).toUpperCase()}`, template);
+        } catch (emailErr) {
+            console.error("Failed to send refund email:", emailErr);
+        }
+
+        await logAdminAction(req.user.id, "Initiate Refund", "Finance", `Refund for ticket ${ticket._id} initiated and email sent.`, req.ip);
+        res.json({ message: "Refund initiated and customer notified.", ticket });
     } catch (err) {
         res.status(500).json({ error: "Failed to process refund." });
     }

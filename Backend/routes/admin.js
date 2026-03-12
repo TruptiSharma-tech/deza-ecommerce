@@ -40,6 +40,39 @@ router.post("/categories", auth, adminOnly, async (req, res) => {
     }
 });
 
+router.delete("/categories/:id", auth, adminOnly, async (req, res) => {
+    try {
+        const cat = await Category.findByIdAndDelete(req.params.id);
+        if (!cat) return res.status(404).json({ error: "Category not found." });
+        await logAdminAction(req.user.id, "Delete Category", "Settings", `Deleted: ${cat.name}`, req.ip);
+        res.json({ message: "Category deleted permanently." });
+    } catch (err) {
+        res.status(500).json({ error: "Failed to delete category." });
+    }
+});
+
+router.patch("/categories/:id/archive", auth, adminOnly, async (req, res) => {
+    try {
+        const cat = await Category.findByIdAndUpdate(req.params.id, { active: false }, { new: true });
+        if (!cat) return res.status(404).json({ error: "Category not found." });
+        await logAdminAction(req.user.id, "Archive Category", "Settings", `Archived: ${cat.name}`, req.ip);
+        res.json(cat);
+    } catch (err) {
+        res.status(500).json({ error: "Failed to archive category." });
+    }
+});
+
+router.patch("/categories/:id/unarchive", auth, adminOnly, async (req, res) => {
+    try {
+        const cat = await Category.findByIdAndUpdate(req.params.id, { active: true }, { new: true });
+        if (!cat) return res.status(404).json({ error: "Category not found." });
+        await logAdminAction(req.user.id, "Restore Category", "Settings", `Restored: ${cat.name}`, req.ip);
+        res.json(cat);
+    } catch (err) {
+        res.status(500).json({ error: "Failed to restore category." });
+    }
+});
+
 // ─── Hero Settings (Home Page) ────────────────────────────────────────────────
 router.get("/hero-settings", async (req, res) => {
     try {
@@ -111,6 +144,39 @@ router.post("/brands", auth, adminOnly, async (req, res) => {
         res.status(201).json(newBrand);
     } catch (err) {
         res.status(500).json({ error: "Failed to create brand." });
+    }
+});
+
+router.delete("/brands/:id", auth, adminOnly, async (req, res) => {
+    try {
+        const brand = await Brand.findByIdAndDelete(req.params.id);
+        if (!brand) return res.status(404).json({ error: "Brand not found." });
+        await logAdminAction(req.user.id, "Delete Brand", "Settings", `Deleted brand: ${brand.name}`, req.ip);
+        res.json({ message: "Brand deleted permanently." });
+    } catch (err) {
+        res.status(500).json({ error: "Failed to delete brand." });
+    }
+});
+
+router.patch("/brands/:id/archive", auth, adminOnly, async (req, res) => {
+    try {
+        const brand = await Brand.findByIdAndUpdate(req.params.id, { isActive: false }, { new: true });
+        if (!brand) return res.status(404).json({ error: "Brand not found." });
+        await logAdminAction(req.user.id, "Archive Brand", "Settings", `Archived brand: ${brand.name}`, req.ip);
+        res.json(brand);
+    } catch (err) {
+        res.status(500).json({ error: "Failed to archive brand." });
+    }
+});
+
+router.patch("/brands/:id/unarchive", auth, adminOnly, async (req, res) => {
+    try {
+        const brand = await Brand.findByIdAndUpdate(req.params.id, { isActive: true }, { new: true });
+        if (!brand) return res.status(404).json({ error: "Brand not found." });
+        await logAdminAction(req.user.id, "Restore Brand", "Settings", `Restored brand: ${brand.name}`, req.ip);
+        res.json(brand);
+    } catch (err) {
+        res.status(500).json({ error: "Failed to restore brand." });
     }
 });
 

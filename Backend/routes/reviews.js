@@ -1,12 +1,15 @@
 import express from "express";
 import Review from "../models/Review.js";
+import Product from "../models/Product.js";
 
 const router = express.Router();
 
 // ─── GET Reviews by Product ID ─────────────────────────────────────────────────
 router.get("/product/:productId", async (req, res) => {
     try {
-        const reviews = await Review.find({ productId: req.params.productId }).sort({ createdAt: -1 });
+        const reviews = await Review.find({
+            productId: { $in: [req.params.productId, String(req.params.productId)] }
+        }).sort({ createdAt: -1 });
         res.json(reviews);
     } catch (err) {
         res.status(500).json({ error: "Failed to fetch reviews." });
@@ -40,6 +43,19 @@ router.post("/", async (req, res) => {
             rating: Number(rating),
             comment: comment || "",
             date: new Date().toLocaleString(),
+        });
+
+        // ✅ RE-CALCULATE AVG RATING FOR PRODUCT (Using Universal ID Matching)
+        const allReviews = await Review.find({
+            productId: { $in: [productId, String(productId)] }
+        });
+
+        const totalRating = allReviews.reduce((sum, r) => sum + r.rating, 0);
+        const avgRating = totalRating / allReviews.length;
+
+        await Product.findByIdAndUpdate(productId, {
+            rating: Number(avgRating.toFixed(1)),
+            numReviews: allReviews.length
         });
 
         res.status(201).json(newReview);

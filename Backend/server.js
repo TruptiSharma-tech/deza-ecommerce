@@ -17,19 +17,19 @@ dotenv.config();
 const app = express();
 
 // ─── Rate Limiters ──────────────────────────────────────────────────────────────
-// Global limiter — 200 requests per 15 minutes per IP
+// Global limiter — increased heavily for local dev due to aggressive admin polling
 const globalLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 200,
+    max: 10000,
     standardHeaders: true,
     legacyHeaders: false,
     message: { error: "Too many requests, please try again later." },
 });
 
-// Strict limiter for auth routes — 10 attempts per 15 minutes per IP
+// Strict limiter for auth routes — 100 attempts per 15 minutes
 const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 10,
+    max: 100,
     standardHeaders: true,
     legacyHeaders: false,
     message: { error: "Too many auth attempts, please try again in 15 minutes." },
@@ -42,7 +42,7 @@ app.use(globalLimiter);
 // CORS — locked down to configured origin in production
 const allowedOrigins = process.env.ALLOWED_ORIGIN
     ? process.env.ALLOWED_ORIGIN.split(",").map((o) => o.trim())
-    : ["http://localhost:5173", "http://localhost:4173"];
+    : ["http://localhost:5173", "http://localhost:4173", "http://127.0.0.1:5173", "http://127.0.0.1:4173"];
 
 app.use(
     cors({
