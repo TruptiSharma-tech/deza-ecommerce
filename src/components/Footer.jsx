@@ -1,6 +1,9 @@
 import { Link } from "react-router-dom";
 import "./Footer.css";
-import { FaPhoneAlt, FaEnvelope } from "react-icons/fa";
+import { FaPhoneAlt, FaEnvelope, FaPaperPlane } from "react-icons/fa";
+import { apiSubscribe } from "../utils/api";
+import toast from "react-hot-toast";
+import React, { useState } from "react";
 
 export default function Footer() {
   return (
@@ -30,6 +33,34 @@ export default function Footer() {
           <Link to="/PrivacyPolicy">Privacy Policy</Link>
           <Link to="/terms">Terms & Conditions</Link>
           <Link to="/ReturnRefund">Return / Refund Policy</Link>
+        </div>
+
+        {/* Newsletter */}
+        <div className="footer-links">
+          <h3>Newsletter</h3>
+          <p style={{ fontSize: "12px", opacity: 0.7, marginBottom: "10px" }}>Subscribe to get luxury updates.</p>
+          <div className="newsletter-form" style={{ display: 'flex', gap: '5px' }}>
+            <input 
+              type="email" 
+              placeholder="Your email..." 
+              id="footer-email"
+              style={{ padding: '8px', borderRadius: '4px', border: '1px solid #d4af37', background: '#111', color: '#fff', width: '100%' }}
+            />
+            <button 
+              onClick={async () => {
+                const email = document.getElementById('footer-email').value;
+                if(!email) return toast.error("Enter email first");
+                try {
+                  await apiSubscribe(email);
+                  toast.success("Subscribed to the DEZA Edit! ✨");
+                  document.getElementById('footer-email').value = "";
+                } catch(e) { toast.error("Already subscribed or error"); }
+              }}
+              style={{ background: '#d4af37', color: '#111', border: 'none', padding: '8px 12px', borderRadius: '4px', cursor: 'pointer' }}
+            >
+              <FaPaperPlane />
+            </button>
+          </div>
         </div>
 
         {/* Support */}

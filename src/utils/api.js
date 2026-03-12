@@ -17,12 +17,17 @@ async function request(path, options = {}) {
     try {
         const res = await fetch(`${BASE_URL}${path}`, {
             headers: headers(),
+            cache: 'no-store', // ⚡ FORCE NO-CACHE FOR REAL-TIME UPDATES
             ...options,
         });
         const data = await res.json();
-        if (!res.ok) throw new Error(data.error || "Request failed");
+        if (!res.ok) {
+            console.error(`❌ API Error [${res.status}] ${path}:`, data);
+            throw new Error(data.error || "Request failed");
+        }
         return data;
     } catch (err) {
+        console.error(`🚨 Network Error ${path}:`, err.message);
         throw err;
     }
 }
@@ -54,7 +59,9 @@ export const apiCreateAdmin = (payload) =>
 // ══════════════════════════════════════════════════════════════
 //  PRODUCTS
 // ══════════════════════════════════════════════════════════════
-export const apiGetProducts = () => request("/products");
+// For admin to see all, including archived
+export const apiGetProducts = (includeArchived = false) =>
+    request(`/products${includeArchived ? "?includeArchived=true" : ""}`);
 
 export const apiGetProduct = (id) => request(`/products/${id}`);
 
@@ -65,7 +72,13 @@ export const apiUpdateProduct = (id, payload) =>
     request(`/products/${id}`, { method: "PUT", body: JSON.stringify(payload) });
 
 export const apiDeleteProduct = (id) =>
-    request(`/products/${id}`, { method: "DELETE" });
+    request(`/products/${id}/permanent`, { method: "DELETE" });
+
+export const apiArchiveProduct = (id) =>
+    request(`/products/${id}/archive`, { method: "PATCH" });
+
+export const apiUnarchiveProduct = (id) =>
+    request(`/products/${id}/unarchive`, { method: "PATCH" });
 
 // ══════════════════════════════════════════════════════════════
 //  ORDERS
@@ -77,8 +90,8 @@ export const apiGetMyOrders = (email) => request(`/orders/my/${encodeURIComponen
 export const apiCreateOrder = (payload) =>
     request("/orders", { method: "POST", body: JSON.stringify(payload) });
 
-export const apiUpdateOrderStatus = (id, status) =>
-    request(`/orders/${id}/status`, { method: "PATCH", body: JSON.stringify({ status }) });
+export const apiUpdateOrderStatus = (id, status, comment, trackingNumber, deliveryCompany) =>
+    request(`/orders/${id}/status`, { method: "PATCH", body: JSON.stringify({ status, comment, trackingNumber, deliveryCompany }) });
 
 export const apiCancelOrder = (id) =>
     request(`/orders/${id}/cancel`, { method: "PATCH" });
@@ -150,6 +163,9 @@ export const apiGetHeroSettings = () => request("/admin/hero-settings");
 export const apiUpdateHeroSettings = (payload) =>
     request("/admin/hero-settings", { method: "PUT", body: JSON.stringify(payload) });
 
+export const apiSendNewsletter = (payload) =>
+    request("/admin/newsletter", { method: "POST", body: JSON.stringify(payload) });
+
 // ══════════════════════════════════════════════════════════════
 //  PAYMENTS (Razorpay)
 // ══════════════════════════════════════════════════════════════
@@ -158,4 +174,5 @@ export const apiCreateRazorpayOrder = (payload) =>
 
 export const apiVerifyRazorpayPayment = (payload) =>
     request("/payments/verify-payment", { method: "POST", body: JSON.stringify(payload) });
+
 

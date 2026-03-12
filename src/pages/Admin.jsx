@@ -4,14 +4,14 @@ import toast from "react-hot-toast";
 import { Filler } from "chart.js";
 import { useNavigate } from "react-router-dom";
 import {
-  apiGetProducts, apiAddProduct, apiUpdateProduct, apiDeleteProduct,
+  apiGetProducts, apiAddProduct, apiUpdateProduct, apiDeleteProduct, apiArchiveProduct, apiUnarchiveProduct,
   apiGetOrders, apiUpdateOrderStatus,
   apiGetQueries, apiUpdateQuery, apiReplyQuery, apiInitiateRefund,
   apiGetReviews, apiDeleteReview,
   apiGetUsers, apiDeleteUser,
   apiGetCategories, apiAddCategory,
   apiGetBrands, apiAddBrand,
-  apiGetSubscribers,
+  apiGetSubscribers, apiSendNewsletter,
   apiGetCoupons, apiAddCoupon,
   apiGetAuditLogs, apiGetHeroSettings
 } from "../utils/api";
@@ -47,7 +47,7 @@ ChartJS.register(
   Filler,
 );
 
-const REFRESH_INTERVAL = 5000; // Real-time sync every 5 seconds ⚡
+const REFRESH_INTERVAL = 3000; // Real-time sync every 3 seconds ⚡
 
 // ❌ REMOVE THESE (these were making everything black)
 // ChartJS.defaults.color = "#1A1A1A";
@@ -109,8 +109,16 @@ export default function Admin() {
   // Edit Product
   const [editingProduct, setEditingProduct] = useState(null);
 
-  const categories = ["Men", "Women", "Unisex"];
-  const types = ["Deza", "Recreational"];
+  // Newsletter State
+  const [showNewsletterForm, setShowNewsletterForm] = useState(false);
+  const [newsSubject, setNewsSubject] = useState("");
+  const [newsTitle, setNewsTitle] = useState("");
+  const [newsBody, setNewsBody] = useState("");
+  const [sendingEmail, setSendingEmail] = useState(false);
+
+  // Hardcoded UI labels (Optional fallback, but we use dynamic now)
+  const categories = categoriesList.length ? categoriesList.map(c => c.name) : ["Men", "Women", "Unisex"];
+  const types = brandsList.length ? brandsList.map(b => b.name) : ["Deza", "Recreational"];
 
   // ✅ PROFESSIONAL CHART OPTIONS (DARK THEME)
   const chartOptions = {
@@ -154,13 +162,28 @@ export default function Admin() {
     }
   };
 
-  // ✅ Notification State
-  const [notifications, setNotifications] = useState([]);
-  const prevOrderRef = useRef(0);
-  const prevQueryRef = useRef(0);
+  // ✅ Notification State (Persisted)
+  const [notifications, setNotifications] = useState(() => {
+    const saved = localStorage.getItem("admin_notifications");
+    return saved ? JSON.parse(saved) : [];
+  });
+  const prevOrderRef = useRef(""); // Store latest ID instead of length
+  const prevQueryRef = useRef(""); // Store latest ID instead of length
   const firstLoadRef = useRef(true);
 
-  // ✅ Real-time Auto-Refresh
+  // Auto-save notifications
+  useEffect(() => {
+    localStorage.setItem("admin_notifications", JSON.stringify(notifications));
+  }, [notifications]);
+
+  // ✅ Auto-scroll strictly to top when Admin tabs change
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    const content = document.querySelector('.admin-content');
+    if (content) content.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+  }, [activeTab]);
+
+  // ✅ Real-time Auto-Refresh (3s)
   useEffect(() => {
     loadAll();
     const interval = setInterval(() => {
@@ -173,67 +196,98 @@ export default function Admin() {
   const loadAll = async (silent = false) => {
     if (!silent) setLoading(true);
     try {
-      const [prods, ords, qrys, revs, cats, brnds, subs, cpns, logs, usrs, hro] = await Promise.all([
-        apiGetProducts().catch(e => { console.error("Products error:", e); return []; }),
-        apiGetOrders().catch(e => { console.error("Orders error:", e); return []; }),
-        apiGetQueries().catch(e => { console.error("Queries error:", e); return []; }),
-        apiGetReviews().catch(e => { console.error("Reviews error:", e); return []; }),
-        apiGetCategories().catch(e => { console.error("Categories error:", e); return []; }),
-        apiGetBrands().catch(e => { console.error("Brands error:", e); return []; }),
-        apiGetSubscribers().catch(e => { console.error("Subscribers error:", e); return []; }),
-        apiGetCoupons().catch(e => { console.error("Coupons error:", e); return []; }),
-        apiGetAuditLogs().catch(e => { console.error("AuditLogs error:", e); return []; }),
-        apiGetUsers().catch(e => { console.error("Users error:", e); return []; }),
-        apiGetHeroSettings().catch(e => { console.error("Hero error:", e); return null; }),
-      ]);
+      // ✅ PERFORMANCE OPTIMIZATION: Only fetch real-time items on silent sync
+      const criticalFetch = [
+        apiGetOrders(),
+        apiGetQueries(),
+        apiGetUsers(),
+      ];
 
-      console.log(`[⚡ Admin Sync] Data fetched at ${new Date().toLocaleTimeString()}`);
+      const fullFetch = silent ? [] : [
+        apiGetProducts(true),
+        apiGetReviews(),
+        apiGetCategories(),
+        apiGetBrands(),
+        apiGetSubscribers(),
+        apiGetCoupons(),
+        apiGetAuditLogs(),
+        apiGetHeroSettings(),
+      ];
 
-      // ✅ New Order Notification Logic
-      if (!firstLoadRef.current && ords.length > prevOrderRef.current) {
-        const newCount = ords.length - prevOrderRef.current;
-        const newNotify = {
-          id: Date.now(),
-          message: `🎉 ${newCount} New Order(s) Received!`,
-          time: new Date().toLocaleTimeString()
-        };
-        setNotifications(prev => [newNotify, ...prev].slice(0, 10));
+      // Handle Critical Fetch with error isolation
+      let ords = [], qrys = [], usrs = [];
+      try {
+        const results = await Promise.all(criticalFetch);
+        ords = results[0];
+        qrys = results[1];
+        usrs = results[2];
+      } catch (critErr) {
+        console.warn("Silent Sync Critical Error:", critErr);
+        // On error, we keep old states and DON'T trigger notifications
+        if (!silent) throw critErr;
+        return;
+      }
 
-        try {
-          const audio = new Audio("https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3");
-          audio.play();
-        } catch (e) { }
+      const fullResults = silent ? [] : await Promise.all(fullFetch.map(p => p.catch(e => null)));
+
+      console.log(`[⚡ Admin Sync] ${silent ? "Fast Sync" : "Full Sync"} at ${new Date().toLocaleTimeString()}`);
+
+      // ✅ New Order Notification Logic (ID based for accuracy)
+      if (ords.length > 0) {
+        const latestOrderId = ords[0]?._id;
+        if (!firstLoadRef.current && latestOrderId && latestOrderId !== prevOrderRef.current) {
+          const orderId = ords[0]?.orderId || `DZ-${String(latestOrderId).slice(-6).toUpperCase()}`;
+          setNotifications(prev => {
+            // Deduplicate if by some chance it was already added
+            const isDuplicate = prev.some(n => n.message.includes(orderId));
+            if (isDuplicate) return prev;
+
+            return [{
+              id: Date.now(),
+              message: `🎉 New Order Received! (${orderId})`,
+              time: new Date().toLocaleTimeString()
+            }, ...prev].slice(0, 15);
+          });
+
+          try {
+            new Audio("https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3").play();
+          } catch (e) { }
+        }
+        prevOrderRef.current = latestOrderId;
       }
 
       // ✅ New Query Notification Logic
-      if (!firstLoadRef.current && qrys.length > prevQueryRef.current) {
-        const newCount = qrys.length - prevQueryRef.current;
-        const newNotify = {
-          id: Date.now() + 1,
-          message: `📬 ${newCount} New Support Query!`,
-          time: new Date().toLocaleTimeString()
-        };
-        setNotifications(prev => [newNotify, ...prev].slice(0, 10));
-        try {
-          const audio = new Audio("https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3");
-          audio.play();
-        } catch (e) { }
+      if (qrys.length > 0) {
+        const latestQryId = qrys[0]?._id;
+        if (!firstLoadRef.current && latestQryId && latestQryId !== prevQueryRef.current) {
+          setNotifications(prev => [{
+            id: Date.now() + 1,
+            message: `📬 New Support Query! (${qrys[0]?.name})`,
+            time: new Date().toLocaleTimeString()
+          }, ...prev].slice(0, 15));
+          try {
+            new Audio("https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3").play();
+          } catch (e) { }
+        }
+        prevQueryRef.current = latestQryId;
       }
 
-      prevOrderRef.current = ords.length;
-      prevQueryRef.current = qrys.length;
       firstLoadRef.current = false;
 
-      setProducts(prods);
+      if (!silent) {
+        const [prods, revs, cats, brnds, subs, cpns, logs, hro] = fullResults;
+        if (prods) setProducts(prods);
+        if (revs) setReviews(revs);
+        if (cats) setCategoriesList(cats);
+        if (brnds) setBrandsList(brnds);
+        if (subs) setSubscribers(subs);
+        if (cpns) setCoupons(cpns);
+        if (logs) setAuditLogs(logs);
+      }
+
       setOrders(ords);
       setQueries(qrys);
-      setReviews(revs);
-      setCategoriesList(cats);
-      setBrandsList(brnds);
-      setSubscribers(subs);
-      setCoupons(cpns);
       setUsers(usrs);
-      setAuditLogs(logs);
 
       setLastUpdated(new Date());
       setError(null);
@@ -284,6 +338,22 @@ export default function Admin() {
     }
   };
 
+  const handleSendNewsletter = async (e) => {
+    e.preventDefault();
+    if (!newsSubject || !newsTitle || !newsBody) return toast.error("All fields required!");
+    setSendingEmail(true);
+    try {
+      await apiSendNewsletter({ subject: newsSubject, title: newsTitle, body: newsBody });
+      toast.success("Newsletter Broadcasted! 🚀");
+      setNewsSubject(""); setNewsTitle(""); setNewsBody("");
+      setShowNewsletterForm(false);
+    } catch (e) {
+      toast.error("Failed to send broadcast");
+    } finally {
+      setSendingEmail(false);
+    }
+  };
+
   // ADD PRODUCT
   const handleAddProduct = async (e) => {
     e.preventDefault();
@@ -300,8 +370,8 @@ export default function Admin() {
       return;
     }
 
-    if (Number(stock) < 0) {
-      toast.error("Stock cannot be negative!");
+    if (Number(stock) <= 0) {
+      toast.error("Stock must be greater than 0!");
       return;
     }
 
@@ -314,9 +384,15 @@ export default function Admin() {
       return;
     }
 
-    const negativePrice = validSizePrices.find((sp) => Number(sp.price) < 0);
-    if (negativePrice) {
-      toast.error("Price cannot be negative!");
+    const invalidPrice = validSizePrices.find((sp) => Number(sp.price) <= 0);
+    if (invalidPrice) {
+      toast.error("Price must be greater than 0!");
+      return;
+    }
+
+    const invalidSize = validSizePrices.find((sp) => parseInt(sp.size) <= 0 || sp.size.trim() === "0" || sp.size.trim() === "0ml");
+    if (invalidSize) {
+      toast.error("Size cannot be 0 or negative!");
       return;
     }
 
@@ -357,14 +433,39 @@ export default function Admin() {
 
   // DELETE PRODUCT
   const handleDeleteProduct = async (id) => {
-    if (!window.confirm("Delete this product?")) return;
+    if (!window.confirm("PERMANENTLY DELETE this product? This action cannot be undone!")) return;
     try {
       await apiDeleteProduct(id);
       setProducts(products.filter((p) => p._id !== id));
-      setReviews(reviews.filter((r) => r.productId !== id));
-      toast.success("Product deleted successfully!");
+      toast.success("Product deleted permanently! 🗑️");
     } catch (err) {
       toast.error("Failed to delete: " + err.message);
+    }
+  };
+
+  // ARCHIVE PRODUCT
+  const handleArchiveProduct = async (id) => {
+    if (!window.confirm("Archive this product? It will be hidden from the shop.")) return;
+    try {
+      await apiArchiveProduct(id);
+      // Update local state to reflect archived status
+      setProducts(products.map((p) => (p._id === id ? { ...p, isArchived: true } : p)));
+      toast.success("Product archived successfully!");
+    } catch (err) {
+      toast.error("Failed to archive: " + err.message);
+    }
+  };
+
+  // UNARCHIVE PRODUCT
+  const handleUnarchiveProduct = async (id) => {
+    if (!window.confirm("Restore this product to the shop?")) return;
+    try {
+      await apiUnarchiveProduct(id);
+      // Update local state to reflect unarchived status
+      setProducts(products.map((p) => (p._id === id ? { ...p, isArchived: false } : p)));
+      toast.success("Product restored successfully!");
+    } catch (err) {
+      toast.error("Failed to restore: " + err.message);
     }
   };
 
@@ -411,8 +512,8 @@ export default function Admin() {
       return;
     }
 
-    if (Number(stock) < 0) {
-      toast.error("Stock cannot be negative!");
+    if (Number(stock) <= 0) {
+      toast.error("Stock must be greater than 0!");
       return;
     }
 
@@ -425,9 +526,15 @@ export default function Admin() {
       return;
     }
 
-    const negativePrice = validSizePrices.find((sp) => Number(sp.price) < 0);
-    if (negativePrice) {
-      toast.error("Price cannot be negative!");
+    const invalidPrice = validSizePrices.find((sp) => Number(sp.price) <= 0);
+    if (invalidPrice) {
+      toast.error("Price must be greater than 0!");
+      return;
+    }
+
+    const invalidSize = validSizePrices.find((sp) => parseInt(sp.size) <= 0 || sp.size.trim() === "0" || sp.size.trim() === "0ml");
+    if (invalidSize) {
+      toast.error("Size cannot be 0 or negative!");
       return;
     }
 
@@ -462,12 +569,14 @@ export default function Admin() {
   };
 
   // ORDER STATUS UPDATE
-  const updateOrderStatus = async (id, status) => {
+  const updateOrderStatus = async (id, status, comment, trackingNumber, deliveryCompany) => {
     try {
-      const updated = await apiUpdateOrderStatus(id, status);
-      setOrders(orders.map((o) => (o._id === id ? updated : o)));
+      const updated = await apiUpdateOrderStatus(id, status, comment, trackingNumber, deliveryCompany);
+      setOrders(orders.map((o) => (o._id === id ? { ...o, ...updated } : o)));
+      if (trackingNumber) toast.success("Tracking information updated! 📦");
+      else toast.success(`Order status updated to ${status}`);
     } catch (err) {
-      toast.error("Failed to update order status: " + err.message);
+      toast.error("Failed to update: " + err.message);
     }
   };
 
@@ -542,11 +651,7 @@ export default function Admin() {
     return true;
   });
 
-  const finalOrders = filteredOrders.filter((o) => {
-    const catMatch = filterCategory === "All" || o.category === filterCategory;
-    const typeMatch = filterType === "All" || o.type === filterType;
-    return catMatch && typeMatch;
-  });
+  const finalOrders = filteredOrders; // Orders shouldn't be filtered by product-categories at top level
 
   // Stats
   const totalProducts = products.length;
@@ -560,13 +665,31 @@ export default function Admin() {
   const deliveredOrders = finalOrders.filter(
     (o) => o.status === "Delivered",
   ).length;
+
   const pendingOrders = finalOrders.filter(
-    (o) => o.status === "Pending",
-  ).length;
-  const shippedOrders = finalOrders.filter(
-    (o) => o.status === "Shipped",
+    (o) => o.status === "Pending" || o.status === "Processing",
   ).length;
 
+  const shippedOrders = finalOrders.filter(
+    (o) => o.status === "Shipped" || o.status === "Out for Delivery",
+  ).length;
+
+  // Filter Products for the List Tab
+  const productsToDisplay = products.filter((p) => {
+    const catMatch = filterCategory === "All" || (p.categories || []).includes(filterCategory);
+    const typeMatch = filterType === "All" || (p.types || []).includes(filterType);
+    return catMatch && typeMatch;
+  });
+
+  // Ratings (Calculated for filtered products)
+  const productsWithAvgRating = productsToDisplay.map((p) => {
+    const productReviews = reviews.filter((r) => r.productId === p._id);
+    const avgRating = productReviews.length
+      ? productReviews.reduce((sum, r) => sum + r.rating, 0) /
+      productReviews.length
+      : (p.rating || 0);
+    return { ...p, avgRating };
+  });
   const pendingQueries = queries.filter(q => q.status === "Pending").length;
   const resolvedQueries = queries.filter(q => q.status === "Resolved" || q.resolved).length;
 
@@ -596,16 +719,6 @@ export default function Admin() {
   const mostSoldProduct = sortedBySold[0]?.title || "N/A";
   const leastSoldProduct =
     sortedBySold[sortedBySold.length - 1]?.title || "N/A";
-
-  // Ratings
-  const productsWithAvgRating = products.map((p) => {
-    const productReviews = reviews.filter((r) => r.productId === p._id);
-    const avgRating = productReviews.length
-      ? productReviews.reduce((sum, r) => sum + r.rating, 0) /
-      productReviews.length
-      : 0;
-    return { ...p, avgRating };
-  });
 
   const highestRatedProduct = productsWithAvgRating.reduce(
     (max, p) => (p.avgRating > max.avgRating ? p : max),
@@ -837,6 +950,27 @@ export default function Admin() {
         </button>
 
         <button
+          className={activeTab === "categories" ? "active" : ""}
+          onClick={() => setActiveTab("categories")}
+        >
+          🏷️ Categories
+        </button>
+
+        <button
+          className={activeTab === "brands" ? "active" : ""}
+          onClick={() => setActiveTab("brands")}
+        >
+          ✨ Brands
+        </button>
+
+        <button
+          className={activeTab === "subscribers" ? "active" : ""}
+          onClick={() => setActiveTab("subscribers")}
+        >
+          📧 Subscribers
+        </button>
+
+        <button
           className={activeTab === "hero" ? "active" : ""}
           onClick={() => setActiveTab("hero")}
         >
@@ -969,7 +1103,16 @@ export default function Admin() {
             {/* NOTIFICATIONS & ACTIVITY */}
             <div className="dashboard-grid-2">
               <div className="activity-panel">
-                <h3>🔔 Recent Notifications</h3>
+                <div className="flex-between">
+                  <h3>🔔 Recent Notifications</h3>
+                  <button
+                    className="small-btn delete-btn"
+                    style={{ fontSize: '10px', padding: '4px 8px' }}
+                    onClick={() => setNotifications([])}
+                  >
+                    Clear All
+                  </button>
+                </div>
                 <div className="notifications-list">
                   {notifications.length > 0 ? (
                     notifications.map(n => (
@@ -1179,19 +1322,19 @@ export default function Admin() {
 
               <div className="checkbox-group">
                 <h4>Select Categories</h4>
-                <div className="checkbox-row">
+                <div className="checkbox-row" style={{ display: "flex", flexWrap: "wrap", gap: "10px" }}>
                   {categories.map((c) => (
-                    <label key={c} className="check-item">
+                    <label key={c} className="check-item" style={{ display: "flex", alignItems: "center", gap: "5px", cursor: "pointer" }}>
                       <input
                         type="checkbox"
                         checked={categoriesSelected.includes(c)}
-                        onChange={() =>
-                          toggleCheckbox(
-                            c,
-                            categoriesSelected,
-                            setCategoriesSelected,
-                          )
-                        }
+                        onChange={() => {
+                          if (categoriesSelected.includes(c)) {
+                            setCategoriesSelected(categoriesSelected.filter(x => x !== c));
+                          } else {
+                            setCategoriesSelected([...categoriesSelected, c]);
+                          }
+                        }}
                       />
                       {c}
                     </label>
@@ -1199,17 +1342,21 @@ export default function Admin() {
                 </div>
               </div>
 
-              <div className="checkbox-group">
-                <h4>Select Types</h4>
-                <div className="checkbox-row">
+              <div className="checkbox-group" style={{ marginTop: "15px" }}>
+                <h4>✨ Brands (Select Brand)</h4>
+                <div className="checkbox-row" style={{ display: "flex", flexWrap: "wrap", gap: "10px" }}>
                   {types.map((t) => (
-                    <label key={t} className="check-item">
+                    <label key={t} className="check-item" style={{ display: "flex", alignItems: "center", gap: "5px", cursor: "pointer" }}>
                       <input
                         type="checkbox"
                         checked={typesSelected.includes(t)}
-                        onChange={() =>
-                          toggleCheckbox(t, typesSelected, setTypesSelected)
-                        }
+                        onChange={() => {
+                          if (typesSelected.includes(t)) {
+                            setTypesSelected(typesSelected.filter(x => x !== t));
+                          } else {
+                            setTypesSelected([...typesSelected, t]);
+                          }
+                        }}
                       />
                       {t}
                     </label>
@@ -1332,7 +1479,22 @@ export default function Admin() {
                           className="table-img"
                         />
                       </td>
-                      <td>{p.title}</td>
+                      <td>
+                        {p.title}
+                        {p.isArchived && (
+                          <span style={{
+                            marginLeft: '8px',
+                            fontSize: '10px',
+                            background: '#ff4d4d',
+                            color: '#fff',
+                            padding: '2px 6px',
+                            borderRadius: '4px',
+                            textTransform: 'uppercase'
+                          }}>
+                            Archived
+                          </span>
+                        )}
+                      </td>
                       <td>{(p.categories || []).join(", ")}</td>
                       <td>{(p.types || []).join(", ")}</td>
                       <td>{p.stock}</td>
@@ -1353,6 +1515,22 @@ export default function Admin() {
                         >
                           Delete
                         </button>
+
+                        {p.isArchived ? (
+                          <button
+                            className="small-btn unarchive-btn"
+                            onClick={() => handleUnarchiveProduct(p._id)}
+                          >
+                            Unarchive
+                          </button>
+                        ) : (
+                          <button
+                            className="small-btn archive-btn"
+                            onClick={() => handleArchiveProduct(p._id)}
+                          >
+                            Archive
+                          </button>
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -1396,8 +1574,11 @@ export default function Admin() {
                 <tbody>
                   {finalOrders.map((o) => (
                     <tr key={o._id}>
-                      <td>{o.orderId || "DZ-" + String(o._id).slice(-6).toUpperCase()}</td>
-                      <td>{new Date(o.date).toLocaleDateString()}</td>
+                      <td>{o.orderId || o.orderNumber || "DZ-" + String(o._id).slice(-6).toUpperCase()}</td>
+                      <td>
+                        {new Date(o.createdAt || o.date).toLocaleDateString()} <br />
+                        <small style={{ opacity: 0.6 }}>{new Date(o.createdAt || o.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</small>
+                      </td>
 
                       <td>
                         <strong>{o.customerName || "N/A"}</strong>
@@ -1406,17 +1587,17 @@ export default function Admin() {
                       </td>
 
                       <td>
-                        {o.address ? (
-                          typeof o.address === "string" ? (
-                            <>{o.address}</>
+                        {o.shippingAddress || o.address ? (
+                          typeof (o.shippingAddress || o.address) === "string" ? (
+                            <>{o.shippingAddress || o.address}</>
                           ) : (
                             <>
                               <strong>{o.customerName}</strong> <br />
                               {o.customerPhone} <br />
-                              {o.address.street}, {o.address.area} <br />
-                              {o.address.city}, {o.address.state} -{" "}
-                              {o.address.pincode} <br />
-                              {o.address.country}
+                              {(o.shippingAddress || o.address).street}, {(o.shippingAddress || o.address).area} <br />
+                              {(o.shippingAddress || o.address).city}, {(o.shippingAddress || o.address).state} -{" "}
+                              {(o.shippingAddress || o.address).pincode} <br />
+                              {(o.shippingAddress || o.address).country}
                             </>
                           )
                         ) : (
@@ -1445,16 +1626,34 @@ export default function Admin() {
                       <td>
                         <select
                           value={o.status}
+                          style={{
+                            background: o.status === "Delivered" ? "#2ecc71" : o.status === "Cancelled" ? "#e74c3c" : "#333",
+                            color: "#fff",
+                            padding: "5px",
+                            borderRadius: "8px",
+                            border: "1px solid #555"
+                          }}
                           onChange={(e) =>
                             updateOrderStatus(o._id, e.target.value)
                           }
                         >
-                          <option value="Pending">Pending</option>
-                          <option value="Packed">Packed</option>
+                          <option value="Processing">Processing</option>
                           <option value="Shipped">Shipped</option>
-                          <option value="Out for Delivery">Out for Delivery</option>
                           <option value="Delivered">Delivered</option>
+                          <option value="Cancelled">Cancelled</option>
                         </select>
+
+                        {o.status === "Shipped" && (
+                          <div style={{ marginTop: "10px" }}>
+                            <input
+                              type="text"
+                              placeholder="Tracking ID"
+                              defaultValue={o.trackingNumber}
+                              onBlur={(e) => updateOrderStatus(o._id, "Shipped", "Tracking Updated", e.target.value)}
+                              style={{ padding: "4px", fontSize: "11px", width: "100px", background: "#222", color: "#fff", border: "1px solid #444" }}
+                            />
+                          </div>
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -1549,12 +1748,12 @@ export default function Admin() {
                               }}
                               value={""} // Always empty to allow re-selection
                             >
-                              <option value="" disabled>✨ Select Auto-Reply...</option>
-                              <option value="We sincerely apologize for the inconvenience. For the wrong product received, your return pickup has been scheduled. The order will be pickup in 3 days. Replacement will be sent post pickup.">Wrong Product Received (Pickup in 3 Days)</option>
-                              <option value="We apologize that the scent did not meet your expectations. We have approved your return request. Please pack the item securely for pickup. Note: Return accepted as per 48h policy.">Not Satisfied (Return Approved)</option>
-                              <option value="We are terribly sorry about the damaged bottle. We have initiated a full refund to your original payment method. As per our 24-hour promise, the amount will be credited within 24 hours.">Damaged / Leakage (Full Refund + 24h Promise)</option>
-                              <option value="Your refund request is approved. Our finance team has initiated the transaction. You will receive the credit in your account within 24 business hours as per DEZA luxury standards.">Refund Approved (24-Hour Credit)</option>
-                              <option value="Thank you for reaching out. Your exchange request for a different size/fragrance has been noted. Our team will contact you for pickup within 48 hours.">Exchange Request Acknowledgment</option>
+                              <option value="" disabled>✨ Select Reply Template...</option>
+                              <option value="We sincerely apologize for the inconvenience. For the wrong product received, your return pickup has been scheduled. The order will be pickup in 3 days. Replacement will be sent post pickup.">Reply Template: Wrong Item (3-Day Pickup)</option>
+                              <option value="We apologize that the scent did not meet your expectations. We have approved your return request. Please pack the item securely for pickup. Note: Return accepted as per 48h policy.">Reply Template: Scent Return Approved (48h)</option>
+                              <option value="We are terribly sorry about the damaged bottle. We have initiated a full refund to your original payment method. As per our 24-hour promise, the amount will be credited within 24 hours.">Reply Template: Damaged Bottle (Full Refund)</option>
+                              <option value="Your refund request is approved. Our finance team has initiated the transaction. You will receive the credit in your account within 24 business hours as per DEZA luxury standards.">Reply Template: Refund Approved (Initate Transfer)</option>
+                              <option value="Thank you for reaching out. Your exchange request for a different size/fragrance has been noted. Our team will contact you for pickup within 48 hours.">Reply Template: Exchange Acknowledged</option>
                             </select>
 
                             <textarea
@@ -1688,13 +1887,23 @@ export default function Admin() {
         {/* CATEGORIES */}
         {activeTab === "categories" && (
           <div className="admin-section">
-            <h2>🏷️ Product Categories</h2>
+            <div className="flex-between">
+              <h2>🏷️ Product Categories</h2>
+              <button className="small-btn edit-btn" onClick={async () => {
+                const name = prompt("Enter Category Name:");
+                if (!name) return;
+                try {
+                  await apiAddCategory({ name, active: true });
+                  toast.success("Category Added! 🪄");
+                  loadAll();
+                } catch (e) { toast.error("Failed to add category"); }
+              }}>+ Add New Category</button>
+            </div>
             <div className="table-wrapper">
               <table>
                 <thead>
                   <tr>
                     <th>Name</th>
-                    <th>Description</th>
                     <th>Status</th>
                   </tr>
                 </thead>
@@ -1702,12 +1911,147 @@ export default function Admin() {
                   {categoriesList.map((cat) => (
                     <tr key={cat._id}>
                       <td>{cat.name}</td>
-                      <td>{cat.description || "N/A"}</td>
                       <td>{cat.active ? "✅ Active" : "❌ Inactive"}</td>
                     </tr>
                   ))}
                   {categoriesList.length === 0 && (
                     <tr><td colSpan="3" style={{ textAlign: "center" }}>No categories found.</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* BRANDS */}
+        {activeTab === "brands" && (
+          <div className="admin-section">
+            <div className="flex-between">
+              <h2>✨ Luxury Fragrance Brands</h2>
+              <button className="small-btn edit-btn" onClick={async () => {
+                const name = prompt("Enter Brand Name:");
+                const origin = prompt("Enter Origin (e.g. France, India):");
+                if (!name) return;
+                try {
+                  await apiAddBrand({ name, origin });
+                  toast.success("Brand Registered! ✨");
+                  loadAll();
+                } catch (e) { toast.error("Failed to register brand"); }
+              }}>+ Add New Brand</button>
+            </div>
+            <div className="table-wrapper">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Brand Name</th>
+                    <th>Origin</th>
+                    <th>Collection Count</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {brandsList.map((b) => (
+                    <tr key={b._id}>
+                      <td style={{ fontWeight: "800", color: "#D4AF37" }}>{b.name}</td>
+                      <td>{b.origin || "International"}</td>
+                      <td>{products.filter(p => p.types?.includes(b.name)).length} Products</td>
+                    </tr>
+                  ))}
+                  {brandsList.length === 0 && (
+                    <tr><td colSpan="3" style={{ textAlign: "center" }}>No brands registered.</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* SUBSCRIBERS */}
+        {activeTab === "subscribers" && (
+          <div className="admin-section">
+            <div className="flex-between">
+              <div>
+                <h2>📧 "The Deza Edit" Newsletter Subscribers</h2>
+                <p className="admin-subtitle">Send your luxury collections and boutique updates to these emails.</p>
+              </div>
+              <button 
+                className="lux-btn" 
+                style={{ width: "auto", padding: "10px 20px" }}
+                onClick={() => setShowNewsletterForm(!showNewsletterForm)}
+              >
+                {showNewsletterForm ? "✕ Cancel" : "📢 Send Newsletter Broadcast"}
+              </button>
+            </div>
+
+            {showNewsletterForm && (
+              <form 
+                onSubmit={handleSendNewsletter}
+                style={{ 
+                  background: "rgba(212, 175, 55, 0.05)", 
+                  padding: "25px", 
+                  borderRadius: "15px", 
+                  border: "1px solid rgba(212, 175, 55, 0.2)",
+                  marginBottom: "30px",
+                  animation: "slideDown 0.4s ease"
+                }}
+              >
+                <h3 style={{ color: "#D4AF37", marginBottom: "20px" }}>Compose Broadcast ✍️</h3>
+                <div className="form-grid">
+                  <label>
+                    Email Subject
+                    <input 
+                      type="text" 
+                      placeholder="e.g. Introducing The Oud Royal Collection" 
+                      value={newsSubject}
+                      onChange={(e) => setNewsSubject(e.target.value)}
+                      required
+                    />
+                  </label>
+                  <label>
+                    Banner/Main Title
+                    <input 
+                      type="text" 
+                      placeholder="e.g. NEW LAUNCH: THE OUD ROYAL" 
+                      value={newsTitle}
+                      onChange={(e) => setNewsTitle(e.target.value)}
+                      required
+                    />
+                  </label>
+                </div>
+                <label style={{ marginTop: "15px" }}>
+                  Message Content (HTML allowed)
+                  <textarea 
+                    rows="6" 
+                    placeholder="Describe your new collection or offer details here..." 
+                    value={newsBody}
+                    onChange={(e) => setNewsBody(e.target.value)}
+                    required
+                  />
+                </label>
+                <button type="submit" className="lux-btn" disabled={sendingEmail} style={{ marginTop: "20px" }}>
+                  {sendingEmail ? "🔄 Broadcasting... Please wait" : "🚀 Send to All Subscribers Now"}
+                </button>
+              </form>
+            )}
+
+            <div className="table-wrapper">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Email Address</th>
+                    <th>Joined On</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {subscribers.map((s) => (
+                    <tr key={s._id}>
+                      <td>{s.email}</td>
+                      <td>{new Date(s.createdAt).toLocaleString()}</td>
+                      <td><span style={{ color: "#2ecc71" }}>● Subscribed</span></td>
+                    </tr>
+                  ))}
+                  {subscribers.length === 0 && (
+                    <tr><td colSpan="3" style={{ textAlign: "center" }}>No active subscribers.</td></tr>
                   )}
                 </tbody>
               </table>

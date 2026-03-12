@@ -6,6 +6,7 @@ import Brand from "../models/Brand.js";
 import Subscriber from "../models/Subscriber.js";
 import Coupon from "../models/Coupon.js";
 import { auth, adminOnly } from "../middleware/auth.js";
+import { sendEmail, getBrandedTemplate } from "../utils/emailHelper.js";
 
 const router = express.Router();
 
@@ -75,9 +76,11 @@ router.put("/hero-settings", auth, adminOnly, async (req, res) => {
         }
 
         await logAdminAction(req.user.id, "Update Hero", "Settings", `Updated hero section`, req.ip);
+        console.log("✅ Hero settings updated successfully");
         res.json(settings);
     } catch (err) {
-        res.status(500).json({ error: "Failed to update hero settings." });
+        console.error("❌ Hero settings update error:", err.message);
+        res.status(500).json({ error: "Failed to update hero settings.", details: err.message });
     }
 });
 
@@ -152,6 +155,34 @@ router.post("/coupons", auth, adminOnly, async (req, res) => {
         res.status(201).json(newCoupon);
     } catch (err) {
         res.status(500).json({ error: "Failed to create coupon." });
+    }
+});
+
+// ─── Newsletter Broadcast ────────────────────────────────────────────────────
+router.post("/newsletter", auth, adminOnly, async (req, res) => {
+    try {
+        const { subject, title, body } = req.body;
+        if (!subject || !title || !body) {
+            return res.status(400).json({ error: "Subject, Title, and Body are all required." });
+        }
+
+        const subscribers = await Subscriber.find({ status: "Active" });
+        if (!subscribers.length) {
+            return res.status(400).json({ error: "No active subscribers found." });
+        }
+
+        const emails = subscribers.map(s => s.email);
+        const html = getBrandedTemplate(title, body);
+
+        // Broadcast to all emails
+        await Promise.all(emails.map(email => sendEmail(email, subject, html)));
+
+        await logAdminAction(req.user.id, "Send Newsletter", "Newsletter", `Sent to ${emails.length} subscribers: ${subject}`, req.ip);
+
+        res.json({ message: `Newsletter sent to ${emails.length} subscribers! 🚀` });
+    } catch (err) {
+        console.error("Newsletter error:", err);
+        res.status(500).json({ error: "Failed to send newsletter broadcast." });
     }
 });
 
