@@ -662,8 +662,67 @@
   opacity: 0.6;
 }
 
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
+@media (max-width: 992px) {
+  .pd-card {
+    grid-template-columns: 1fr;
+    gap: 30px;
+    padding: 25px;
+    border-radius: 20px;
+  }
+
+  .pd-img-container {
+    max-width: 500px;
+    margin: 0 auto;
+  }
+
+  .pd-main-name {
+    font-size: 26px;
+  }
+
+  .pd-price {
+    font-size: 26px;
   }
 }
+
+@media (max-width: 600px) {
+  .pd-page {
+    padding: 20px 4%;
+  }
+
+  .pd-actions {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .cart-btn, .buy-btn, .wish-btn, .whatsapp-btn {
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+  }
+
+  .wish-whatsapp {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .pd-size-qty-row {
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .main-image {
+    border-radius: 16px;
+  }
+
+  .pd-delivery-checker-compact {
+    padding: 20px;
+  }
+
+  .pincode-wrapper-compact {
+    flex-direction: column;
+  }
+
+  .pincode-wrapper-compact button {
+    height: 50px;
+  }
+}

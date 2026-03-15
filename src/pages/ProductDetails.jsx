@@ -122,7 +122,16 @@ export default function ProductDetails() {
   const handleWhatsAppOrder = () => {
     const phoneNumber = "919082710359";
     const productImage = product.images?.[0] || "";
-    const message = `Hello DEZA 💛 I want to place an order.\n\n🛍 Product: ${product.title}\n📦 Size: ${selectedSize}\n🔢 Quantity: ${qty}\n💰 Price: ₹${finalPrice}\n\n🖼 Product Image: ${productImage}\n\nPlease confirm my order.`;
+    const productUrl = window.location.href; // Current page URL
+    
+    // Check if image is a link (previews work) or base64 (previews don't work)
+    const isUrl = productImage.startsWith("http");
+    
+    // If it's a URL, use it for preview. If base64, use the Product URL for preview.
+    const previewLink = isUrl ? productImage : productUrl;
+    
+    const message = `${previewLink}\n\nHello DEZA 💛 I want to place an order.\n\n🛍 Product: ${product.title}\n📦 Size: ${selectedSize}\n🔢 Quantity: ${qty}\n💰 Price: ₹${finalPrice}\n\nPlease confirm my order.`;
+    
     window.open(`https://api.whatsapp.com/send?phone=${phoneNumber}&text=${encodeURIComponent(message)}`, "_blank");
   };
 

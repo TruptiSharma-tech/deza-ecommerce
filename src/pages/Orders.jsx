@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { apiGetMyOrders, apiCancelOrder, apiReturnOrder, apiRefundOrder } from "../utils/api";
+import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import "./Orders.css";
 
 export default function Orders() {
+  const navigate = useNavigate();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -53,10 +55,12 @@ export default function Orders() {
 
     try {
       const updated = await apiCancelOrder(id);
-      setOrders((prev) => prev.map((o) => (o._id === id ? updated : o)));
+      // Remove the cancelled order from the list so it disappears immediately
+      setOrders((prev) => prev.filter((o) => o._id !== id));
       toast.success("Order cancelled successfully!");
     } catch (err) {
-      toast.error(err.message);
+      console.error("Order Cancellation Failed:", err);
+      toast.error(err.message || "Failed to cancel order");
     }
   };
 
@@ -149,8 +153,8 @@ export default function Orders() {
                 <span className="order-status">{o.status || "Placed"}</span>
               </div>
 
-              <p>
-                <b>Date:</b> {o.date || "N/A"}
+              <p className="order-date">
+                <b>Date:</b> {o.createdAt ? new Date(o.createdAt).toLocaleDateString("en-IN", { day: 'numeric', month: 'short', year: 'numeric' }) : "Recently Placed"}
               </p>
               <p>
                 <b>Total:</b> ₹{o.totalPrice || o.total || 0}
@@ -174,63 +178,7 @@ export default function Orders() {
                 </span>
               </p>
 
-              {/* Enhanced Real-Time GPS Tracking - Show for all active states */}
-              {(o.status !== "Delivered" && o.status !== "Cancelled" && !o.status?.includes("Return")) && (
-                <div className="order-gps-tracking deluxe-gps">
-                  <div className="gps-header">
-                    <span className="dot pulse" style={{ background: (o.status === "Processing" || o.status === "Packed") ? "#f1c40f" : "#ff3e3e" }}></span>
-                    {(o.status === "Processing" || o.status === "Packed") ? "📡 ORDER PREPARATION: ACTIVE" : "📡 LIVE GPS TRACE: ACTIVE"}
-                  </div>
 
-                  <div className="gps-map-container">
-                    <div className="gps-path-line"></div>
-                    <div
-                      className="gps-covered-line"
-                      style={{
-                        width: o.status === "Processing" ? `${5 + (gpsTick * 0.05)}%` :
-                          o.status === "Packed" ? `${25 + (gpsTick * 0.05)}%` :
-                            o.status === "Shipped" ? `${45 + (gpsTick * 0.1)}%` : `${85 + (gpsTick * 0.05)}%`
-                      }}
-                    ></div>
-
-                    <div
-                      className="truck-marker-fancy"
-                      style={{
-                        left: o.status === "Processing" ? `${5 + (gpsTick * 0.05)}%` :
-                          o.status === "Packed" ? `${25 + (gpsTick * 0.05)}%` :
-                            o.status === "Shipped" ? `${45 + (gpsTick * 0.1)}%` : `${85 + (gpsTick * 0.05)}%`
-                      }}
-                    >
-                      <div className="truck-icon">{(o.status === "Shipped" || o.status === "Out for Delivery") ? "🚚" : "📦"}</div>
-                      <div className="truck-ping"></div>
-                    </div>
-
-                    <div className="checkpoint start">🏢 Warehouse</div>
-                    <div className="checkpoint end">🏠 You</div>
-                  </div>
-
-                  <div className="gps-info-grid">
-                    <div className="info-box">
-                      <small>Stage</small>
-                      <p>
-                        {o.status === "Processing" ? "Quality Check Running" :
-                          o.status === "Packed" ? "Securely Boxed" :
-                            o.status === "Shipped" ? "In Transit (Main Highway)" : "Local Distribution Centre"}
-                      </p>
-                    </div>
-                    <div className="info-box">
-                      <small>Expected Movement</small>
-                      <p>
-                        {o.status === "Processing" ? "Next: Packing" :
-                          o.status === "Packed" ? "Next: Courier Pickup" :
-                            o.status === "Shipped" ? "Next: Dist. Centre" : "Next: Doorstep Delivery"}
-                      </p>
-                    </div>
-                  </div>
-
-                  <p className="gps-disclaimer">Real-time status refreshed 3s ago • Precision Tracking Active</p>
-                </div>
-              )}
 
               {/* Progress Bar */}
               <div className="progress-bar-container">
@@ -249,6 +197,16 @@ export default function Orders() {
                   </div>
                 ))}
               </div>
+
+              {/* Track Order Button */}
+              {o.status !== "Cancelled" && (
+                <button
+                  className="track-order-btn"
+                  onClick={() => navigate(`/track-order/${o.orderId || o._id}`)}
+                >
+                  📍 Track Order
+                </button>
+              )}
 
               {/* Cancel only before Delivered */}
               {o.status !== "Delivered" && o.status !== "Cancelled" && (

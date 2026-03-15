@@ -19,9 +19,18 @@ export default function Shop() {
   const [brandsList, setBrandsList] = useState([]);
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const catParam = params.get("category");
+    const typeParam = params.get("type");
+    const sortParam = params.get("sort");
+
+    if (catParam) setCategory(catParam);
+    if (typeParam) setType(typeParam);
+    if (sortParam) setSort(sortParam);
+
     loadProducts();
     loadFilters();
-  }, []);
+  }, [window.location.search]);
 
   const loadFilters = async () => {
     try {

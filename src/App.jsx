@@ -43,10 +43,15 @@ const LoadingScreen = () => (
   </div>
 );
 
+import { AuthProvider } from "./context/AuthContext";
+import ScrollProgress from "./components/ScrollProgress";
+
 export default function App() {
   return (
-    <Router>
-      <Toaster
+    <AuthProvider>
+      <Router>
+        <ScrollProgress />
+        <Toaster
         position="top-center"
         toastOptions={{
           style: {
@@ -128,6 +133,7 @@ export default function App() {
       </Suspense>
 
       <Footer />
-    </Router>
+      </Router>
+    </AuthProvider>
   );
 }

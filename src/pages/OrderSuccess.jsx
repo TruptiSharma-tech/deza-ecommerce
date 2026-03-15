@@ -64,6 +64,21 @@ export default function OrderSuccess() {
 
         <div className="success-btns">
           <button onClick={() => navigate("/orders")}>View My Orders</button>
+          <button 
+            style={{ background: "#25d366", color: "#fff", borderColor: "#25d366" }}
+            onClick={() => {
+              const firstItemImg = order?.items?.[0]?.image || "";
+              const trackUrl = `${window.location.origin}/track-order/${order.orderId || order._id}`;
+              const isUrl = firstItemImg.startsWith("http");
+              
+              const previewLink = isUrl ? firstItemImg : trackUrl;
+              
+              const msg = `${previewLink}\n\n*NEW ORDER CONFIRMED* 🛍️\n\nOrder ID: ${order.orderId || "DZ-" + String(order._id).slice(-6).toUpperCase()}\nTotal: ₹${order.totalPrice}\nPayment: ${order.paymentMethod}\n\nPlease process my luxury delivery! 💛`;
+              window.open(`https://wa.me/919082710359?text=${encodeURIComponent(msg)}`, "_blank");
+            }}
+          >
+            Share on WhatsApp
+          </button>
           <button className="home-btn" onClick={() => navigate("/")}>
             Back to Home
           </button>

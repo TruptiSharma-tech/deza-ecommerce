@@ -22,6 +22,8 @@ export default function Cart() {
   const updateCart = (updated) => {
     setCart(updated);
     localStorage.setItem("deza_cart", JSON.stringify(updated));
+    // Dispatch custom event to notify Navbar and other components
+    window.dispatchEvent(new Event("cartUpdate"));
   };
 
   const removeItem = (_id, selectedSize) => {

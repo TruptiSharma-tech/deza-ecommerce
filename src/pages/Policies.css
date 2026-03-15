@@ -55,6 +55,75 @@
   color: #d4af37;
 }
 
+/* FAQ Specific Styles */
+.policy-intro {
+  text-align: center;
+  margin-bottom: 50px;
+  color: #fff9;
+}
+
+.faq-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.faq-item {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.faq-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(212, 175, 55, 0.3);
+}
+
+.faq-item.active {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: #d4af37;
+}
+
+.faq-question {
+  padding: 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.faq-question h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 500;
+  color: #fff;
+}
+
+.faq-toggle {
+  font-size: 1.5rem;
+  color: #d4af37;
+  font-weight: 300;
+}
+
+.faq-answer {
+  padding: 0 24px 24px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  animation: slideDown 0.4s ease forwards;
+}
+
+.faq-answer p {
+  margin: 0;
+  font-size: 0.95rem;
+  color: #fff9;
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 @media screen and (max-width: 768px) {
   .policy-page {
     padding: 20px;

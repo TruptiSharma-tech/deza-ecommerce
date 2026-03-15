@@ -36,9 +36,9 @@ export default function Register() {
       return;
     }
     // Allows only alphanumeric chars, @ and .
-    const strictEmailRegex = /^[a-zA-Z0-9.]+@[a-zA-Z0-9]+\.[a-zA-Z0-9.]+$/;
-    if (!formData.email || !strictEmailRegex.test(formData.email) || formData.email.includes(',')) {
-      setUiMessage("❌ Please enter a valid email address (Only letters, numbers, @ and . are allowed)!");
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!formData.email || !emailRegex.test(formData.email)) {
+      setUiMessage("❌ Please enter a valid email address!");
       return;
     }
 
@@ -49,8 +49,8 @@ export default function Register() {
     }
 
     const cleanNumber = formData.contact.replace(/\D/g, "");
-    if (cleanNumber.length !== 10) {
-      setUiMessage("❌ Please enter active 10-digit number");
+    if (cleanNumber.length < 10 || cleanNumber.length > 13) {
+      setUiMessage("❌ Please enter a valid 10-13 digit mobile number!");
       return;
     }
 
@@ -315,7 +315,7 @@ export default function Register() {
                 value={formData.contact}
                 onChange={handleChange}
                 required
-                maxLength={10}
+                maxLength={13}
                 disabled={otpSent}
               />
               {otpSent && !otpVerified && (

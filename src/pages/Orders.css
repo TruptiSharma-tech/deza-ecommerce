@@ -23,27 +23,24 @@
 }
 
 .orders-grid {
-  max-width: 1200px;
+  max-width: 900px;
   margin: auto;
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(30x, 1fr));
-  gap: 25px;
-  justify-items: center;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
 }
 
 .order-card {
-  background: rgba(30, 30, 30, 0.85);
-  padding: 25px;
+  background: rgba(30, 30, 30, 0.88);
+  padding: 30px 36px;
   border-radius: 22px;
-  border: 1px solid rgba(212, 175, 55, 0.25);
+  border: 1px solid rgba(212, 175, 55, 0.22);
   transition: 0.35s ease;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
-
-  /* Fixed rectangular card */
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.55);
   width: 100%;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  gap: 4px;
 }
 
 
@@ -119,6 +116,30 @@
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(255, 92, 92, 0.4);
 }
+
+.track-order-btn {
+  width: 100%;
+  padding: 13px;
+  border-radius: 18px;
+  border: 1px solid rgba(212, 175, 55, 0.35);
+  cursor: pointer;
+  background: rgba(212, 175, 55, 0.1);
+  color: #d4af37;
+  font-weight: 700;
+  font-size: 0.95rem;
+  letter-spacing: 0.5px;
+  margin-bottom: 10px;
+  font-family: "Poppins", sans-serif;
+  transition: 0.3s ease;
+}
+
+.track-order-btn:hover {
+  background: rgba(212, 175, 55, 0.2);
+  border-color: rgba(212, 175, 55, 0.6);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(212, 175, 55, 0.2);
+}
+
 
 .order-items {
   display: flex;
@@ -405,3 +426,29 @@
   text-align: center;
   border: 1px solid rgba(255, 77, 77, 0.2);
 }
+
+@media (max-width: 768px) {
+  .orders-title {
+    font-size: 2rem;
+  }
+  
+  .order-card {
+    padding: 20px;
+  }
+  
+  .order-head {
+    flex-direction: column;
+    gap: 10px;
+    align-items: flex-start;
+  }
+  
+  .progress-step {
+    font-size: 0.75rem;
+    padding: 8px 6px;
+  }
+  
+  .order-item img {
+    width: 65px;
+    height: 65px;
+  }
+}

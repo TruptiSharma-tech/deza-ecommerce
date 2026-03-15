@@ -154,14 +154,21 @@ export default function Home() {
       {/* ═══════════ BROWSE BAR ═══════════ */}
       <div className="browse-bar">
         {[
-          { icon: "✨", label: "Original Collection" },
-          { icon: "🎨", label: "Recreational Collection" },
-          { icon: "⭐", label: "Best Sellers" },
-          { icon: "🆕", label: "New Arrivals" },
-          { icon: "👔", label: "Men" },
-          { icon: "👗", label: "Women" },
+          { icon: "✨", label: "Deza Original", filter: { type: "Deza" } },
+          { icon: "🎨", label: "Recreational", filter: { type: "Recreational" } },
+          { icon: "🧴", label: "Men", filter: { category: "Men" } },
+          { icon: "🌸", label: "Women", filter: { category: "Women" } },
+          { icon: "🌬️", label: "Unisex", filter: { category: "Unisex" } },
+          { icon: "⭐", label: "Best Sellers", filter: { sort: "ratingHigh" } },
         ].map((cat) => (
-          <button key={cat.label} className="browse-chip" onClick={() => navigate("/shop")}>
+          <button 
+            key={cat.label} 
+            className="browse-chip" 
+            onClick={() => {
+              const params = new URLSearchParams(cat.filter).toString();
+              navigate(`/shop?${params}`);
+            }}
+          >
             <span className="chip-icon">{cat.icon}</span>
             {cat.label}
           </button>

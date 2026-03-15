@@ -1,10 +1,12 @@
 import express from "express";
+import mongoose from "mongoose";
 import { nanoid } from "nanoid";
 import Order from "../models/Order.js";
 import Product from "../models/Product.js";
-import AuditLog from "../models/AuditLog.js";
 import { auth, adminOnly } from "../middleware/auth.js";
+import AuditLog from "../models/AuditLog.js";
 import { sendEmail, getBrandedTemplate } from "../utils/emailHelper.js";
+import { sendWhatsApp } from "../utils/whatsappHelper.js";
 
 const router = express.Router();
 
@@ -37,12 +39,20 @@ router.get("/", auth, adminOnly, async (req, res) => {
 router.get("/my/:email", auth, async (req, res) => {
     try {
         const searchEmail = req.params.email.toLowerCase().trim();
+        const isAdmin = req.user.role === "admin";
+
         // Check if user is viewing their own orders or if admin
-        if (req.user.email.toLowerCase() !== searchEmail && req.user.role !== "admin") {
+        if (req.user.email.toLowerCase() !== searchEmail && !isAdmin) {
             return res.status(403).json({ error: "Unauthorized access." });
         }
 
-        const orders = await Order.find({ customerEmail: searchEmail }).sort({ createdAt: -1 });
+        // Filter: Users don't see cancelled orders, but admins see everything
+        const query = { customerEmail: searchEmail };
+        if (!isAdmin) {
+            query.orderStatus = { $ne: "Cancelled" };
+        }
+
+        const orders = await Order.find(query).sort({ createdAt: -1 });
         const mapped = orders.map(o => ({
             ...o.toObject(),
             totalPrice: o.totalAmount,
@@ -161,10 +171,50 @@ router.patch("/:id/status", auth, adminOnly, async (req, res) => {
         order.statusHistory.push({ status, comment: comment || `Status updated to ${status}` });
 
         await order.save();
-
         await logAdminAction(req.user.id, "Update Order", "Orders", `Updated ${order.orderNumber} to ${status}`, req.ip);
+
+        // ─── SEND NOTIFICATIONS ───────────────────────────────────────────────
+        try {
+            const customerName = order.customerName || "Customer";
+            const orderNum = order.orderNumber;
+            const trackNum = trackingNumber || order.trackingNumber || "N/A";
+            
+            // 1. Email Notification
+            let emailTitle = `Order Update: ${status}`;
+            let emailBody = `
+                <p>Hello ${customerName},</p>
+                <p>Your order <strong>#${orderNum}</strong> status has been updated to: <span style="color: #d4af37; font-weight: bold;">${status}</span></p>
+            `;
+
+            if (status === "Shipped") {
+                emailTitle = "Your DEZA Fragrance is En Route! 🚚";
+                emailBody += `
+                    <p>Good news! Your package has been handed over to our courier partner.</p>
+                    <p><strong>Tracking ID:</strong> ${trackNum}</p>
+                    <p>You can track your order live on our website under the 'My Orders' section.</p>
+                `;
+            } else if (status === "Delivered") {
+                emailTitle = "Delivered: Enjoy your DEZA Luxury ✨";
+                emailBody += `
+                    <p>Your order has been successfully delivered. We hope you love your new signature scent!</p>
+                    <p>Don't forget to share your experience by leaving a review on our website.</p>
+                `;
+            }
+
+            const html = getBrandedTemplate(emailTitle, emailBody);
+            await sendEmail(order.customerEmail, `DEZA Luxury Update - #${orderNum}`, html);
+
+            // 2. WhatsApp Notification (Official API)
+            // Note: Template 'order_update' must be approved in your Meta Dashboard
+            await sendWhatsApp(order.customerPhone, "order_update", [customerName, orderNum, status]);
+
+        } catch (notifyErr) {
+            console.error("Notification trigger failed (silently):", notifyErr.message);
+        }
+
         res.json(order);
     } catch (err) {
+        console.error("Status update error:", err);
         res.status(500).json({ error: "Failed to update order status." });
     }
 });
@@ -184,30 +234,91 @@ router.delete("/:id", auth, adminOnly, async (req, res) => {
 
 // ─── USER ACTIONS (Cancel, Return, Refund) ───────────────────────────────────
 
-router.patch("/:id/cancel", async (req, res) => {
+// ─── PATCH - Cancel Order (Safe Version) ──────────────────────────────────
+router.patch("/:id/cancel", auth, async (req, res) => {
+    console.log(`[CANCEL] Attempting to cancel order ${req.params.id} by ${req.user?.email}`);
     try {
         const order = await Order.findById(req.params.id);
-        if (!order) return res.status(404).json({ error: "Order not found." });
-
-        if (order.orderStatus === "Delivered" || order.orderStatus === "Cancelled") {
-            return res.status(400).json({ error: "Order cannot be cancelled at this stage." });
+        if (!order) {
+            console.log("[CANCEL] Order not found");
+            return res.status(404).json({ error: "Order not found." });
         }
 
-        order.orderStatus = "Cancelled";
-        order.cancelledAt = new Date();
-        order.statusHistory.push({ status: "Cancelled", comment: "Cancelled by User" });
+        // Security Check
+        const orderEmail = (order.customerEmail || "").toLowerCase().trim();
+        const userEmail = (req.user?.email || "").toLowerCase().trim();
+        const isAdmin = req.user?.role === "admin" || req.user?.isAdmin === true;
 
-        await order.save();
+        if (!isAdmin && orderEmail !== userEmail) {
+            console.log(`[CANCEL] Security violation: User ${userEmail} tried to cancel ${orderEmail}'s order`);
+            return res.status(403).json({ error: "Unauthorized access." });
+        }
 
-        // Always return mapped structure
+        // Check Status
+        if (order.status === "Cancelled" || order.orderStatus === "Cancelled") {
+            return res.status(400).json({ error: "Order is already cancelled." });
+        }
+        if (["Delivered", "Shipped"].includes(order.orderStatus)) {
+            return res.status(400).json({ error: `Cannot cancel a ${order.orderStatus} order.` });
+        }
+
+        // 1. Restore Stock (Optional - don't let it crash the cancel)
+        try {
+            if (order.items && order.items.length > 0) {
+                console.log(`[CANCEL] Restoring stock for ${order.items.length} items...`);
+                for (const item of order.items) {
+                    const productId = item.id || item._id;
+                    if (productId && mongoose.Types.ObjectId.isValid(productId)) {
+                        await Product.findByIdAndUpdate(productId, {
+                            $inc: { stock: item.qty || 1, sold: -(item.qty || 1) }
+                        });
+                    }
+                }
+            }
+        } catch (stockErr) {
+            console.error("[CANCEL] Stock restoration failed (ignoring):", stockErr);
+        }
+
+        // 2. Update Order (Using findByIdAndUpdate to bypass strict validation on unrelated fields)
+        const updatedOrder = await Order.findByIdAndUpdate(
+            req.params.id,
+            {
+                $set: {
+                    orderStatus: "Cancelled",
+                    cancelledAt: new Date()
+                },
+                $push: {
+                    statusHistory: {
+                        status: "Cancelled",
+                        timestamp: new Date(),
+                        comment: isAdmin ? "Cancelled by Admin" : "Cancelled by Customer"
+                    }
+                }
+            },
+            { new: true }
+        );
+
+        if (!updatedOrder) {
+            throw new Error("Failed to update order status in database.");
+        }
+
+        console.log(`[CANCEL] Success: ${updatedOrder.orderNumber} cancelled`);
+
+        // 3. Log Admin Action
+        if (isAdmin) {
+            await logAdminAction(req.user.id, "Cancel Order", "Orders", `Cancelled ${updatedOrder.orderNumber}`, req.ip);
+        }
+
+        // Response
         res.json({
-            ...order.toObject(),
-            totalPrice: order.totalAmount,
-            status: order.orderStatus,
-            orderId: order.orderNumber
+            ...updatedOrder.toObject(),
+            totalPrice: updatedOrder.totalAmount,
+            status: updatedOrder.orderStatus,
+            orderId: updatedOrder.orderNumber
         });
     } catch (err) {
-        res.status(500).json({ error: "Failed to cancel order." });
+        console.error("[CANCEL] CRITICAL SERVER ERROR:", err);
+        res.status(500).json({ error: "Server error: " + err.message });
     }
 });
 

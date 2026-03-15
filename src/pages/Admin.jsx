@@ -874,7 +874,7 @@ export default function Admin() {
     localStorage.removeItem("currentUser");
     localStorage.removeItem("deza_token");
     toast.success("Admin logged out! 👋");
-    navigate("/admin-login");
+    navigate("/");
   };
 
   return (
@@ -1638,9 +1638,10 @@ export default function Admin() {
                           }
                         >
                           <option value="Processing">Processing</option>
+                          <option value="Packed">Packed</option>
                           <option value="Shipped">Shipped</option>
+                          <option value="Out for Delivery">Out for Delivery</option>
                           <option value="Delivered">Delivered</option>
-                          <option value="Cancelled">Cancelled</option>
                         </select>
 
                         {o.status === "Shipped" && (

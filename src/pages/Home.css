@@ -30,9 +30,8 @@
 .hero-banner {
   position: relative;
   width: 100%;
-  height: 80vh;
+  height: 100vh; /* Full screen height */
   min-height: 500px;
-  max-height: 750px;
   overflow: hidden;
   background: #000;
 }
@@ -55,23 +54,22 @@
 .hero-slide img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: cover; /* Stretched/Filled look that is fully responsive */
   object-position: center center;
   image-rendering: -webkit-optimize-contrast;
-  filter: none;
+  padding: 0; 
 }
 
-/* Cinematic overlays */
+/* Cinematic overlays - Restored for better readability and luxury feel */
 .hero-slide::before {
   content: "";
   position: absolute;
   inset: 0;
   background: linear-gradient(180deg,
-      rgba(0, 0, 0, 0.3) 0%,
+      rgba(0, 0, 0, 0.45) 0%,
       transparent 30%,
-      transparent 50%,
-      rgba(0, 0, 0, 0.6) 80%,
-      rgba(5, 5, 5, 0.95) 100%);
+      transparent 70%,
+      rgba(0, 0, 0, 0.85) 100%);
   z-index: 1;
 }
 
@@ -80,10 +78,9 @@
   position: absolute;
   inset: 0;
   background: linear-gradient(90deg,
-      rgba(0, 0, 0, 0.7) 0%,
-      rgba(0, 0, 0, 0.3) 35%,
-      transparent 65%,
-      rgba(0, 0, 0, 0.2) 100%);
+      rgba(0, 0, 0, 0.8) 0%,
+      rgba(0, 0, 0, 0.2) 40%,
+      transparent 100%);
   z-index: 1;
 }
 
@@ -96,8 +93,9 @@
   flex-direction: column;
   justify-content: center;
   padding: 0 8%;
-  max-width: 700px;
+  max-width: 800px;
   transition: opacity 0.5s ease;
+  margin-top: -40px; /* Slight offset for visual balance on full screen */
 }
 
 .hero-overlay.hidden {
@@ -230,7 +228,7 @@
 /* Carousel navigation */
 .hero-dots {
   position: absolute;
-  bottom: 40px;
+  bottom: 60px;
   left: 8%;
   display: flex;
   gap: 8px;

@@ -33,7 +33,7 @@ export default function AccountSidebar({ isOpen, onClose }) {
   const handleLogout = () => {
     localStorage.removeItem("currentUser");
     localStorage.removeItem("deza_token");
-    window.location.reload();
+    window.location.href = "/";
   };
 
   const handleSaveProfile = () => {

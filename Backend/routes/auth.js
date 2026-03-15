@@ -19,9 +19,9 @@ router.post("/register", async (req, res) => {
         }
 
         // ✅ Exact Email format — Only allow letters, numbers, dot, and @
-        const strictEmailRegex = /^[a-zA-Z0-9.]+@[a-zA-Z0-9]+\.[a-zA-Z0-9.]+$/;
-        if (!strictEmailRegex.test(email)) {
-            return res.status(400).json({ error: "Email address should only contain letters, numbers, @, and ." });
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            return res.status(400).json({ error: "Please enter a valid email address (Only letters, numbers, @ and . are allowed)." });
         }
 
         const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;

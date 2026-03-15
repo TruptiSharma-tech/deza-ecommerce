@@ -187,24 +187,66 @@
 @media (max-width: 900px) {
   .cart-layout {
     grid-template-columns: 1fr;
+    gap: 30px;
   }
 }
 
-.whatsapp-btn {
-  width: 100%;
-  padding: 14px;
-  background: #25d366;
-  border: none;
-  border-radius: 12px;
-  font-size: 16px;
-  font-weight: 600;
-  cursor: pointer;
-  color: white;
-  margin-top: 15px;
-  transition: 0.3s;
-}
+@media (max-width: 600px) {
+  .cart-title {
+    font-size: 1.8rem;
+  }
+  
+  .cart-card {
+    display: grid;
+    grid-template-columns: 100px 1fr;
+    gap: 15px;
+    align-items: flex-start;
+    text-align: left;
+    padding: 12px;
+  }
 
-.whatsapp-btn:hover {
-  background: #1ebe5d;
-  transform: scale(1.02);
+  .cart-img-wrap img {
+    width: 80px;
+    height: 80px;
+    padding: 5px;
+  }
+
+  .cart-info h3 {
+    font-size: 1rem;
+    margin-bottom: 2px;
+  }
+
+  .qty-box {
+    margin-top: 5px;
+  }
+
+  .qty-box button {
+    width: 28px;
+    height: 28px;
+    font-size: 14px;
+  }
+  
+  .cart-right {
+    grid-column: span 2;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 10px;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    padding-top: 10px;
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .remove-btn {
+    margin-top: 0;
+    padding: 6px 12px;
+    font-size: 12px;
+    border-radius: 8px;
+  }
+
+  .item-total {
+    font-size: 1rem;
+    margin-bottom: 0;
+  }
 }
