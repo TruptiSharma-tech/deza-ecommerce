@@ -190,12 +190,24 @@
 /* ── Main Grid ────────────────────────────────────────────────── */
 .to-main-grid {
   display: grid;
-  grid-template-columns: 1fr 440px;
-  gap: 20px;
-  padding: 20px 32px;
+  grid-template-columns: 1.4fr 1fr; /* Use ratios instead of fixed pixels */
+  gap: 24px;
+  padding: 24px;
+  width: 100%;
   max-width: 1400px;
   margin: 0 auto;
   align-items: start;
+  box-sizing: border-box;
+}
+
+/* Ensure no horizontal scroll on the page */
+html, body {
+  overflow-x: hidden;
+}
+
+.to-page {
+  overflow-x: hidden;
+  box-sizing: border-box;
 }
 
 /* ── Shared Section Label ────────────────────────────────────── */
@@ -590,59 +602,106 @@
   font-weight: 600;
 }
 
-/* ── Lower Left Row (Items + Help) ─────────────────────────── */
-.to-lower-left-row {
-  display: flex;
-  gap: 16px;
+/* ── Consolidated End-to-End Items Section ── */
+.to-full-width-container {
+  width: 100vw;
+  position: relative;
+  left: 50%;
+  right: 50%;
+  margin-left: -50vw;
+  margin-right: -50vw;
+  margin-top: 40px;
+  margin-bottom: 40px;
+  overflow: hidden;
 }
 
-.to-items-horizontal-card {
-  flex: 1;
-  background: #161616;
-  border: 1px solid rgba(255,255,255,0.07);
-  border-radius: 20px;
-  padding: 16px 20px;
-  min-width: 0;
+.to-items-full-card-horizontal {
+  background: #141414;
+  border-top: 1px solid rgba(212, 175, 55, 0.2);
+  border-bottom: 1px solid rgba(212, 175, 55, 0.2);
+  padding: 32px 0;
+  width: 100%;
+}
+
+.to-items-full-card-horizontal .to-section-label {
+  padding-left: 5vw;
 }
 
 .to-items-horizontal-list {
   display: flex;
-  gap: 12px;
+  gap: 24px;
   overflow-x: auto;
-  padding-bottom: 4px;
+  padding: 10px 5vw 25px;
+  scrollbar-width: none; /* Hide for Refined look */
 }
-.to-items-horizontal-list::-webkit-scrollbar { height: 3px; }
-.to-items-horizontal-list::-webkit-scrollbar-thumb { background: rgba(212,175,55,0.2); border-radius: 2px; }
+.to-items-horizontal-list::-webkit-scrollbar {
+  display: none;
+}
 
-.to-item-mini-card {
+.to-item-landscape-card {
   display: flex;
   align-items: center;
-  gap: 10px;
-  background: rgba(255,255,255,0.03);
-  padding: 8px 12px;
-  border-radius: 12px;
+  gap: 20px;
+  background: rgba(255, 255, 255, 0.03);
+  padding: 18px 24px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  min-width: 340px;
   flex-shrink: 0;
-  border: 1px solid rgba(255,255,255,0.04);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.to-item-img-mini {
-  width: 36px;
-  height: 36px;
-  border-radius: 6px;
+.to-item-landscape-card:hover {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(212, 175, 55, 0.4);
+  transform: translateY(-4px);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+}
+
+.to-item-img-landscape {
+  width: 85px;
+  height: 85px;
+  border-radius: 12px;
   object-fit: cover;
+  background: #000;
+  border: 1px solid rgba(255,255,255,0.05);
 }
 
-.to-item-mini-name {
-  font-size: 11px;
-  font-weight: 600;
-  margin: 0;
-  color: #f0ece4;
-  white-space: nowrap;
+.to-item-landscape-info {
+  flex: 1;
 }
-.to-item-mini-meta {
-  font-size: 9px;
-  color: rgba(240,236,228,0.4);
-  margin: 1px 0 0;
+
+.to-item-landscape-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: #f0ece4;
+  margin: 0 0 5px;
+  letter-spacing: 0.5px;
+}
+
+.to-item-landscape-meta {
+  font-size: 12px;
+  color: rgba(240, 236, 228, 0.5);
+  margin: 0 0 8px;
+}
+
+.to-item-landscape-price {
+  font-size: 14px;
+  font-weight: 800;
+  color: #d4af37;
+  margin: 0;
+  letter-spacing: 1px;
+}
+
+@media (max-width: 768px) {
+  .to-item-landscape-card {
+    min-width: 280px;
+    padding: 14px 18px;
+  }
+  .to-item-img-landscape {
+    width: 65px;
+    height: 65px;
+  }
 }
 
 /* ── Help Card (Original Style) ────────────────────────────── */
@@ -730,33 +789,41 @@
   to   { opacity: 1; }
 }
 
-@media (max-width: 900px) {
+/* ── Responsive ──────────────────────────────────────────────── */
+@media (max-width: 1100px) {
   .to-main-grid {
     grid-template-columns: 1fr;
-    padding: 20px 16px;
-    gap: 16px;
-  }
-  .to-right-col { order: 1; } /* map below timeline on small screens */
-  .to-lower-left-row {
-    flex-direction: column;
-  }
-  .to-help-card {
-    min-width: 100%;
+    max-width: 900px;
+    padding: 16px;
   }
 }
 
-@media (max-width: 640px) {
-  .to-header-bar { padding: 12px 16px; }
-  .to-brand { font-size: 18px; }
-  .to-meta-row { padding: 0 8px; justify-content: center; }
-  .to-meta-item { padding: 10px 12px; align-items: center; text-align: center; }
-  .to-meta-divider { display: none; }
-  .to-eta-banner { padding: 16px; justify-content: center; text-align: center; }
-  .to-eta-left { flex-direction: column; gap: 8px; }
-  .to-eta-date { font-size: 18px; }
-  .to-timeline-card { padding: 16px; }
-  .to-step { grid-template-columns: 40px 1fr; gap: 15px; }
-  .to-step-circle { width: 40px; height: 40px; }
-  .to-step-icon { font-size: 16px; }
-  .to-step-line { left: 19px; }
+@media (max-width: 768px) {
+  .to-header-bar { padding: 10px 16px; }
+  .to-meta-row { padding: 0 16px; justify-content: space-around; }
+  .to-meta-item { padding: 10px 15px; }
+  .to-eta-banner { padding: 12px 16px; gap: 10px; }
+  .to-eta-date { font-size: 16px; }
+  .to-main-grid { padding: 12px; }
+}
+
+@media (max-width: 480px) {
+  .to-brand { font-size: 16px; letter-spacing: 1.5px; }
+  .to-status-chip { padding: 4px 10px; font-size: 9px; }
+  .to-meta-item small { font-size: 8px; }
+  .to-meta-item b { font-size: 12px; }
+  .to-eta-icon { font-size: 20px; }
+  .to-eta-date { font-size: 15px; }
+  .to-live-text { font-size: 9px; }
+  .to-main-grid { padding: 8px; gap: 10px; }
+  .to-timeline-card { padding: 12px; }
+  .to-map-card { padding: 12px; }
+  .to-route-visual { padding: 20px 10px 10px; margin-bottom: 10px; }
+  .to-step-circle { width: 36px; height: 36px; }
+  .to-step-line { left: 17px; top: 36px; }
+  .to-step { grid-template-columns: 36px 1fr; gap: 12px; padding-bottom: 20px; }
+  .to-step-title { font-size: 13px; }
+  .to-step-location { font-size: 11px; }
+  .to-step-detail { font-size: 10px; }
+  .to-current-loc-box { padding: 10px; }
 }

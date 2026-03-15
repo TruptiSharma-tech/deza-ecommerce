@@ -305,8 +305,6 @@ export default function TrackOrder() {
 
       {/* ═══ MAIN GRID ══════════════════════════════════════ */}
       <div className="to-main-grid">
-
-        {/* ── LEFT: Timeline & Items ────────────────────── */}
         <div className="to-left-col">
           <div className="to-timeline-card">
             <div className="to-section-label">📍 Shipment Status</div>
@@ -369,27 +367,7 @@ export default function TrackOrder() {
               )}
             </div>
           </div>
-
-          {/* ═══ ITEMS SECTION (FULL WIDTH BELOW TIMELINE) ══════ */}
-          {order.items && order.items.length > 0 && (
-            <div className="to-items-horizontal-card">
-              <div className="to-section-label-small">🛒 Order Items</div>
-              <div className="to-items-horizontal-list">
-                {order.items.map((item, i) => (
-                  <div key={i} className="to-item-mini-card">
-                    {item.image && <img src={item.image} alt={item.name} className="to-item-img-mini" />}
-                    <div className="to-item-mini-info">
-                      <p className="to-item-mini-name">{item.name}</p>
-                      <p className="to-item-mini-meta">Qty: {item.qty} · {item.selectedSize}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
-
-        {/* ── RIGHT: Live Location etc ───────────────────────── */}
         <div className="to-right-col">
           {/* Live Route Map */}
           {!isCancelled && (
@@ -492,6 +470,27 @@ export default function TrackOrder() {
           </div>
         </div>
       </div>
+
+      {/* ═══ FULL WIDTH HORIZONTAL ITEMS ══════ */}
+      {order.items && order.items.length > 0 && (
+        <div className="to-full-width-container">
+          <div className="to-items-full-card-horizontal">
+            <div className="to-section-label">🛒 Items in Shipment ({order.items.length})</div>
+            <div className="to-items-horizontal-list">
+              {order.items.map((item, i) => (
+                <div key={i} className="to-item-landscape-card">
+                  {item.image && <img src={item.image} alt={item.name} className="to-item-img-landscape" />}
+                  <div className="to-item-landscape-info">
+                    <p className="to-item-landscape-name">{item.name}</p>
+                    <p className="to-item-landscape-meta">{item.selectedSize} | Qty: {item.qty}</p>
+                    <p className="to-item-landscape-price">₹{(item.price * item.qty).toLocaleString("en-IN")}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="to-footer-note">
         ✨ DEZA Luxury Perfumes · Mulund West, Mumbai · All deliveries shipped with care

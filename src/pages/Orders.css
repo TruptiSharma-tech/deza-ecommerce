@@ -23,7 +23,8 @@
 }
 
 .orders-grid {
-  max-width: 900px;
+  width: 95%;
+  max-width: 1600px;
   margin: auto;
   display: flex;
   flex-direction: column;
@@ -80,14 +81,15 @@
 .progress-step {
   flex: 1;
   text-align: center;
-  padding: 10px 12px;
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  font-size: 0.9rem;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  font-size: 0.8rem;
   opacity: 0.5;
   transition: 0.3s ease;
   font-weight: 500;
+  min-width: 100px;
 }
 
 .progress-step.active {
