@@ -2,13 +2,14 @@ import mongoose from "mongoose";
 
 const reviewSchema = new mongoose.Schema(
     {
-        productId: { type: mongoose.Schema.Types.Mixed, required: true }, // supports old numeric IDs or ObjectId
+        productId: { type: mongoose.Schema.Types.ObjectId, ref: "Product", required: true },
         userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
         userName: { type: String, default: "Anonymous" },
         userEmail: { type: String, default: "" },
         rating: { type: Number, required: true, min: 1, max: 5 },
         comment: { type: String, default: "" },
-        date: { type: String, default: () => new Date().toLocaleString() },
+        images: { type: [String], default: [] }, // Photo reviews
+        isApproved: { type: Boolean, default: false }, // Moderation
     },
     { timestamps: true }
 );

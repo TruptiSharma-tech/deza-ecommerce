@@ -51,19 +51,27 @@ const orderSchema = new mongoose.Schema(
         customerEmail: { type: String, default: "" },
         customerPhone: { type: String, default: "" },
         items: { type: [orderItemSchema], required: true },
-        shippingAddress: { type: mongoose.Schema.Types.Mixed, required: true },
-        billingAddress: { type: mongoose.Schema.Types.Mixed },
+        shippingAddress: { type: addressSchema, required: true },
+        billingAddress: { type: addressSchema },
         totalAmount: { type: Number, required: true },
+        discountAmount: { type: Number, default: 0 },
         taxAmount: { type: Number, default: 0 },
         shippingFee: { type: Number, default: 0 },
+        currency: { type: String, default: "INR" },
         paymentMethod: { type: String, required: true },
-        paymentStatus: { type: String, default: "Pending" },
+        paymentStatus: { 
+            type: String, 
+            enum: ["Pending", "Paid", "Failed", "Refunded"], 
+            default: "Pending" 
+        },
         paymentDetails: mongoose.Schema.Types.Mixed,
         orderStatus: {
             type: String,
+            enum: ["Pending", "Processing", "Shipped", "Delivered", "Cancelled", "Returned"],
             default: "Pending",
         },
         statusHistory: [statusHistorySchema],
+        coupon: { type: mongoose.Schema.Types.ObjectId, ref: "Coupon" },
         trackingNumber: { type: String, default: "" },
         deliveryCompany: { type: String, default: "" },
         estimatedDeliveryDate: { type: Date },
@@ -77,5 +85,11 @@ const orderSchema = new mongoose.Schema(
     },
     { timestamps: true }
 );
+
+// Performance Indexes
+orderSchema.index({ customerId: 1 });
+orderSchema.index({ orderStatus: 1 });
+orderSchema.index({ orderNumber: 1 });
+orderSchema.index({ createdAt: -1 });
 
 export default mongoose.model("Order", orderSchema);

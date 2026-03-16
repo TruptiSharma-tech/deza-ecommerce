@@ -6,23 +6,37 @@ const userSchema = new mongoose.Schema(
         email: { type: String, required: true, unique: true, lowercase: true, trim: true },
         password: { type: String, required: true },
         contact: { type: String, default: "" },
+        phoneNumber: { 
+            type: String, 
+            trim: true,
+            validate: {
+                validator: function(v) {
+                    return v === "" || /\d{10}/.test(v);
+                },
+                message: props => `${props.value} is not a valid phone number!`
+            }
+        },
         gender: { type: String, default: "" },
-        dob: { type: Date, default: null },          // ✅ Fixed: Date type not String
-        role: { type: String, enum: ["user"], default: "user" },
-        addresses: {
-            type: [{
+        dob: { type: Date, default: null },
+        role: { type: String, enum: ["user", "admin"], default: "user" },
+        addresses: [
+            {
+                label: { type: String, default: "Home" }, // Home, Office, etc.
                 street: String,
+                area: String,
                 city: String,
                 state: String,
                 pincode: String,
+                country: { type: String, default: "India" },
                 isDefault: { type: Boolean, default: false }
-            }],
-            default: []
-        },
+            }
+        ],
         wishlist: [{ type: mongoose.Schema.Types.ObjectId, ref: "Product" }],
-        verifiedAt: { type: Date, default: null },   // ✅ Fixed: Date type not String
+        verifiedAt: { type: Date, default: null },
+        isActive: { type: Boolean, default: true },
+        lastLogin: { type: Date, default: null },
 
-        // ✅ Secure password reset — stores a hashed token, not plaintext
+        // Secure password reset — stores a hashed token, not plaintext
         resetPasswordToken: { type: String, default: null, select: false },
         resetPasswordExpires: { type: Date, default: null, select: false },
 

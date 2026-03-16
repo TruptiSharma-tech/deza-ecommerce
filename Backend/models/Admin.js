@@ -16,6 +16,8 @@ const adminSchema = new mongoose.Schema(
         },
         lastLogin: { type: Date, default: null },
         status: { type: String, enum: ["active", "inactive"], default: "active" },
+        phoneNumber: { type: String, trim: true },
+        profileImage: { type: String, default: "" },
     },
     { timestamps: true }
 );

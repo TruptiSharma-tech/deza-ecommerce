@@ -367,7 +367,27 @@ export default function TrackOrder() {
               )}
             </div>
           </div>
+
+          {/* 📦 COMPACT SCROLLABLE ITEMS BOX (Upar Shifted) */}
+          {order.items && order.items.length > 0 && (
+            <div className="to-items-box-compact">
+              <div className="to-section-label">🛒 Items in Shipment ({order.items.length})</div>
+              <div className="to-items-scroll-area">
+                {order.items.map((item, i) => (
+                  <div key={i} className="to-compact-item-card">
+                    {item.image && <img src={item.image} alt={item.name} className="to-compact-item-img" />}
+                    <div className="to-compact-item-info">
+                      <p className="to-compact-item-name">{item.name}</p>
+                      <p className="to-compact-item-meta">{item.selectedSize} · Qty: {item.qty}</p>
+                      <p className="to-compact-item-price">₹{(item.price * item.qty).toLocaleString("en-IN")}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
+
         <div className="to-right-col">
           {/* Live Route Map */}
           {!isCancelled && (
@@ -451,7 +471,7 @@ export default function TrackOrder() {
             </div>
           </div>
 
-          {/* Help Card (Moved below Address) */}
+          {/* Help Card */}
           <div className="to-help-card">
             <span>🎧</span>
             <div>
@@ -470,27 +490,6 @@ export default function TrackOrder() {
           </div>
         </div>
       </div>
-
-      {/* ═══ FULL WIDTH HORIZONTAL ITEMS ══════ */}
-      {order.items && order.items.length > 0 && (
-        <div className="to-full-width-container">
-          <div className="to-items-full-card-horizontal">
-            <div className="to-section-label">🛒 Items in Shipment ({order.items.length})</div>
-            <div className="to-items-horizontal-list">
-              {order.items.map((item, i) => (
-                <div key={i} className="to-item-landscape-card">
-                  {item.image && <img src={item.image} alt={item.name} className="to-item-img-landscape" />}
-                  <div className="to-item-landscape-info">
-                    <p className="to-item-landscape-name">{item.name}</p>
-                    <p className="to-item-landscape-meta">{item.selectedSize} | Qty: {item.qty}</p>
-                    <p className="to-item-landscape-price">₹{(item.price * item.qty).toLocaleString("en-IN")}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
 
       <div className="to-footer-note">
         ✨ DEZA Luxury Perfumes · Mulund West, Mumbai · All deliveries shipped with care
