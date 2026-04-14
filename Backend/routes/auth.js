@@ -130,6 +130,17 @@ router.post("/login", async (req, res) => {
     }
 });
 
+// ─── Get Current User Profile (Fetch Details including Addresses) ──────────────
+router.get("/me", auth, async (req, res) => {
+    try {
+        const user = await User.findById(req.user.id).select("-password -resetPasswordToken -resetPasswordExpires");
+        if (!user) return res.status(404).json({ error: "User not found." });
+        res.json(user);
+    } catch (err) {
+        res.status(500).json({ error: "Server error." });
+    }
+});
+
 // ─── Admin Login ──────────────────────────────────────────────────────────────
 router.post("/admin-login", async (req, res) => {
     try {

@@ -9,8 +9,8 @@ dotenv.config();
 const router = express.Router();
 
 const razorpay = new Razorpay({
-    key_id: process.env.RAZORPAY_KEY_ID,
-    key_secret: process.env.RAZORPAY_KEY_SECRET,
+    key_id: process.env.RAZORPAY_KEY_ID || "rzp_test_SdJA8ZBmvE42IN",
+    key_secret: process.env.RAZORPAY_KEY_SECRET || "c7vWYCsia23VKeyiXnWKkzn4",
 });
 
 // ─── POST - Create Order ──────────────────────────────────────────────────────
@@ -45,7 +45,7 @@ router.post("/verify-payment", auth, async (req, res) => {
 
         const sign = razorpay_order_id + "|" + razorpay_payment_id;
         const expectedSign = crypto
-            .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
+            .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET || "c7vWYCsia23VKeyiXnWKkzn4")
             .update(sign.toString())
             .digest("hex");
 

@@ -45,9 +45,10 @@ const statusHistorySchema = new mongoose.Schema(
 
 const orderSchema = new mongoose.Schema(
     {
-        orderNumber: { type: String, unique: true }, // Human readable order number
-        customerId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: false },
-        customerName: { type: String, default: "" },
+        orderNumber: { type: String, required: true, unique: true },
+        customerId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+        shopId: { type: mongoose.Schema.Types.ObjectId, ref: "Shop" }, // New Field
+        customerName: { type: String, required: true },
         customerEmail: { type: String, default: "" },
         customerPhone: { type: String, default: "" },
         items: { type: [orderItemSchema], required: true },
@@ -67,7 +68,7 @@ const orderSchema = new mongoose.Schema(
         paymentDetails: mongoose.Schema.Types.Mixed,
         orderStatus: {
             type: String,
-            enum: ["Pending", "Processing", "Shipped", "Delivered", "Cancelled", "Returned"],
+            enum: ["Pending", "Processing", "Packed", "Shipped", "Out for Delivery", "Delivered", "Cancelled", "Returned"],
             default: "Pending",
         },
         statusHistory: [statusHistorySchema],
@@ -81,6 +82,15 @@ const orderSchema = new mongoose.Schema(
             reason: String,
             requestDate: Date,
             status: { type: String, enum: ["None", "Pending", "Approved", "Rejected"], default: "None" },
+        },
+        orderSource: { type: String, default: "Website" },
+        refundStatus: { type: String, default: "Not Requested" },
+        returnStatus: { type: String, default: "Not Requested" },
+        liveTracking: {
+            lat: { type: Number, default: 19.1726 }, // Mulund West, Mumbai
+            lng: { type: Number, default: 72.9425 },
+            lastUpdated: { type: Date, default: Date.now },
+            isActive: { type: Boolean, default: false }
         }
     },
     { timestamps: true }
@@ -89,7 +99,6 @@ const orderSchema = new mongoose.Schema(
 // Performance Indexes
 orderSchema.index({ customerId: 1 });
 orderSchema.index({ orderStatus: 1 });
-orderSchema.index({ orderNumber: 1 });
 orderSchema.index({ createdAt: -1 });
 
 export default mongoose.model("Order", orderSchema);

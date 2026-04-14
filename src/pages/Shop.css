@@ -255,13 +255,14 @@
 }
 
 @media (max-width: 768px) {
+  .shop-page { padding: 40px 15px; }
   .shop-title {
     font-size: 32px;
   }
 
   .shop-grid {
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-    gap: 25px;
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    gap: 20px;
   }
 
   .shop-img {

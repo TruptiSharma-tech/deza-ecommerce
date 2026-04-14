@@ -45,11 +45,11 @@ export default function Shop() {
   const loadProducts = async () => {
     setLoading(true);
     try {
-      const data = await apiGetProducts();
+      const res = await apiGetProducts(false, 1, 100);
+      const data = Array.isArray(res) ? res : (res.products || []);
       setProducts(data);
     } catch (err) {
       console.error("Failed to fetch products:", err);
-      // Fallback: seed collection message
       setProducts([]);
     } finally {
       setLoading(false);
@@ -202,7 +202,7 @@ export default function Shop() {
                 key={p._id}
                 onClick={() => navigate(`/product/${p._id}`)}
               >
-                <img src={p.image} alt={p.title} className="shop-img" />
+                <img src={p.image} alt={p.title} className="shop-img" loading="lazy" />
 
                 <h2>{p.title}</h2>
 

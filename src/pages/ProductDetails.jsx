@@ -4,7 +4,7 @@ import toast from "react-hot-toast";
 import "./ProductDetails.css";
 import { FaHeart, FaRegHeart, FaShoppingCart, FaStar } from "react-icons/fa";
 import { FaWhatsapp } from "react-icons/fa";
-import { apiGetProduct, apiGetProductReviews, apiSubmitReview } from "../utils/api";
+import { apiGetProduct, apiGetProductReviews, apiSubmitReview, apiCreateOrder, apiGetProfile } from "../utils/api";
 
 export default function ProductDetails() {
   const { id } = useParams();
@@ -26,12 +26,23 @@ export default function ProductDetails() {
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // WhatsApp Order Details State
+  const [showWhatsAppModal, setShowWhatsAppModal] = useState(false);
+  const [waName, setWaName] = useState("");
+  const [waPhone, setWaPhone] = useState("");
+  const [waAddress, setWaAddress] = useState("");
+
   const currentUser = JSON.parse(localStorage.getItem("currentUser"));
 
   const loadProductData = async () => {
     setLoading(true);
     try {
-      const data = await apiGetProduct(id);
+      // ✅ Concurrently fetch product and reviews
+      const [data, revs] = await Promise.all([
+        apiGetProduct(id).catch(() => null),
+        apiGetProductReviews(id).catch(() => [])
+      ]);
+
       if (data) {
         if (!data.images || data.images.length === 0) {
           data.images = [data.image];
@@ -44,13 +55,9 @@ export default function ProductDetails() {
         setProduct(null);
       }
 
-      try {
-        const revs = await apiGetProductReviews(id);
-        setReviews(revs || []);
-      } catch (revErr) {
-        setReviews([]);
-      }
+      setReviews(revs || []);
 
+      // Wishlist check
       try {
         const wishlist = JSON.parse(localStorage.getItem("deza_wishlist")) || [];
         const exists = wishlist.find((x) => String(x?._id) === String(id));
@@ -119,20 +126,117 @@ export default function ProductDetails() {
     navigate("/cart");
   };
 
-  const handleWhatsAppOrder = () => {
-    const phoneNumber = "919082710359";
-    const productImage = product.images?.[0] || "";
-    const productUrl = window.location.href; // Current page URL
-    
-    // Check if image is a link (previews work) or base64 (previews don't work)
-    const isUrl = productImage.startsWith("http");
-    
-    // If it's a URL, use it for preview. If base64, use the Product URL for preview.
-    const previewLink = isUrl ? productImage : productUrl;
-    
-    const message = `${previewLink}\n\nHello DEZA 💛 I want to place an order.\n\n🛍 Product: ${product.title}\n📦 Size: ${selectedSize}\n🔢 Quantity: ${qty}\n💰 Price: ₹${finalPrice}\n\nPlease confirm my order.`;
-    
-    window.open(`https://api.whatsapp.com/send?phone=${phoneNumber}&text=${encodeURIComponent(message)}`, "_blank");
+  const handleWhatsAppOrder = async () => {
+    if (!checkLogin()) return;
+
+    // ⚡ INSTANT FETCH: Check local storage first (Fastest)
+    const prevCheckout = JSON.parse(localStorage.getItem("checkoutInfo")) || {};
+    const localAddrObj = prevCheckout.address;
+    const localAddressStr = localAddrObj ? `${localAddrObj.street}, ${localAddrObj.area || ""}, ${localAddrObj.city}, ${localAddrObj.pincode}` : "";
+
+    const cachedName = currentUser?.name || prevCheckout.name || "";
+    const cachedContact = currentUser?.contact || currentUser?.phoneNumber || prevCheckout.phone || "";
+    const cachedAddress = localAddressStr;
+
+    // ✅ IF CACHED DATA COMPLETE -> GO INSTANTLY
+    if (cachedName && cachedContact && cachedAddress) {
+      processInstantWhatsAppOrder(cachedName, cachedContact, cachedAddress);
+      return;
+    }
+
+    // 🔄 FALLBACK: If missing, fetch from DB (Slightly slower)
+    try {
+      const freshUser = await apiGetProfile();
+      const dbAddr = freshUser?.addresses?.find(a => a.isDefault) || freshUser?.addresses?.[0];
+      const dbAddressStr = dbAddr ? `${dbAddr.street}, ${dbAddr.area || ""}, ${dbAddr.city}, ${dbAddr.pincode}` : "";
+
+      const name = freshUser?.name || cachedName;
+      const contact = freshUser?.contact || freshUser?.phoneNumber || cachedContact;
+      const address = dbAddressStr || cachedAddress;
+
+      if (name && contact && address) {
+        processInstantWhatsAppOrder(name, contact, address);
+      } else {
+        setWaName(name);
+        setWaPhone(contact);
+        setWaAddress(address);
+        setShowWhatsAppModal(true);
+      }
+    } catch (err) {
+      // Final Fallback: Show Modal
+      setWaName(cachedName);
+      setWaPhone(cachedContact);
+      setShowWhatsAppModal(true);
+    }
+  };
+
+  const processInstantWhatsAppOrder = async (name, contact, address) => {
+    setLoading(true);
+    try {
+      const orderPayload = {
+        customerId: currentUser?._id,
+        customerName: name,
+        customerPhone: contact,
+        customerEmail: currentUser?.email || "",
+        items: [{
+          _id: product._id,
+          name: product.title,
+          image: product.images?.[0] || product.image,
+          selectedSize: selectedSize,
+          price: finalPrice,
+          qty: qty
+        }],
+        address: { street: address }, // ✅ Wrap in object for schema compatibility
+        totalPrice: finalPrice * qty,
+        paymentMethod: "WhatsApp / COD",
+        paymentStatus: "Pending",
+        orderSource: "WhatsApp"
+      };
+
+      const newOrder = await apiCreateOrder(orderPayload);
+      const orderNum = newOrder.orderNumber;
+
+      const orderDate = new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
+      const orderTime = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
+
+      const message = `*DEZA LUXURY ORDER* 💎\n\n` +
+        `📦 *Order Details:*\n` +
+        `--------------------------\n` +
+        `*Order ID:* ${orderNum}\n` +
+        `*Date:* ${orderDate}\n` +
+        `*Time:* ${orderTime}\n\n` +
+        `👤 *Customer Info:*\n` +
+        `--------------------------\n` +
+        `*Name:* ${name}\n` +
+        `*Phone:* ${contact}\n` +
+        `*Address:* ${address}\n\n` +
+        `🛍 *Product Details:*\n` +
+        `--------------------------\n` +
+        `*Item:* ${product.title}\n` +
+        `*Size:* ${selectedSize}\n` +
+        `*Quantity:* ${qty}\n` +
+        `*Total Amount:* ₹${(finalPrice * qty).toLocaleString("en-IN")}\n\n` +
+        `🔗 *Product Link:* ${window.location.href}\n\n` +
+        `*Note:* Please confirm availability and shipping estimated timeline.`;
+
+      const merchantPhone = "919082710359";
+      const waUrl = `https://api.whatsapp.com/send?phone=${merchantPhone}&text=${encodeURIComponent(message)}`;
+      
+      // ✅ Use window.location.href to avoid popup blockers and ensure mobile compatibility
+      window.location.href = waUrl;
+      toast.success("Order Tracked! Opening WhatsApp...");
+    } catch (err) {
+      toast.error("Order creation failed: " + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const confirmWhatsAppOrder = async (e) => {
+    e.preventDefault();
+    if (!waName || !waPhone || !waAddress) return toast.error("Please fill all details!");
+    processInstantWhatsAppOrder(waName, waPhone, waAddress);
+    setShowWhatsAppModal(false);
   };
 
   const handleWishlist = () => {
@@ -371,6 +475,53 @@ export default function ProductDetails() {
               </div>
             </div>
           </div>
+
+          {/* 🚀 WHATSAPP ORDER MODAL */}
+          {showWhatsAppModal && (
+            <div className="wa-modal-overlay">
+              <div className="wa-modal-card">
+                <h2>Complete WhatsApp Order</h2>
+                <p>Please provide your shipping details to send a professional order request to the seller.</p>
+                
+                <form onSubmit={confirmWhatsAppOrder}>
+                  <div className="wa-form-group">
+                    <label>Receiver Name</label>
+                    <input 
+                      type="text" 
+                      value={waName} 
+                      onChange={(e) => setWaName(e.target.value)} 
+                      placeholder="e.g. Rahul Sharma"
+                      required
+                    />
+                  </div>
+                  <div className="wa-form-group">
+                    <label>Contact Number</label>
+                    <input 
+                      type="tel" 
+                      value={waPhone} 
+                      onChange={(e) => setWaPhone(e.target.value)} 
+                      placeholder="e.g. 9876543210"
+                      required
+                    />
+                  </div>
+                  <div className="wa-form-group">
+                    <label>Full Delivery Address</label>
+                    <textarea 
+                      value={waAddress} 
+                      onChange={(e) => setWaAddress(e.target.value)} 
+                      placeholder="Street, Building, Landmark, City, Pincode"
+                      required
+                    />
+                  </div>
+
+                  <div className="wa-modal-actions">
+                    <button type="button" className="wa-cancel-btn" onClick={() => setShowWhatsAppModal(false)}>Cancel</button>
+                    <button type="submit" className="wa-confirm-btn">Confirm & Send Order 🛍</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
         </>
       )}
     </div>

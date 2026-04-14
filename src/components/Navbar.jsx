@@ -5,6 +5,20 @@ import { FaUserCircle, FaHeart } from "react-icons/fa";
 import { ShoppingCart } from "lucide-react";
 import AccountSidebar from "./AccountSidebar";
 import { useAuth } from "../context/AuthContext";
+import { apiGetProducts, apiGetHeroSettings } from "../utils/api";
+
+// 🚀 Preload function for components
+const preloadPage = (componentName) => {
+  // This triggers the browser to start fetching the lazy-loaded chunk
+  const pages = {
+    Home: () => import("../pages/Home"),
+    Shop: () => import("../pages/Shop"),
+    About: () => import("../pages/About"),
+    Orders: () => import("../pages/Orders"),
+    Cart: () => import("../pages/Cart"),
+  };
+  if (pages[componentName]) pages[componentName]();
+};
 
 export default function Navbar() {
   const navigate = useNavigate();
@@ -34,9 +48,30 @@ export default function Navbar() {
 
           {/* LINKS */}
           <div className="navbar-links">
-            <Link to="/">Home</Link>
-            <Link to="/shop">Shop</Link>
-            <Link to="/about">About</Link>
+            <Link 
+              to="/" 
+              onMouseEnter={() => {
+                preloadPage("Home");
+                apiGetHeroSettings();
+              }}
+            >
+              Home
+            </Link>
+            <Link 
+              to="/shop"
+              onMouseEnter={() => {
+                preloadPage("Shop");
+                apiGetProducts();
+              }}
+            >
+              Shop
+            </Link>
+            <Link 
+              to="/about"
+              onMouseEnter={() => preloadPage("About")}
+            >
+              About
+            </Link>
 
             {isAdmin && (
               <button className="admin-btn" onClick={() => navigate("/admin")}>

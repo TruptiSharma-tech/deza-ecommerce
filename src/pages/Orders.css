@@ -430,27 +430,22 @@
 }
 
 @media (max-width: 768px) {
-  .orders-title {
-    font-size: 2rem;
-  }
+  .orders-page { padding: 60px 15px; }
+  .orders-title { font-size: 1.8rem; margin-bottom: 30px; }
   
-  .order-card {
-    padding: 20px;
-  }
+  .order-card { padding: 18px; border-radius: 16px; }
+  .order-head { flex-direction: column; gap: 8px; align-items: flex-start; }
+  .order-head h2 { font-size: 1.1rem; }
   
-  .order-head {
-    flex-direction: column;
-    gap: 10px;
-    align-items: flex-start;
-  }
-  
-  .progress-step {
-    font-size: 0.75rem;
-    padding: 8px 6px;
-  }
+  .progress-step { font-size: 0.7rem; padding: 6px 4px; min-width: 80px; }
   
   .order-item img {
     width: 65px;
     height: 65px;
   }
-}
+}
+@media (max-width: 480px) {
+  .orders-title { font-size: 1.5rem; }
+  .progress-step { font-size: 0.6rem; min-width: 65px; }
+  .cancel-btn, .track-order-btn { font-size: 0.85rem; padding: 10px; }
+}

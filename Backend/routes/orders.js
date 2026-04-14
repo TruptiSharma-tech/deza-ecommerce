@@ -3,7 +3,9 @@ import mongoose from "mongoose";
 import { nanoid } from "nanoid";
 import Order from "../models/Order.js";
 import Product from "../models/Product.js";
+import Shop from "../models/Shop.js";
 import { auth, adminOnly } from "../middleware/auth.js";
+import User from "../models/User.js";
 import AuditLog from "../models/AuditLog.js";
 import { sendEmail, getBrandedTemplate } from "../utils/emailHelper.js";
 import { sendWhatsApp } from "../utils/whatsappHelper.js";
@@ -22,7 +24,7 @@ const logAdminAction = async (adminId, action, module, details, ip) => {
 // ─── GET All Orders (Admin only) ──────────────────────────────────────────────
 router.get("/", auth, adminOnly, async (req, res) => {
     try {
-        const orders = await Order.find().populate("customerId", "name email").sort({ createdAt: -1 });
+        const orders = await Order.find().populate("customerId", "name email").populate("shopId").sort({ createdAt: -1 });
         const mapped = orders.map(o => ({
             ...o.toObject(),
             totalPrice: o.totalAmount, // legacy support
@@ -39,26 +41,52 @@ router.get("/", auth, adminOnly, async (req, res) => {
 router.get("/my/:email", auth, async (req, res) => {
     try {
         const searchEmail = req.params.email.toLowerCase().trim();
-        const isAdmin = req.user.role === "admin";
+        const isAdmin = req.user && (["superadmin", "manager", "support", "admin"].includes(req.user.role) || req.user.isAdmin === true);
 
         // Check if user is viewing their own orders or if admin
         if (req.user.email.toLowerCase() !== searchEmail && !isAdmin) {
             return res.status(403).json({ error: "Unauthorized access." });
         }
 
+        // 🔍 Fetch user's phone to find WhatsApp orders too
+        const userInDb = await User.findOne({ email: searchEmail });
+        const userPhone = userInDb?.phoneNumber || userInDb?.contact || "";
+
         // Filter: Users don't see cancelled orders, but admins see everything
-        const query = { customerEmail: searchEmail };
-        if (!isAdmin) {
-            query.orderStatus = { $ne: "Cancelled" };
+        // Build query to find by Email OR Phone Number
+        let query = {};
+        const conditions = [];
+        
+        if (searchEmail) conditions.push({ customerEmail: searchEmail });
+        if (userPhone) conditions.push({ customerPhone: userPhone });
+
+        if (conditions.length > 1) {
+            query.$or = conditions;
+        } else if (conditions.length === 1) {
+            query = conditions[0];
         }
 
-        const orders = await Order.find(query).sort({ createdAt: -1 });
-        const mapped = orders.map(o => ({
-            ...o.toObject(),
-            totalPrice: o.totalAmount,
-            status: o.orderStatus,
-            orderId: o.orderNumber
-        }));
+        // In "My Orders", we now show everything, but the UI can handle status-based display
+        if (!isAdmin) {
+            // query.orderStatus = { $ne: "Cancelled" }; // Removed filtering to allow users to see their cancelled orders
+        }
+
+        const orders = await Order.find(query).populate("shopId").sort({ createdAt: -1 });
+        const mapped = orders.map(o => {
+            try {
+                const obj = o.toObject();
+                return {
+                    ...obj,
+                    totalPrice: o.totalAmount || 0,
+                    status: o.orderStatus || "Pending",
+                    orderId: o.orderNumber || "DZ-GUEST"
+                };
+            } catch (mapErr) {
+                console.error("Skipping corrupted order:", o._id, mapErr);
+                return null;
+            }
+        }).filter(o => o !== null);
+
         res.json(mapped);
     } catch (err) {
         res.status(500).json({ error: "Failed to fetch orders." });
@@ -68,7 +96,15 @@ router.get("/my/:email", auth, async (req, res) => {
 // ─── GET Single Order (Tracking) ──────────────────────────────────────────────
 router.get("/track/:orderNumber", async (req, res) => {
     try {
-        const order = await Order.findOne({ orderNumber: req.params.orderNumber });
+        const { orderNumber } = req.params;
+        let query = { orderNumber };
+        
+        // If it looks like a MongoDB ObjectId, also try searching by _id as fallback
+        if (mongoose.Types.ObjectId.isValid(orderNumber)) {
+            query = { $or: [{ orderNumber }, { _id: orderNumber }] };
+        }
+
+        const order = await Order.findOne(query).populate("shopId");
         if (!order) return res.status(404).json({ error: "Order not found." });
         const obj = order.toObject();
         obj.totalPrice = obj.totalAmount;
@@ -85,7 +121,7 @@ router.post("/", async (req, res) => {
     try {
         const {
             customerId, customerName, customerPhone, customerEmail,
-            items, address, totalPrice, paymentMethod, paymentId, paymentStatus
+            items, address, totalPrice, paymentMethod, paymentId, paymentStatus, orderSource
         } = req.body;
 
         const orderNumber = `DZ-${nanoid(10).toUpperCase()}`;
@@ -99,20 +135,29 @@ router.post("/", async (req, res) => {
             qty: item.qty || 1,
         }));
 
+        const formattedAddress = typeof address === 'string' 
+            ? { street: address } 
+            : (address || {});
+
+        // Fetch primary shop to assign to this order
+        const primaryShop = await mongoose.model("Shop").findOne({ isPrimary: true });
+
         const newOrder = await Order.create({
             orderNumber,
             customerId: customerId || null,
+            shopId: primaryShop?._id || null, // Dynamic shop assignment
             customerName: customerName || "Guest",
             customerPhone: customerPhone || "",
             customerEmail: customerEmail || "",
             items: mappedItems,
-            shippingAddress: address || {},
+            shippingAddress: formattedAddress,
             totalAmount: Number(totalPrice) || 0,
             paymentMethod: paymentMethod || "Cash On Delivery",
             paymentStatus: paymentStatus || "Pending",
             paymentDetails: { paymentId },
             orderStatus: "Processing",
-            statusHistory: [{ status: "Processing", comment: "Order placed successfully." }]
+            statusHistory: [{ status: "Processing", comment: "Order placed successfully." }],
+            orderSource: orderSource || "Website"
         });
 
         // ✅ REDUCE STOCK FOR EACH ITEM
@@ -148,8 +193,8 @@ router.post("/", async (req, res) => {
 
         res.status(201).json(newOrder);
     } catch (err) {
-        console.error("Create order error:", err);
-        res.status(500).json({ error: "Failed to create order." });
+        console.error("🔥🔥 ORDER CREATION FAILED:", err);
+        res.status(500).json({ error: "Failed to create order: " + err.message });
     }
 });
 
@@ -172,6 +217,7 @@ router.patch("/:id/status", auth, adminOnly, async (req, res) => {
 
         await order.save();
         await logAdminAction(req.user.id, "Update Order", "Orders", `Updated ${order.orderNumber} to ${status}`, req.ip);
+
 
         // ─── SEND NOTIFICATIONS ───────────────────────────────────────────────
         try {
@@ -205,8 +251,9 @@ router.patch("/:id/status", auth, adminOnly, async (req, res) => {
             await sendEmail(order.customerEmail, `DEZA Luxury Update - #${orderNum}`, html);
 
             // 2. WhatsApp Notification (Official API)
-            // Note: Template 'order_update' must be approved in your Meta Dashboard
-            await sendWhatsApp(order.customerPhone, "order_update", [customerName, orderNum, status]);
+            // Now includes the Product Image for a professional look
+            const productImage = order.items?.[0]?.image || "";
+            await sendWhatsApp(order.customerPhone, "order_update", [productImage, customerName, orderNum, status]);
 
         } catch (notifyErr) {
             console.error("Notification trigger failed (silently):", notifyErr.message);
@@ -216,6 +263,25 @@ router.patch("/:id/status", auth, adminOnly, async (req, res) => {
     } catch (err) {
         console.error("Status update error:", err);
         res.status(500).json({ error: "Failed to update order status." });
+    }
+});
+
+// ─── PATCH - Update Live GPS Tracking ──────────────────────────────────────────
+router.patch("/:id/tracking", auth, async (req, res) => {
+    try {
+        const { lat, lng, isActive } = req.body;
+        const order = await Order.findById(req.params.id);
+        if (!order) return res.status(404).json({ error: "Order not found." });
+
+        if (lat !== undefined) order.liveTracking.lat = lat;
+        if (lng !== undefined) order.liveTracking.lng = lng;
+        if (isActive !== undefined) order.liveTracking.isActive = isActive;
+        order.liveTracking.lastUpdated = new Date();
+
+        await order.save();
+        res.json(order.liveTracking);
+    } catch (err) {
+        res.status(500).json({ error: "Failed to update tracking." });
     }
 });
 
@@ -367,6 +433,27 @@ router.patch("/:id/refund", auth, async (req, res) => {
         });
     } catch (err) {
         res.status(500).json({ error: "Failed to request refund." });
+    }
+});
+
+// ─── PATCH - Toggle Live Tracking ─────────────────────────────────────────────
+router.patch("/:id/live-tracking", auth, adminOnly, async (req, res) => {
+    try {
+        const { isActive, lat, lng } = req.body;
+        const order = await Order.findById(req.params.id);
+        if (!order) return res.status(404).json({ error: "Order not found." });
+
+        order.liveTracking = {
+            isActive: isActive !== undefined ? isActive : !order.liveTracking.isActive,
+            lat: lat || order.liveTracking.lat,
+            lng: lng || order.liveTracking.lng,
+            lastUpdated: new Date()
+        };
+
+        await order.save();
+        res.json({ message: `Live tracking ${order.liveTracking.isActive ? "enabled" : "disabled"}`, liveTracking: order.liveTracking });
+    } catch (err) {
+        res.status(500).json({ error: "Failed to update live tracking." });
     }
 });
 

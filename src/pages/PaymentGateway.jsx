@@ -72,7 +72,7 @@ export default function PaymentGateway() {
       const order = await apiCreateRazorpayOrder({ amount: total });
 
       const options = {
-        key: import.meta.env.VITE_RAZORPAY_KEY_ID || "rzp_test_1DP5mmOlF5G5ag",
+        key: import.meta.env.VITE_RAZORPAY_KEY_ID || "rzp_test_SdJA8ZBmvE42IN",
         amount: order.amount,
         currency: order.currency,
         name: "DEZA Luxury Store",
@@ -101,9 +101,26 @@ export default function PaymentGateway() {
         prefill: {
           name: name || currentUser?.name || "Customer",
           contact: cleanPhone || "9999999999",
-          email: currentUser?.email || "support@deza.com"
+          email: currentUser?.email || "support@deza.com",
+          method: selectedType.toLowerCase() === "upi" ? "upi" : "card"
         },
         theme: { color: "#D4AF37" },
+        config: {
+          display: {
+            blocks: {
+              upi: {
+                name: "Pay via UPI / QR",
+                instruments: [{ method: "upi" }]
+              },
+              card: {
+                name: "Pay via Card",
+                instruments: [{ method: "card" }]
+              }
+            },
+            sequence: [selectedType.toLowerCase() === "upi" ? "block.upi" : "block.card"],
+            preferences: { show_default_blocks: true }
+          }
+        },
         modal: {
           ondismiss: () => setLoading(false)
         }

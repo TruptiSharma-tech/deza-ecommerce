@@ -18,7 +18,7 @@ const logAdminAction = async (adminId, action, module, details, ip) => {
 // ─── GET All Products ──────────────────────────────────────────────────────────
 router.get("/", async (req, res) => {
     try {
-        const { category, brand, featured } = req.query;
+        const { category, brand, featured, page = 1, limit = 20 } = req.query;
         let query = { isArchived: false };
         if (req.query.includeArchived === "true") delete query.isArchived;
 
@@ -27,31 +27,33 @@ router.get("/", async (req, res) => {
         if (featured) query.isFeatured = featured === "true";
         if (req.query.isActive) query.isActive = req.query.isActive === "true";
 
+        const skip = (parseInt(page) - 1) * parseInt(limit);
+
         const products = await Product.find(query)
             .populate("category brand")
-            .sort({ createdAt: -1 });
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(parseInt(limit));
 
-        // 🔄 SELF-HEAL ALL: Ensure every shop card has the absolute latest rating
-        const updatedProducts = await Promise.all(products.map(async (p) => {
-            const allReviews = await Review.find({
-                productId: { $in: [p._id, String(p._id)] }
-            });
+        const total = await Product.countDocuments(query);
 
-            if (allReviews.length > 0) {
-                const avg = allReviews.reduce((sum, r) => sum + r.rating, 0) / allReviews.length;
-                p.rating = Number(avg.toFixed(1));
-                p.numReviews = allReviews.length;
-                // We don't necessarily need to p.save() every time here to keep it fast, 
-                // but let's ensure the object sent to frontend is fresh.
-            }
-
+        // 🚀 OPTIMIZED: Remove N+1 query. Use existing rating in model.
+        // Ratings are updated when reviews are submitted in reviewRoutes.
+        const updatedProducts = products.map((p) => {
             const obj = p.toObject();
             obj.image = obj.mainImage;
+            // Fallback for rating if it doesn't exist
+            if (obj.rating === undefined) obj.rating = 0;
+            if (obj.numReviews === undefined) obj.numReviews = 0;
             return obj;
-        }));
+        });
 
-        // res.set('Cache-Control', 'public, max-age=30'); // Disabled for real-time rating updates
-        res.json(updatedProducts);
+        res.json({
+            products: updatedProducts,
+            total,
+            page: parseInt(page),
+            pages: Math.ceil(total / limit)
+        });
     } catch (err) {
         res.status(500).json({ error: "Failed to fetch products." });
     }

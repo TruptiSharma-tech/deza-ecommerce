@@ -276,7 +276,10 @@ export default function Admin() {
 
       if (!silent) {
         const [prods, revs, cats, brnds, subs, cpns, logs, hro] = fullResults;
-        if (prods) setProducts(prods);
+        if (prods) {
+          const productData = Array.isArray(prods) ? prods : (prods.products || []);
+          setProducts(productData);
+        }
         if (revs) setReviews(revs);
         if (cats) setCategoriesList(cats);
         if (brnds) setBrandsList(brnds);
@@ -308,7 +311,7 @@ export default function Admin() {
   // ✅ Computed Sales Ticker (Live data)
   const recentSalesTicker = useMemo(() => {
     return [...orders]
-      .sort((a, b) => new Date(b.date) - new Date(a.date))
+      .sort((a, b) => new Date(b.createdAt || b.date) - new Date(a.createdAt || a.date))
       .slice(0, 5)
       .map(o => `${o.customerName} just ordered ₹${o.totalPrice}!`)
       .join(" • ");
@@ -658,7 +661,10 @@ export default function Admin() {
   const totalOrders = finalOrders.length;
 
   const totalRevenue = finalOrders.reduce(
-    (acc, o) => acc + (o.totalPrice || 0),
+    (acc, o) => {
+      if (o.status === "Cancelled" || o.status === "Returned") return acc;
+      return acc + (o.totalPrice || 0);
+    },
     0,
   );
 
@@ -673,6 +679,10 @@ export default function Admin() {
   const shippedOrders = finalOrders.filter(
     (o) => o.status === "Shipped" || o.status === "Out for Delivery",
   ).length;
+
+  const whatsappRevenue = finalOrders
+    .filter(o => o.orderSource === "WhatsApp" && o.status !== "Cancelled" && o.status !== "Returned")
+    .reduce((acc, o) => acc + (o.totalPrice || 0), 0);
 
   // Filter Products for the List Tab
   const productsToDisplay = products.filter((p) => {
@@ -728,7 +738,7 @@ export default function Admin() {
   // Charts
   // ✅ Aggregated Revenue Data (Grouped by Date)
   const revenueByDate = finalOrders.reduce((acc, o) => {
-    const dateStr = new Date(o.date).toLocaleDateString();
+    const dateStr = new Date(o.createdAt || o.date).toLocaleDateString();
     acc[dateStr] = (acc[dateStr] || 0) + (o.totalPrice || 0);
     return acc;
   }, {});
@@ -1096,6 +1106,18 @@ export default function Admin() {
                 <div className="card-content">
                   <h3>Txn Failed</h3>
                   <p>{failedTransactions}</p>
+                </div>
+              </div>
+
+              {/* WHATSAPP REVENUE CARD */}
+              <div className="admin-card myntra-card" style={{ background: "linear-gradient(135deg, #25D366, #128C7E)" }}>
+                <div className="card-icon">💬</div>
+                <div className="card-content">
+                  <h3>WhatsApp Sales</h3>
+                  <p>₹{whatsappRevenue.toLocaleString()}</p>
+                  <small style={{ display: "block", opacity: 0.8, fontSize: "11px", marginTop: "5px" }}>
+                    Tracked via WhatsApp Button
+                  </small>
                 </div>
               </div>
             </div>
@@ -1564,6 +1586,7 @@ export default function Admin() {
                     <th>Date</th>
                     <th>Customer</th>
                     <th>Address</th>
+                    <th>Source</th>
                     <th>Items</th>
                     <th>Total</th>
                     <th>Status</th>
@@ -1605,6 +1628,20 @@ export default function Admin() {
                         )}
                       </td>
                       <td>
+                        <span style={{ 
+                          padding: '4px 8px', 
+                          borderRadius: '6px', 
+                          fontSize: '10px', 
+                          fontWeight: '800',
+                          background: o.orderSource === "WhatsApp" ? "#25D366" : "rgba(212,175,55,0.1)",
+                          color: o.orderSource === "WhatsApp" ? "#000" : "#D4AF37",
+                          textTransform: 'uppercase'
+                        }}>
+                          {o.orderSource || "Website"}
+                        </span>
+                      </td>
+
+                      <td>
                         {(o.items || []).map((item, idx) => (
                           <div key={item._id || item.id || idx} style={{ marginBottom: "10px" }}>
                             <img
@@ -1643,6 +1680,49 @@ export default function Admin() {
                           <option value="Out for Delivery">Out for Delivery</option>
                           <option value="Delivered">Delivered</option>
                         </select>
+
+                        <div style={{ marginTop: "10px", display: "flex", gap: "5px" }}>
+                          <button
+                            onClick={async () => {
+                              try {
+                                const res = await apiToggleLiveTracking(o._id);
+                                toast.success(res.message);
+                                loadAll(true);
+                              } catch (e) { toast.error("Failed to toggle tracking"); }
+                            }}
+                            style={{
+                              padding: "4px 8px",
+                              fontSize: "10px",
+                              borderRadius: "6px",
+                              background: o.liveTracking?.isActive ? "#50c878" : "#333",
+                              color: "#fff",
+                              border: "1px solid #555",
+                              cursor: "pointer"
+                            }}
+                          >
+                            {o.liveTracking?.isActive ? "📡 Live" : "🛰️ GO LIVE"}
+                          </button>
+                          
+                          {o.liveTracking?.isActive && (
+                            <button
+                              onClick={async () => {
+                                // Simulate random movement around current point or the origin shop
+                                const fallBackLat = o.shopId?.location?.lat || 19.1726;
+                                const fallBackLng = o.shopId?.location?.lng || 72.9425;
+                                const newLat = (o.liveTracking?.lat || fallBackLat) + (Math.random() - 0.5) * 0.01;
+                                const newLng = (o.liveTracking?.lng || fallBackLng) + (Math.random() - 0.5) * 0.01;
+                                try {
+                                  await apiToggleLiveTracking(o._id, true, newLat, newLng);
+                                  toast.success("Driver Position Updated");
+                                  loadAll(true);
+                                } catch (e) { }
+                              }}
+                              style={{ padding: "4px 8px", fontSize: "10px", borderRadius: "6px", background: "#d4af37", color: "#000", border: "none", cursor: "pointer" }}
+                            >
+                              Move 🚛
+                            </button>
+                          )}
+                        </div>
 
                         {o.status === "Shipped" && (
                           <div style={{ marginTop: "10px" }}>

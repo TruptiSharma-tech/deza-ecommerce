@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { apiGetMyOrders, apiCancelOrder, apiReturnOrder, apiRefundOrder } from "../utils/api";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 import toast from "react-hot-toast";
 import "./Orders.css";
 
@@ -16,34 +17,34 @@ export default function Orders() {
   const [returnType, setReturnType] = useState("Refund");
   const [returnReason, setReturnReason] = useState("Wrong Product Received");
   const [returnMessage, setReturnMessage] = useState("");
-  const [gpsTick, setGpsTick] = useState(0);
-
-  const currentUser = JSON.parse(localStorage.getItem("currentUser"));
-
-  // Simulated GPS Movement Effect
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setGpsTick(prev => (prev + 0.5) % 100);
-    }, 3000);
-    return () => clearInterval(timer);
-  }, []);
+  const { user: currentUser } = useAuth();
 
   useEffect(() => {
-    loadOrders();
-  }, []);
+    if (currentUser?.email) {
+      loadOrders();
+    } else {
+      setLoading(false);
+    }
+  }, [currentUser?.email]);
+
+  const [fetchError, setFetchError] = useState(null);
 
   const loadOrders = async () => {
     setLoading(true);
+    setFetchError(null);
     try {
-      if (currentUser?.email) {
-        const data = await apiGetMyOrders(currentUser.email);
+      const email = currentUser?.email;
+      if (email) {
+        console.log("📦 Fetching orders for:", email);
+        const data = await apiGetMyOrders(email);
         setOrders(Array.isArray(data) ? data : []);
       } else {
         setOrders([]);
       }
     } catch (err) {
       console.error("Failed to load orders:", err);
-      setOrders([]);
+      setFetchError(err.message || "Failed to load orders");
+      toast.error("Could not load your orders.");
     } finally {
       setLoading(false);
     }
@@ -55,8 +56,8 @@ export default function Orders() {
 
     try {
       const updated = await apiCancelOrder(id);
-      // Remove the cancelled order from the list so it disappears immediately
-      setOrders((prev) => prev.filter((o) => o._id !== id));
+      // Keep the order but update its status instead of filtering it out
+      setOrders((prev) => prev.map((o) => (o._id === id ? { ...o, status: "Cancelled" } : o)));
       toast.success("Order cancelled successfully!");
     } catch (err) {
       console.error("Order Cancellation Failed:", err);
@@ -131,7 +132,7 @@ export default function Orders() {
     return (
       <div className="orders-page">
         <h1 className="orders-title">📦 My Orders</h1>
-        <p className="empty-msg">Loading your orders...</p>
+        <div className="empty-msg">✨ Fetching your orders...</div>
       </div>
     );
   }
@@ -140,7 +141,14 @@ export default function Orders() {
     <div className="orders-page">
       <h1 className="orders-title">📦 My Orders</h1>
 
-      {!currentUser ? (
+      {fetchError ? (
+        <div className="empty-msg">
+          <p>❌ {fetchError}</p>
+          <button className="track-order-btn" onClick={loadOrders} style={{ width: 'auto', padding: '10px 30px', marginTop: '20px' }}>
+            Try Again
+          </button>
+        </div>
+      ) : !currentUser ? (
         <p className="empty-msg">Please login to view your orders.</p>
       ) : orders.length === 0 ? (
         <p className="empty-msg">No Orders Yet 💛</p>
@@ -157,7 +165,7 @@ export default function Orders() {
                 <b>Date:</b> {o.createdAt ? new Date(o.createdAt).toLocaleDateString("en-IN", { day: 'numeric', month: 'short', year: 'numeric' }) : "Recently Placed"}
               </p>
               <p>
-                <b>Total:</b> ₹{o.totalPrice || o.total || 0}
+                <b>Total:</b> ₹{o.totalPrice || o.totalAmount || o.total || 0}
               </p>
               <p>
                 <b>Payment:</b> {o.paymentMethod || "N/A"}

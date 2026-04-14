@@ -13,11 +13,34 @@ const headers = (extra = {}) => ({
     ...extra,
 });
 
+// ── Simple In-Memory Cache for GET requests ────────────────────────────────
+const apiCache = new Map();
+const CACHE_EXPIRY = 5 * 60 * 1000; // 5 minutes
+
 async function request(path, options = {}) {
+    const isGet = !options.method || options.method === "GET";
+    const cacheKey = path;
+
+    // Return cached data if available and not expired
+    if (isGet) {
+        const cached = apiCache.get(cacheKey);
+        if (cached && (Date.now() - cached.timestamp < CACHE_EXPIRY)) {
+            // Return cached data immediately, but trigger a background refresh (stale-while-revalidate)
+            // if it's older than 1 minute to keep it fresh without blocking the UI
+            if (Date.now() - cached.timestamp > 60 * 1000) {
+                console.log(`🔄 [API] Background refresh for: ${path}`);
+                fetch(`${BASE_URL}${path}`, { headers: headers(), ...options })
+                    .then(res => res.json())
+                    .then(data => apiCache.set(cacheKey, { data, timestamp: Date.now() }))
+                    .catch(() => {});
+            }
+            return cached.data;
+        }
+    }
+
     try {
         const res = await fetch(`${BASE_URL}${path}`, {
             headers: headers(),
-            cache: 'no-store', // ⚡ FORCE NO-CACHE FOR REAL-TIME UPDATES
             ...options,
         });
         const data = await res.json();
@@ -25,6 +48,23 @@ async function request(path, options = {}) {
             console.error(`❌ API Error [${res.status}] ${path}:`, data);
             throw new Error(data.error || "Request failed");
         }
+
+        // Cache successful GET responses
+        if (isGet) {
+            apiCache.set(cacheKey, { data, timestamp: Date.now() });
+        } else {
+            // Invalidate cache for mutations on the same path or related paths
+            // For example, if we update a product, we should clear the products list cache
+            if (path.includes("/products")) apiCache.delete("/products");
+            if (path.includes("/admin/hero-settings")) apiCache.delete("/admin/hero-settings");
+            if (path.includes("/orders")) {
+                apiCache.forEach((_, key) => {
+                    if (key.includes("/orders")) apiCache.delete(key);
+                });
+            }
+            apiCache.delete(path);
+        }
+
         return data;
     } catch (err) {
         console.error(`🚨 Network Error ${path}:`, err.message);
@@ -44,6 +84,8 @@ export const apiLogin = (payload) =>
 export const apiAdminLogin = (payload) =>
     request("/auth/admin-login", { method: "POST", body: JSON.stringify(payload) });
 
+export const apiGetProfile = () => request("/auth/me");
+
 export const apiGetUsers = () => request("/auth/users");
 export const apiDeleteUser = (id) => request(`/auth/users/${id}`, { method: "DELETE" });
 
@@ -60,8 +102,8 @@ export const apiCreateAdmin = (payload) =>
 //  PRODUCTS
 // ══════════════════════════════════════════════════════════════
 // For admin to see all, including archived
-export const apiGetProducts = (includeArchived = false) =>
-    request(`/products${includeArchived ? "?includeArchived=true" : ""}`);
+export const apiGetProducts = (includeArchived = false, page = 1, limit = 20) =>
+    request(`/products?page=${page}&limit=${limit}${includeArchived ? "&includeArchived=true" : ""}`);
 
 export const apiGetProduct = (id) => request(`/products/${id}`);
 
@@ -92,6 +134,9 @@ export const apiCreateOrder = (payload) =>
 
 export const apiUpdateOrderStatus = (id, status, comment, trackingNumber, deliveryCompany) =>
     request(`/orders/${id}/status`, { method: "PATCH", body: JSON.stringify({ status, comment, trackingNumber, deliveryCompany }) });
+
+export const apiToggleLiveTracking = (id, isActive, lat, lng) =>
+    request(`/orders/${id}/live-tracking`, { method: "PATCH", body: JSON.stringify({ isActive, lat, lng }) });
 
 export const apiCancelOrder = (id) =>
     request(`/orders/${id}/cancel`, { method: "PATCH" });

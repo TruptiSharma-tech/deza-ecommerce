@@ -2,15 +2,49 @@ import React, { useEffect, useState, useRef } from "react";
 import "./TrackOrder.css";
 import { useParams, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import L from 'leaflet';
+
+// Fix for default marker icon in Leaflet
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+});
+
+// Custom Delivery Truck Icon
+// Custom Icons for Map
+const deliveryIcon = new L.Icon({
+  iconUrl: 'https://cdn-icons-png.flaticon.com/512/7541/7541900.png',
+  iconSize: [45, 45],
+  iconAnchor: [22, 45],
+  popupAnchor: [0, -45],
+});
+
+const warehouseIcon = new L.Icon({
+  iconUrl: 'https://cdn-icons-png.flaticon.com/512/2897/2897868.png',
+  iconSize: [35, 35],
+  iconAnchor: [17, 35],
+});
+
+const homeIcon = new L.Icon({
+  iconUrl: 'https://cdn-icons-png.flaticon.com/512/1239/1239525.png',
+  iconSize: [35, 35],
+  iconAnchor: [17, 35],
+});
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
-const ORIGIN = {
-  name: "DEZA Warehouse",
+// Fallback Origin (in case shopId is missing)
+const DEFAULT_ORIGIN = {
+  name: "DEZA Luxury - Hub",
   area: "Mulund West",
   city: "Mumbai",
   state: "Maharashtra",
   pincode: "400080",
+  lat: 19.1726,
+  lng: 72.9425
 };
 
 // Each step: label, icon (emoji), location description, what to show as sub-info
@@ -127,6 +161,15 @@ function formatPhone(num) {
   return `+91 ${digits}`;
 }
 
+// Helper to center map when coords change
+function RecenterMap({ lat, lng }) {
+  const map = useMap();
+  useEffect(() => {
+    if (lat && lng) map.setView([lat, lng]);
+  }, [lat, lng]);
+  return null;
+}
+
 export default function TrackOrder() {
   const { orderId } = useParams();
   const navigate = useNavigate();
@@ -134,8 +177,31 @@ export default function TrackOrder() {
   const [loading, setLoading] = useState(true);
   const [vehiclePos, setVehiclePos] = useState(0); // 0–100% across route
   const animRef = useRef(null);
+  const pollRef = useRef(null);
 
-  useEffect(() => { fetchOrder(); }, [orderId]);
+  useEffect(() => { 
+    fetchOrder(); 
+    // ⏱️ REAL-TIME POLLING (Every 5 seconds)
+    pollRef.current = setInterval(fetchOrderSilent, 5000);
+    return () => clearInterval(pollRef.current);
+  }, [orderId]);
+
+  // Silent update for polling (doesn't trigger big loader)
+  const fetchOrderSilent = async () => {
+    try {
+      const token = localStorage.getItem("deza_token");
+      const res = await fetch(
+        `${API_URL}/orders/track/${encodeURIComponent(orderId)}`,
+        { headers: token ? { Authorization: `Bearer ${token}` } : {} }
+      );
+      if (res.ok) {
+        const data = await res.json();
+        setOrder(data);
+      }
+    } catch (err) {
+       console.error("Tracking poll failed");
+    }
+  };
 
   // Animate vehicle position
   useEffect(() => {
@@ -170,6 +236,13 @@ export default function TrackOrder() {
       setLoading(false);
     }
   };
+
+  const activeShop = order?.shopId || DEFAULT_ORIGIN;
+  const originName = activeShop.name;
+  const originArea = activeShop.area || "";
+  const originCity = activeShop.city || "Mumbai";
+  const originLat  = activeShop.location?.lat || activeShop.lat || DEFAULT_ORIGIN.lat;
+  const originLng  = activeShop.location?.lng || activeShop.lng || DEFAULT_ORIGIN.lng;
 
   if (loading) {
     return (
@@ -223,7 +296,7 @@ export default function TrackOrder() {
         <div className="to-header-center">
           <span className="to-brand">DEZA</span>
           <span className="to-header-sep">·</span>
-          <span className="to-header-sub">Order Tracking</span>
+          <span className="to-header-sub">Tracking Shipment</span>
         </div>
         <span className={`to-status-chip ${isCancelled ? "chip-red" : isDelivered ? "chip-green" : "chip-gold"}`}>
           {order.status}
@@ -241,9 +314,8 @@ export default function TrackOrder() {
               onClick={() => {
                 const id = order.orderId || order._id;
                 navigator.clipboard.writeText(id);
-                toast.success("Order ID Copied!");
+                toast.success("ID Copied!");
               }}
-              title="Copy Order ID"
             >
               📋
             </button>
@@ -256,13 +328,8 @@ export default function TrackOrder() {
         </div>
         <div className="to-meta-divider" />
         <div className="to-meta-item">
-          <small>TOTAL AMOUNT</small>
-          <b>₹{order.totalPrice?.toLocaleString("en-IN") || "—"}</b>
-        </div>
-        <div className="to-meta-divider" />
-        <div className="to-meta-item">
-          <small>PAYMENT</small>
-          <b>{order.paymentMethod || "—"}</b>
+          <small>DESTINATION</small>
+          <b>{destCity}</b>
         </div>
       </div>
 
@@ -272,33 +339,23 @@ export default function TrackOrder() {
           <div className="to-eta-left">
             <span className="to-eta-icon">🚀</span>
             <div>
-              <p className="to-eta-label">Expected Delivery</p>
+              <p className="to-eta-label">Expected Arrival</p>
               <p className="to-eta-date">{eta}</p>
             </div>
           </div>
           <div className="to-eta-right">
             <span className="to-live-pulse" />
-            <span className="to-live-text">LIVE TRACKING ON</span>
+            <span className="to-live-text">LIVE TRACKING ACTIVE</span>
           </div>
         </div>
       )}
 
       {isDelivered && (
         <div className="to-delivered-banner">
-          <span>🎉</span>
+          <span className="to-bounce">🎉</span>
           <div>
-            <p className="to-delv-title">Your order has been delivered!</p>
-            <p className="to-delv-sub">Thank you for shopping with DEZA Luxury Perfumes</p>
-          </div>
-        </div>
-      )}
-
-      {isCancelled && (
-        <div className="to-cancelled-banner">
-          <span>🚫</span>
-          <div>
-            <p className="to-delv-title">Order Cancelled</p>
-            <p className="to-delv-sub">Refund (if applicable) will be processed in 5–7 business days</p>
+            <p className="to-delv-title">Delivered successfully!</p>
+            <p className="to-delv-sub">Enjoy your premium fragrance experience.</p>
           </div>
         </div>
       )}
@@ -306,8 +363,47 @@ export default function TrackOrder() {
       {/* ═══ MAIN GRID ══════════════════════════════════════ */}
       <div className="to-main-grid">
         <div className="to-left-col">
+          
+          {/* ═══ PREMIUM ROAD VISUAL ═════════════════════════ */}
+          {!isCancelled && !isDelivered && (
+            <div className="to-map-card no-pad">
+               <div className="to-route-visual">
+                  <div className="to-section-label-small">🚚 Current Journey</div>
+                  
+                  <div className="to-road">
+                    <div className="to-road-dashes" />
+                    <div className="to-road-fill" style={{ width: `${vehiclePos}%` }} />
+                    
+                    <div className="to-vehicle" style={{ left: `${vehiclePos}%` }}>
+                      <div className="to-vehicle-ping" />
+                      <div className="to-vehicle-icon">🚛</div>
+                      <div className="to-vehicle-shadow" />
+                    </div>
+                  </div>
+
+                  <div className="to-checkpoints">
+                    <div className="to-checkpoint">
+                        <div className="to-cp-dot origin-cp" />
+                        <p>{originArea || "HUB"}</p>
+                        <small>{originCity}</small>
+                    </div>
+                    <div className="to-checkpoint">
+                        <div className="to-cp-dot mid-cp" style={{ opacity: vehiclePos > 40 ? 1 : 0.2 }} />
+                        <p>Sorting</p>
+                        <small>In Transit</small>
+                    </div>
+                    <div className="to-checkpoint">
+                        <div className="to-cp-dot dest-cp" style={{ opacity: vehiclePos > 95 ? 1 : 0.2 }} />
+                        <p>Your Door</p>
+                        <small>{destCity}</small>
+                    </div>
+                  </div>
+               </div>
+            </div>
+          )}
+
           <div className="to-timeline-card">
-            <div className="to-section-label">📍 Shipment Status</div>
+            <div className="to-section-label">📍 Shipment Updates</div>
 
             <div className="to-timeline">
               {TIMELINE.map((step, i) => {
@@ -317,13 +413,11 @@ export default function TrackOrder() {
 
                 return (
                   <div key={step.key} className={`to-step ${done ? "done" : ""} ${current ? "current" : ""}`}>
-                    {/* Connector line */}
                     {i < TIMELINE.length - 1 && (
                       <div className={`to-step-line ${i < currentIdx && !isCancelled ? "filled" : ""}`} />
                     )}
 
-                    {/* Circle icon */}
-                    <div className="to-step-circle" style={{ "--step-color": done ? step.color : "rgba(255,255,255,0.1)" }}>
+                    <div className="to-step-circle" style={{ "--step-color": done ? step.color : "rgba(255,255,255,0.06)" }}>
                       {done ? (
                         <span className="to-step-icon">{step.icon}</span>
                       ) : (
@@ -332,46 +426,44 @@ export default function TrackOrder() {
                       {current && <span className="to-step-ping" />}
                     </div>
 
-                    {/* Text */}
                     <div className="to-step-body">
                       <div className="to-step-header-row">
                         <p className={`to-step-title ${done ? "title-done" : ""}`}>{step.label}</p>
-                        {current && <span className="to-current-badge">CURRENT</span>}
+                        {current && <span className="to-current-badge">ACTIVE</span>}
                       </div>
                       {done && (
                         <>
-                          <p className="to-step-location">📌 {step.location}</p>
+                          <p className="to-step-location">{step.location}</p>
                           <p className="to-step-detail">{step.detail}</p>
-                          {ts && <p className="to-step-ts">🕐 {ts}</p>}
+                          {ts && <p className="to-step-ts">Update: {ts}</p>}
                         </>
                       )}
                       {!done && !isCancelled && (
-                        <p className="to-step-pending">Pending</p>
+                        <p className="to-step-pending">Coming up next</p>
                       )}
                     </div>
                   </div>
                 );
               })}
 
-              {/* Cancelled step */}
               {isCancelled && (
                 <div className="to-step done current">
                   <div className="to-step-circle" style={{ "--step-color": "#ff4b4b" }}>
                     <span className="to-step-icon">🚫</span>
                   </div>
                   <div className="to-step-body">
-                    <p className="to-step-title title-done" style={{ color: "#ff6b6b" }}>Order Cancelled</p>
-                    <p className="to-step-detail">Your order was cancelled</p>
+                    <p className="to-step-title title-done" style={{ color: "#ff6b6b" }}>Order Revoked</p>
+                    <p className="to-step-detail">Your order has been cancelled.</p>
                   </div>
                 </div>
               )}
             </div>
           </div>
 
-          {/* 📦 COMPACT SCROLLABLE ITEMS BOX (Upar Shifted) */}
+          {/* 📦 SHIPMENT ITEMS */}
           {order.items && order.items.length > 0 && (
             <div className="to-items-box-compact">
-              <div className="to-section-label">🛒 Items in Shipment ({order.items.length})</div>
+              <div className="to-section-label">🛒 Shipment Contents ({order.items.length})</div>
               <div className="to-items-scroll-area">
                 {order.items.map((item, i) => (
                   <div key={i} className="to-compact-item-card">
@@ -389,110 +481,96 @@ export default function TrackOrder() {
         </div>
 
         <div className="to-right-col">
-          {/* Live Route Map */}
+          {/* Live GSP Map with Multi-Markers */}
           {!isCancelled && (
             <div className="to-map-card">
               <div className="to-section-label">
                 <span className="to-live-dot" />
-                Live Route · Mulund West → {destCity}
+                Precise GPS Tracking
               </div>
 
-              {/* Animated Route Visual */}
-              <div className="to-route-visual">
-                {/* Road */}
-                <div className="to-road">
-                  <div className="to-road-dashes" />
-                  {/* Progress fill */}
-                  <div className="to-road-fill" style={{ width: `${vehiclePos}%` }} />
-                  {/* Moving vehicle */}
-                  <div className="to-vehicle" style={{ left: `${vehiclePos}%` }}>
-                    <div className="to-vehicle-icon">
-                      {currentIdx >= 3 ? "🏎️" : currentIdx >= 2 ? "🚚" : "📦"}
-                    </div>
-                    <div className="to-vehicle-shadow" />
-                    <div className="to-vehicle-ping" />
-                  </div>
-                </div>
+              <div className="to-map-container" style={{ height: "420px", borderRadius: "18px", overflow: "hidden", margin: "12px 0", border: "1px solid rgba(212,175,55,0.25)", boxShadow: "0 10px 40px rgba(0,0,0,0.5)" }}>
+                <MapContainer 
+                  center={[order.liveTracking?.lat || 19.1726, order.liveTracking?.lng || 72.9425]} 
+                  zoom={12} 
+                  style={{ height: "100%", width: "100%" }}
+                  zoomControl={false}
+                >
+                  <TileLayer
+                    url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+                    attribution='&copy; OpenStreetMap'
+                  />
+                  
+                  {/* Origin (Dynamic Shop) */}
+                  <Marker position={[originLat, originLng]} icon={warehouseIcon}>
+                    <Popup><b>{originName}</b> (Shipment Origin)</Popup>
+                  </Marker>
 
-                {/* Checkpoints */}
-                <div className="to-checkpoints">
-                  <div className="to-checkpoint origin">
-                    <div className="to-cp-dot origin-cp" />
-                    <span>🏪</span>
-                    <p>Mulund West</p>
-                    <small>Mumbai</small>
-                  </div>
-                  <div className="to-checkpoint mid">
-                    <div className="to-cp-dot mid-cp" style={{ opacity: currentIdx >= 2 ? 1 : 0.3 }} />
-                    <span>🏢</span>
-                    <p>Sorting Hub</p>
-                    <small>Thane</small>
-                  </div>
-                  <div className="to-checkpoint dest">
-                    <div className="to-cp-dot dest-cp" style={{ opacity: isDelivered ? 1 : 0.35 }} />
-                    <span>🏠</span>
-                    <p>{destCity}</p>
-                    <small>You</small>
-                  </div>
-                </div>
+                  {/* Delivery Partner */}
+                  <Marker 
+                    position={[order.liveTracking?.lat || 19.1726, order.liveTracking?.lng || 72.9425]} 
+                    icon={deliveryIcon}
+                  >
+                    <Popup>
+                      <b>DEZA Courier</b><br />
+                      Status: On the Move
+                    </Popup>
+                  </Marker>
+
+                  <RecenterMap lat={order.liveTracking?.lat} lng={order.liveTracking?.lng} />
+                </MapContainer>
               </div>
 
-              {/* Current Location Info */}
               <div className="to-current-loc-box">
-                <div className="to-cur-loc-left">
-                  <span className="to-cur-loc-icon">📍</span>
-                  <div>
-                    <small>CURRENT LOCATION</small>
-                    <p>{LOCATION_TRAIL[Math.min(currentIdx, LOCATION_TRAIL.length - 1)]}</p>
+                  <div className="to-cur-loc-left">
+                    <span className="to-cur-loc-icon">🚚</span>
+                    <div>
+                      <small>CURRENT LOCATION</small>
+                      <p>{order.liveTracking?.isActive ? "Your courier is on the way!" : "Package processed at hub."}</p>
+                    </div>
                   </div>
-                </div>
-                <div className="to-refresh-tag">
-                  <span className="to-live-dot small" />
-                  Updated just now
-                </div>
+                  <div className="to-refresh-tag">
+                    <span className="to-live-dot small" />
+                    LIVE
+                  </div>
               </div>
             </div>
           )}
 
-          {/* Delivery Address Card */}
           <div className="to-addr-card">
-            <div className="to-section-label">🏠 Delivery Address</div>
+            <div className="to-section-label">🏠 Delivery To</div>
             <div className="to-addr-body">
-              {order.customerName && <p className="to-addr-name">{order.customerName}</p>}
-              <p className="to-addr-text">{destFull || "Address not available"}</p>
-              {order.customerPhone && <p className="to-addr-phone">📞 {formatPhone(order.customerPhone)}</p>}
+              <p className="to-addr-name">{order.customerName}</p>
+              <p className="to-addr-text">{destFull}</p>
+              <p className="to-addr-phone">📞 {formatPhone(order.customerPhone)}</p>
             </div>
-
             <div className="to-origin-row">
-              <div className="to-origin-label">Dispatched from</div>
-              <div className="to-origin-val">
-                📍 {ORIGIN.name}, {ORIGIN.area}, {ORIGIN.city} — {ORIGIN.pincode}
-              </div>
+              <div className="to-origin-label">SHIPPED FROM</div>
+              <div className="to-origin-val">{originName} · {originCity}</div>
             </div>
           </div>
 
-          {/* Help Card */}
           <div className="to-help-card">
-            <span>🎧</span>
+            <span>📞</span>
             <div>
-              <p className="to-help-title">Issues with this order?</p>
-              <p className="to-help-sub">Chat with our team directly on WhatsApp</p>
+              <p className="to-help-title">Need help?</p>
+              <p className="to-help-sub">Direct WhatsApp Support</p>
             </div>
             <button 
               className="to-help-btn" 
               onClick={() => {
-                const msg = `Hi DEZA Support, I need help with my Order ID: ${order.orderId || order._id}`;
+                const msg = `Help with Order: ${order.orderId || order._id}`;
                 window.open(`https://wa.me/919082710359?text=${encodeURIComponent(msg)}`, '_blank');
               }}
             >
-              Chat on WhatsApp
+              CHAT
             </button>
           </div>
         </div>
       </div>
 
       <div className="to-footer-note">
-        ✨ DEZA Luxury Perfumes · Mulund West, Mumbai · All deliveries shipped with care
+        ✨ DEZA Luxury Fragrances · Professional Logistics Partner · Mumbai
       </div>
     </div>
   );

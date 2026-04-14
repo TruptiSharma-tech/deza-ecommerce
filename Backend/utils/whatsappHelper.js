@@ -20,6 +20,24 @@ export const sendWhatsApp = async (phone, templateName, variables = []) => {
 
         const url = `https://graph.facebook.com/v18.0/${phoneNumberId}/messages`;
 
+        // Smart Media Handling: Detect if variables contain an Image URL
+        const mediaUrl = variables.find(v => String(v).startsWith("http") && /\.(jpg|jpeg|png|webp)/i.test(String(v)));
+        const bodyVars = variables.filter(v => v !== mediaUrl);
+
+        const components = [
+            {
+                type: "body",
+                parameters: bodyVars.map(v => ({ type: "text", text: String(v) }))
+            }
+        ];
+
+        if (mediaUrl) {
+            components.unshift({
+                type: "header",
+                parameters: [{ type: "image", image: { link: mediaUrl } }]
+            });
+        }
+
         const data = {
             messaging_product: "whatsapp",
             to: cleanPhone,
@@ -27,12 +45,7 @@ export const sendWhatsApp = async (phone, templateName, variables = []) => {
             template: {
                 name: templateName,
                 language: { code: "en_US" },
-                components: [
-                    {
-                        type: "body",
-                        parameters: variables.map(v => ({ type: "text", text: String(v) }))
-                    }
-                ]
+                components
             }
         };
 

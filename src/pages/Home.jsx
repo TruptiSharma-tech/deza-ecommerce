@@ -38,7 +38,8 @@ export default function Home() {
       .catch(() => { });
 
     apiGetProducts()
-      .then((data) => {
+      .then((res) => {
+        const data = Array.isArray(res) ? res : (res.products || []);
         const topRated = data.filter(p => (p.rating || 0) >= 4.5);
         const sorted = (topRated.length >= 2 ? topRated : data)
           .sort((a, b) => (b.rating || 0) - (a.rating || 0));
@@ -87,7 +88,12 @@ export default function Home() {
       <section className="hero-banner">
         {banners.map((banner, idx) => (
           <div className={`hero-slide ${idx === currentSlide ? "active" : ""}`} key={idx}>
-            <img src={banner.image} alt={banner.title || `DEZA Slide ${idx + 1}`} />
+            <img 
+              src={banner.image} 
+              alt={banner.title || `DEZA Slide ${idx + 1}`} 
+              fetchpriority={idx === 0 ? "high" : "low"}
+              loading={idx === 0 ? "eager" : "lazy"}
+            />
           </div>
         ))}
 
@@ -231,7 +237,7 @@ export default function Home() {
                   {p.rating >= 4.2 && p.rating < 4.5 && <div className="showcase-card-badge trending">TRENDING</div>}
 
                   <div className="showcase-card-img-wrap">
-                    <img src={p.image} alt={p.title} className="showcase-card-img" />
+                    <img src={p.image} alt={p.title} className="showcase-card-img" loading="lazy" />
                     <button className="showcase-quick-view" onClick={(e) => { e.stopPropagation(); navigate(`/product/${p._id}`); }}>
                       QUICK VIEW
                     </button>
