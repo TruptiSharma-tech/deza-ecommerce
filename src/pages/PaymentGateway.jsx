@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import Confetti from "react-confetti";
 import { apiCreateOrder, apiCreateRazorpayOrder, apiVerifyRazorpayPayment } from "../utils/api";
 import toast from "react-hot-toast";
+import { getUserEmail, cartKey } from "../utils/userStorage";
 import "./PaymentGateway.css";
 
 export default function PaymentGateway() {
@@ -49,8 +50,9 @@ export default function PaymentGateway() {
       });
       // ✅ Save the created order details so OrderSuccess can display them
       localStorage.setItem("lastOrder", JSON.stringify(createdOrder));
-      // Clear cart
-      localStorage.removeItem("deza_cart");
+      // ✅ Clear the user-scoped cart key (not the generic one)
+      const userEmail = getUserEmail();
+      localStorage.removeItem(cartKey(userEmail));
       localStorage.removeItem("checkoutInfo");
       window.dispatchEvent(new Event("cartUpdate"));
     } catch (err) {

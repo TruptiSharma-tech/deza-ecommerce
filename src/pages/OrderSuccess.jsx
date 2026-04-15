@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import "./OrderSucess.css";
 import { useNavigate } from "react-router-dom";
 import Confetti from "react-confetti";
+import { getUserEmail, cartKey } from "../utils/userStorage";
 
 export default function OrderSuccess() {
   const navigate = useNavigate();
@@ -18,7 +19,9 @@ export default function OrderSuccess() {
     }
 
     // EXTRA SAFE: Force clear cart and checkout info upon success screen load
-    localStorage.removeItem("deza_cart");
+    const userEmail = getUserEmail();
+    localStorage.removeItem(cartKey(userEmail));
+    localStorage.removeItem("deza_cart"); // legacy fallback
     localStorage.removeItem("checkoutInfo");
     window.dispatchEvent(new Event("cartUpdate"));
 

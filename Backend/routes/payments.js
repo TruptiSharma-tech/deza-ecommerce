@@ -2,7 +2,6 @@ import express from "express";
 import Razorpay from "razorpay";
 import crypto from "crypto";
 import dotenv from "dotenv";
-import { auth } from "../middleware/auth.js";
 
 dotenv.config();
 
@@ -13,8 +12,9 @@ const razorpay = new Razorpay({
     key_secret: process.env.RAZORPAY_KEY_SECRET || "c7vWYCsia23VKeyiXnWKkzn4",
 });
 
-// ─── POST - Create Order ──────────────────────────────────────────────────────
-router.post("/create-order", auth, async (req, res) => {
+// ─── POST - Create Razorpay Order ─────────────────────────────────────────────
+// No auth required — user identity is tracked on the order itself (POST /orders)
+router.post("/create-order", async (req, res) => {
     try {
         const { amount, currency = "INR" } = req.body;
 
@@ -32,16 +32,20 @@ router.post("/create-order", auth, async (req, res) => {
         res.json(order);
     } catch (err) {
         console.error("❌ Razorpay Order Creation Error:", err);
-        // Provide more detail if it's an authentication error
         const errorMessage = err.description || err.message || "Failed to create Razorpay order";
         res.status(500).json({ error: errorMessage });
     }
 });
 
-// ─── POST - Verify Payment ────────────────────────────────────────────────────
-router.post("/verify-payment", auth, async (req, res) => {
+// ─── POST - Verify Payment Signature ─────────────────────────────────────────
+// No auth required — signature verification is cryptographic, not session-based
+router.post("/verify-payment", async (req, res) => {
     try {
         const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
+
+        if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+            return res.status(400).json({ error: "Missing payment details for verification." });
+        }
 
         const sign = razorpay_order_id + "|" + razorpay_payment_id;
         const expectedSign = crypto
@@ -52,7 +56,7 @@ router.post("/verify-payment", auth, async (req, res) => {
         if (razorpay_signature === expectedSign) {
             return res.json({ message: "Payment verified successfully" });
         } else {
-            return res.status(400).json({ error: "Invalid signature" });
+            return res.status(400).json({ error: "Invalid signature. Payment may be tampered." });
         }
     } catch (err) {
         console.error("Signature Verification Error:", err);

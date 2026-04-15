@@ -1,4 +1,8 @@
-import { getCart, getUserEmail } from "../utils/userStorage";
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
+import { getCart, getUserEmail, setCart } from "../utils/userStorage";
+import "./Checkout.css";
 
 export default function Checkout() {
   const navigate = useNavigate();
