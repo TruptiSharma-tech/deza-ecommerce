@@ -3,9 +3,11 @@ import "./AccountSidebar.css";
 import { FaUser, FaEdit, FaLock, FaCog, FaSignOutAlt, FaShoppingBag, FaHeart, FaTicketAlt, FaSearchLocation } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
+import { useAuth } from "../context/AuthContext";
 
 export default function AccountSidebar({ isOpen, onClose }) {
   const navigate = useNavigate();
+  const { logout } = useAuth();
   const [activeSection, setActiveSection] = useState("profile");
   const [user, setUser] = useState(null);
 
@@ -31,15 +33,9 @@ export default function AccountSidebar({ isOpen, onClose }) {
   if (!isOpen) return null;
 
   const handleLogout = () => {
-    localStorage.removeItem("currentUser");
-    localStorage.removeItem("deza_token");
-    localStorage.removeItem("deza_cart");
-    localStorage.removeItem("deza_wishlist");
-    localStorage.removeItem("lastOrder");
-    localStorage.removeItem("checkoutInfo");
-    localStorage.removeItem("dezaOrders");
-    window.dispatchEvent(new Event("cartUpdate"));
-    window.location.href = "/";
+    // Use AuthContext logout — it clears user-scoped cart/wishlist keys correctly
+    // and resets React user state before redirecting
+    logout();
   };
 
   const handleSaveProfile = () => {

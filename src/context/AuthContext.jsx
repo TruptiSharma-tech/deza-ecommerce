@@ -87,7 +87,7 @@ export function AuthProvider({ children }) {
     localStorage.removeItem("lastOrder");
     localStorage.removeItem("checkoutInfo");
     localStorage.removeItem("dezaOrders");
-    window.location.href = "/login";
+    window.location.href = "/";
   };
 
   return (
