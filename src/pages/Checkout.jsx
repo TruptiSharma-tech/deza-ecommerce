@@ -1,13 +1,10 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import toast from "react-hot-toast";
-import "./Checkout.css";
+import { getCart, getUserEmail } from "../utils/userStorage";
 
 export default function Checkout() {
   const navigate = useNavigate();
 
-  // Get cart safely
-  const cart = JSON.parse(localStorage.getItem("deza_cart")) || [];
+  // Get cart safely (user-scoped)
+  const cart = getCart(getUserEmail());
 
   // Get previous checkout info
   const prevInfo = JSON.parse(localStorage.getItem("checkoutInfo")) || {};

@@ -37,7 +37,43 @@ router.get("/", auth, adminOnly, async (req, res) => {
     }
 });
 
-// ─── GET My Orders (by Email) ────────────────────────────────────────────────
+// ─── GET My Orders (Secure - based on token) ───────────────────────────────────
+router.get("/me", auth, async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const userEmail = req.user.email?.toLowerCase().trim();
+        
+        console.log(`📡 [API] Secure Order Request - ID: ${userId}, Email: ${userEmail}`);
+
+        // 🔗 Strict Privacy Query
+        const conditions = [];
+        if (userId && mongoose.Types.ObjectId.isValid(userId)) {
+            conditions.push({ customerId: userId });
+        }
+        if (userEmail && userEmail.length > 3) {
+            conditions.push({ customerEmail: userEmail });
+        }
+
+        if (conditions.length === 0) {
+            return res.json([]); // Return empty if no valid identifiers
+        }
+
+        const query = { $or: conditions };
+        const orders = await Order.find(query).populate("shopId").sort({ createdAt: -1 });
+        const mapped = orders.map(o => ({
+            ...o.toObject(),
+            totalPrice: o.totalAmount || 0,
+            status: o.orderStatus || "Pending",
+            orderId: o.orderNumber || "DZ-GUEST"
+        }));
+
+        res.json(mapped);
+    } catch (err) {
+        res.status(500).json({ error: "Failed to fetch your orders." });
+    }
+});
+
+// ─── GET My Orders (by Email - Admin or Self) ──────────────────────────────────
 router.get("/my/:email", auth, async (req, res) => {
     try {
         const searchEmail = req.params.email.toLowerCase().trim();
@@ -58,7 +94,7 @@ router.get("/my/:email", auth, async (req, res) => {
         const conditions = [];
         
         if (searchEmail) conditions.push({ customerEmail: searchEmail });
-        if (userPhone) conditions.push({ customerPhone: userPhone });
+        if (userPhone && userPhone.trim() !== "") conditions.push({ customerPhone: userPhone });
 
         if (conditions.length > 1) {
             query.$or = conditions;

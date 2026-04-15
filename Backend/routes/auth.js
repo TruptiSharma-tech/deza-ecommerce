@@ -95,7 +95,10 @@ router.post("/login", async (req, res) => {
             return res.status(400).json({ error: "Email and password are required." });
         }
 
-        const user = await User.findOne({ email: email.toLowerCase() });
+        const user = await User.findOne({ email: email.toLowerCase() })
+            .populate("wishlist")
+            .populate("cart.product");
+
         if (!user) {
             return res.status(401).json({ error: "Invalid credentials." });
         }
@@ -122,6 +125,8 @@ router.post("/login", async (req, res) => {
                 contact: user.contact,
                 gender: user.gender,
                 dob: user.dob,
+                cart: user.cart,
+                wishlist: user.wishlist
             },
         });
     } catch (err) {
@@ -133,11 +138,32 @@ router.post("/login", async (req, res) => {
 // ─── Get Current User Profile (Fetch Details including Addresses) ──────────────
 router.get("/me", auth, async (req, res) => {
     try {
-        const user = await User.findById(req.user.id).select("-password -resetPasswordToken -resetPasswordExpires");
+        const user = await User.findById(req.user.id)
+            .select("-password -resetPasswordToken -resetPasswordExpires")
+            .populate("wishlist")
+            .populate("cart.product");
         if (!user) return res.status(404).json({ error: "User not found." });
         res.json(user);
     } catch (err) {
         res.status(500).json({ error: "Server error." });
+    }
+});
+
+// ─── Sync Cart/Wishlist ────────────────────────────────────────────────────────
+router.post("/sync", auth, async (req, res) => {
+    try {
+        const { cart, wishlist } = req.body;
+        const user = await User.findById(req.user.id);
+        if (!user) return res.status(404).json({ error: "User not found." });
+
+        if (cart) user.cart = cart;
+        if (wishlist) user.wishlist = wishlist;
+
+        await user.save();
+        res.json({ message: "Data synced successfully." });
+    } catch (err) {
+        console.error("Sync error:", err);
+        res.status(500).json({ error: "Failed to sync data." });
     }
 });
 

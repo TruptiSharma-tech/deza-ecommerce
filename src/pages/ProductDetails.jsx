@@ -5,10 +5,12 @@ import "./ProductDetails.css";
 import { FaHeart, FaRegHeart, FaShoppingCart, FaStar } from "react-icons/fa";
 import { FaWhatsapp } from "react-icons/fa";
 import { apiGetProduct, apiGetProductReviews, apiSubmitReview, apiCreateOrder, apiGetProfile } from "../utils/api";
+import { useShop } from "../context/ShopContext";
 
 export default function ProductDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { updateCart, wishlist: contextWishlist, updateWishlist } = useShop();
 
   const [product, setProduct] = useState(null);
   const [selectedSize, setSelectedSize] = useState("");
@@ -34,10 +36,17 @@ export default function ProductDetails() {
 
   const currentUser = JSON.parse(localStorage.getItem("currentUser"));
 
+  useEffect(() => {
+    // Update local 'wish' state when contextWishlist changes
+    if (product) {
+       const exists = contextWishlist.find((x) => String(x._id) === String(product._id));
+       setWish(!!exists);
+    }
+  }, [contextWishlist, product]);
+
   const loadProductData = async () => {
     setLoading(true);
     try {
-      // ✅ Concurrently fetch product and reviews
       const [data, revs] = await Promise.all([
         apiGetProduct(id).catch(() => null),
         apiGetProductReviews(id).catch(() => [])
@@ -54,16 +63,7 @@ export default function ProductDetails() {
       } else {
         setProduct(null);
       }
-
       setReviews(revs || []);
-
-      // Wishlist check
-      try {
-        const wishlist = JSON.parse(localStorage.getItem("deza_wishlist")) || [];
-        const exists = wishlist.find((x) => String(x?._id) === String(id));
-        setWish(!!exists);
-      } catch (wishErr) { }
-
       setCurrentImageIndex(0);
     } catch (err) {
       console.error("Error loading product:", err);
@@ -76,8 +76,6 @@ export default function ProductDetails() {
   useEffect(() => {
     loadProductData();
   }, [id]);
-
-
 
   const getPriceBySize = () => {
     if (!product) return 0;
@@ -101,7 +99,12 @@ export default function ProductDetails() {
 
   const handleAddToCart = () => {
     if (!checkLogin()) return;
-    const cart = JSON.parse(localStorage.getItem("deza_cart")) || [];
+    const email = currentUser.email;
+    const cartKey = `deza_cart_${email}`;
+    const cart = Array.isArray(JSON.parse(localStorage.getItem(cartKey))) 
+      ? JSON.parse(localStorage.getItem(cartKey)) 
+      : [];
+      
     const existingIndex = cart.findIndex((x) => String(x._id) === String(product._id) && x.selectedSize === selectedSize);
     if (existingIndex !== -1) {
       cart[existingIndex].qty += qty;
@@ -110,13 +113,12 @@ export default function ProductDetails() {
         _id: product._id,
         name: product.title,
         price: finalPrice,
-        image: product.images?.[0],
+        image: product.images?.[0] || product.image,
         selectedSize,
         qty,
       });
     }
-    localStorage.setItem("deza_cart", JSON.stringify(cart));
-    window.dispatchEvent(new Event("cartUpdate"));
+    updateCart(cart);
     toast.success("Added to Cart! 🛒");
   };
 
@@ -126,10 +128,28 @@ export default function ProductDetails() {
     navigate("/cart");
   };
 
+  const handleWishlist = () => {
+    if (!checkLogin()) return;
+    const email = currentUser.email;
+    const wishKey = `deza_wishlist_${email}`;
+    const wishlist = Array.isArray(JSON.parse(localStorage.getItem(wishKey))) 
+      ? JSON.parse(localStorage.getItem(wishKey)) 
+      : [];
+
+    const exists = wishlist.find((x) => String(x._id) === String(product._id));
+    if (exists) {
+      const updated = wishlist.filter((x) => String(x._id) !== String(product._id));
+      updateWishlist(updated);
+      toast.success("Removed from Wishlist! 💔");
+      return;
+    }
+    const updated = [...wishlist, product];
+    updateWishlist(updated);
+    toast.success("Added to Wishlist! ❤️");
+  };
+
   const handleWhatsAppOrder = async () => {
     if (!checkLogin()) return;
-
-    // ⚡ INSTANT FETCH: Check local storage first (Fastest)
     const prevCheckout = JSON.parse(localStorage.getItem("checkoutInfo")) || {};
     const localAddrObj = prevCheckout.address;
     const localAddressStr = localAddrObj ? `${localAddrObj.street}, ${localAddrObj.area || ""}, ${localAddrObj.city}, ${localAddrObj.pincode}` : "";
@@ -138,13 +158,11 @@ export default function ProductDetails() {
     const cachedContact = currentUser?.contact || currentUser?.phoneNumber || prevCheckout.phone || "";
     const cachedAddress = localAddressStr;
 
-    // ✅ IF CACHED DATA COMPLETE -> GO INSTANTLY
     if (cachedName && cachedContact && cachedAddress) {
       processInstantWhatsAppOrder(cachedName, cachedContact, cachedAddress);
       return;
     }
 
-    // 🔄 FALLBACK: If missing, fetch from DB (Slightly slower)
     try {
       const freshUser = await apiGetProfile();
       const dbAddr = freshUser?.addresses?.find(a => a.isDefault) || freshUser?.addresses?.[0];
@@ -163,7 +181,6 @@ export default function ProductDetails() {
         setShowWhatsAppModal(true);
       }
     } catch (err) {
-      // Final Fallback: Show Modal
       setWaName(cachedName);
       setWaPhone(cachedContact);
       setShowWhatsAppModal(true);
@@ -186,7 +203,7 @@ export default function ProductDetails() {
           price: finalPrice,
           qty: qty
         }],
-        address: { street: address }, // ✅ Wrap in object for schema compatibility
+        address: { street: address },
         totalPrice: finalPrice * qty,
         paymentMethod: "WhatsApp / COD",
         paymentStatus: "Pending",
@@ -221,8 +238,6 @@ export default function ProductDetails() {
 
       const merchantPhone = "919082710359";
       const waUrl = `https://api.whatsapp.com/send?phone=${merchantPhone}&text=${encodeURIComponent(message)}`;
-      
-      // ✅ Use window.location.href to avoid popup blockers and ensure mobile compatibility
       window.location.href = waUrl;
       toast.success("Order Tracked! Opening WhatsApp...");
     } catch (err) {
@@ -237,31 +252,6 @@ export default function ProductDetails() {
     if (!waName || !waPhone || !waAddress) return toast.error("Please fill all details!");
     processInstantWhatsAppOrder(waName, waPhone, waAddress);
     setShowWhatsAppModal(false);
-  };
-
-  const handleWishlist = () => {
-    if (!checkLogin()) return;
-    const wishlist = JSON.parse(localStorage.getItem("deza_wishlist")) || [];
-    const exists = wishlist.find((x) => String(x._id) === String(product._id));
-    if (exists) {
-      const updated = wishlist.filter((x) => String(x._id) !== String(product._id));
-      localStorage.setItem("deza_wishlist", JSON.stringify(updated));
-      setWish(false);
-      toast.success("Removed from Wishlist! 💔");
-      return;
-    }
-    wishlist.push(product);
-    localStorage.setItem("deza_wishlist", JSON.stringify(wishlist));
-    setWish(true);
-    toast.success("Added to Wishlist! ❤️");
-  };
-
-  const handleImageUpload = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onloadend = () => setPreviewImage(reader.result);
-    reader.readAsDataURL(file);
   };
 
   const handleReviewSubmit = async () => {
@@ -297,23 +287,18 @@ export default function ProductDetails() {
       setDeliveryMessage("❌ Please enter active 6-digit pincode.");
       return;
     }
-
     setIsChecking(true);
     setDeliveryMessage("⚡ Checking logistics from Mulund Hub...");
-
     try {
       const response = await fetch(`https://api.postalpincode.in/pincode/${pincode}`);
       const data = await response.json();
-
       if (data[0].Status === "Success") {
         const details = data[0].PostOffice[0];
         const city = details.District;
         const state = details.State;
-
         let days = "5 - 8 Business Days";
         const pPrefix = pincode.substring(0, 3);
         const firstDigit = pincode[0];
-
         if (pincode === "400080") {
           days = "Same-day Express Delivery! 🚀";
         } else if (pPrefix === "400") {
@@ -323,7 +308,6 @@ export default function ProductDetails() {
         } else if (["3", "5", "6"].includes(firstDigit)) {
           days = "4-6 Business Days";
         }
-
         setDeliveryMessage(`📍 ${city}, ${state}: Expected in ${days}`);
       } else {
         setDeliveryMessage("❌ Service not available for this pincode.");
@@ -347,7 +331,6 @@ export default function ProductDetails() {
         </div>
       ) : (
         <>
-
           <div className="pd-card">
             <div className="pd-img-container">
               <div className="pd-img">
@@ -362,7 +345,6 @@ export default function ProductDetails() {
                   ))}
                 </div>
               )}
-              {/* MOVING RATINGS HERE: bellow product image */}
               <div className="pd-rating-badge-under-img">
                 <div className="pd-stars-row">
                   {Array.from({ length: 5 }, (_, i) => (
@@ -389,7 +371,6 @@ export default function ProductDetails() {
             </div>
 
             <div className="pd-info">
-              {/* Price and Name in one line */}
               <div className="pd-header-top-row">
                 <div className="pd-header-main-info">
                   <p className="pd-brand">{product.brand?.name || product.brand || "DEZA Luxury"}</p>
@@ -401,7 +382,6 @@ export default function ProductDetails() {
                 </div>
               </div>
 
-              {/* Description and fragnance nites bellow price */}
               <div className="pd-content-wrapper-top">
                 <div className="pd-section-group">
                   <h3>Description</h3>
@@ -412,10 +392,6 @@ export default function ProductDetails() {
                   <p className="deza-raw-text">{product.fragrance || "No notes provided."}</p>
                 </div>
               </div>
-
-
-
-
 
               <div className="pd-size-qty-row">
                 <div className="pd-sizes">
@@ -456,8 +432,6 @@ export default function ProductDetails() {
                   ))}
                 </div>
                 <textarea placeholder="Write your review..." value={comment} onChange={(e) => setComment(e.target.value)} />
-                <input type="file" accept="image/*" onChange={handleImageUpload} />
-                {previewImage && <div style={{ marginTop: "10px" }}><img src={previewImage} alt="preview" style={{ width: "100px", borderRadius: "8px" }} /></div>}
                 <button className="submit-review-btn" onClick={handleReviewSubmit}>Submit Review</button>
 
                 <div className="reviews-list-container">
@@ -476,44 +450,23 @@ export default function ProductDetails() {
             </div>
           </div>
 
-          {/* 🚀 WHATSAPP ORDER MODAL */}
           {showWhatsAppModal && (
             <div className="wa-modal-overlay">
               <div className="wa-modal-card">
                 <h2>Complete WhatsApp Order</h2>
-                <p>Please provide your shipping details to send a professional order request to the seller.</p>
-                
                 <form onSubmit={confirmWhatsAppOrder}>
                   <div className="wa-form-group">
                     <label>Receiver Name</label>
-                    <input 
-                      type="text" 
-                      value={waName} 
-                      onChange={(e) => setWaName(e.target.value)} 
-                      placeholder="e.g. Rahul Sharma"
-                      required
-                    />
+                    <input type="text" value={waName} onChange={(e) => setWaName(e.target.value)} required />
                   </div>
                   <div className="wa-form-group">
                     <label>Contact Number</label>
-                    <input 
-                      type="tel" 
-                      value={waPhone} 
-                      onChange={(e) => setWaPhone(e.target.value)} 
-                      placeholder="e.g. 9876543210"
-                      required
-                    />
+                    <input type="tel" value={waPhone} onChange={(e) => setWaPhone(e.target.value)} required />
                   </div>
                   <div className="wa-form-group">
                     <label>Full Delivery Address</label>
-                    <textarea 
-                      value={waAddress} 
-                      onChange={(e) => setWaAddress(e.target.value)} 
-                      placeholder="Street, Building, Landmark, City, Pincode"
-                      required
-                    />
+                    <textarea value={waAddress} onChange={(e) => setWaAddress(e.target.value)} required />
                   </div>
-
                   <div className="wa-modal-actions">
                     <button type="button" className="wa-cancel-btn" onClick={() => setShowWhatsAppModal(false)}>Cancel</button>
                     <button type="submit" className="wa-confirm-btn">Confirm & Send Order 🛍</button>

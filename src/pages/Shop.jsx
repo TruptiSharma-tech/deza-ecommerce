@@ -3,10 +3,12 @@ import { useNavigate } from "react-router-dom";
 import { apiGetProducts, apiGetCategories, apiGetBrands } from "../utils/api";
 import { FaStar } from "react-icons/fa";
 import toast from "react-hot-toast";
+import { useShop } from "../context/ShopContext";
 import "./Shop.css";
 
 export default function Shop() {
   const navigate = useNavigate();
+  const { updateCart } = useShop();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -64,7 +66,11 @@ export default function Shop() {
       return;
     }
 
-    const cart = JSON.parse(localStorage.getItem("deza_cart")) || [];
+    const email = currentUser.email;
+    const cart = Array.isArray(JSON.parse(localStorage.getItem(`deza_cart_${email}`))) 
+      ? JSON.parse(localStorage.getItem(`deza_cart_${email}`)) 
+      : [];
+
     const selectedSize = product.sizePrices && product.sizePrices.length > 0
       ? product.sizePrices[0].size
       : "Default";
@@ -89,8 +95,7 @@ export default function Shop() {
       });
     }
 
-    localStorage.setItem("deza_cart", JSON.stringify(cart));
-    window.dispatchEvent(new Event("cartUpdate"));
+    updateCart(cart);
     toast.success("Added to Cart! 🛒");
   };
 
@@ -147,7 +152,6 @@ export default function Shop() {
         </p>
       </div>
 
-      {/* ================= FILTER BAR ================= */}
       <div className="shop-filter-bar">
         <input
           type="text"
@@ -159,24 +163,11 @@ export default function Shop() {
         <select value={category} onChange={(e) => setCategory(e.target.value)}>
           <option value="All">All Categories</option>
           {categoriesList.map(c => <option key={c._id} value={c.name}>{c.name}</option>)}
-          {!categoriesList.length && (
-            <>
-              <option value="Men">Men</option>
-              <option value="Women">Women</option>
-              <option value="Unisex">Unisex</option>
-            </>
-          )}
         </select>
 
         <select value={type} onChange={(e) => setType(e.target.value)}>
           <option value="All">All Brands</option>
           {brandsList.map(b => <option key={b._id} value={b.name}>{b.name}</option>)}
-          {!brandsList.length && (
-            <>
-              <option value="Deza">Deza</option>
-              <option value="Recreational">Recreational</option>
-            </>
-          )}
         </select>
 
         <select value={sort} onChange={(e) => setSort(e.target.value)}>
@@ -188,7 +179,6 @@ export default function Shop() {
         </select>
       </div>
 
-      {/* ================= PRODUCTS ================= */}
       {loading ? (
         <div style={{ textAlign: 'center', padding: '60px', color: '#d4af37', fontSize: '18px' }}>
           Loading products...

@@ -2,28 +2,29 @@ import React, { useEffect, useState } from "react";
 import "./Cart.css";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
+import { getCart, getUserEmail } from "../utils/userStorage";
+import { useShop } from "../context/ShopContext";
 
 export default function Cart() {
   const [cart, setCart] = useState([]);
   const navigate = useNavigate();
+  const { updateCart } = useShop();
 
   const currentUser = JSON.parse(localStorage.getItem("currentUser"));
+  const userEmail = currentUser?.email;
 
   useEffect(() => {
     if (!currentUser) {
       setCart([]);
       return;
     }
-
-    const storedCart = JSON.parse(localStorage.getItem("deza_cart")) || [];
+    const storedCart = getCart(userEmail);
     setCart(storedCart);
-  }, []);
+  }, [userEmail]);
 
-  const updateCart = (updated) => {
+  const handleUpdate = (updated) => {
     setCart(updated);
-    localStorage.setItem("deza_cart", JSON.stringify(updated));
-    // Dispatch custom event to notify Navbar and other components
-    window.dispatchEvent(new Event("cartUpdate"));
+    updateCart(updated);
   };
 
   const removeItem = (_id, selectedSize) => {
@@ -31,19 +32,17 @@ export default function Cart() {
       (item) =>
         !(String(item._id) === String(_id) && item.selectedSize === selectedSize),
     );
-    updateCart(updated);
+    handleUpdate(updated);
   };
 
   const changeQty = (_id, selectedSize, qty) => {
     if (qty < 1) return;
-
     const updated = cart.map((item) =>
       String(item._id) === String(_id) && item.selectedSize === selectedSize
         ? { ...item, qty: qty }
         : item,
     );
-
-    updateCart(updated);
+    handleUpdate(updated);
   };
 
   const totalPrice = cart.reduce((acc, item) => acc + item.price * item.qty, 0);
@@ -56,12 +55,10 @@ export default function Cart() {
       navigate("/login");
       return;
     }
-
     if (cart.length === 0) {
       toast.error("Cart is empty!");
       return;
     }
-
     navigate("/checkout");
   };
 
@@ -121,7 +118,6 @@ export default function Cart() {
 
                 <div className="cart-right">
                   <p className="item-total">₹{item.price * item.qty}</p>
-
                   <button
                     className="remove-btn"
                     onClick={() => removeItem(item._id, item.selectedSize)}
@@ -135,28 +131,23 @@ export default function Cart() {
 
           <div className="cart-summary">
             <h2>Order Summary</h2>
-
             <div className="summary-row">
               <span>Subtotal</span>
               <span>₹{totalPrice}</span>
             </div>
-
             <div className="summary-row">
               <span>Shipping</span>
               <span>
                 {shippingCharge === 0 ? "FREE" : `₹${shippingCharge}`}
               </span>
             </div>
-
             <div className="summary-row total-row">
               <span>Total</span>
               <span>₹{grandTotal}</span>
             </div>
-
             <button className="checkout-btn" onClick={checkout}>
               Proceed to Checkout →
             </button>
-
             <p className="cart-note">✨ Free delivery on orders above ₹999</p>
           </div>
         </div>

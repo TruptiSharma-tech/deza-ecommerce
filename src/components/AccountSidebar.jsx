@@ -33,6 +33,12 @@ export default function AccountSidebar({ isOpen, onClose }) {
   const handleLogout = () => {
     localStorage.removeItem("currentUser");
     localStorage.removeItem("deza_token");
+    localStorage.removeItem("deza_cart");
+    localStorage.removeItem("deza_wishlist");
+    localStorage.removeItem("lastOrder");
+    localStorage.removeItem("checkoutInfo");
+    localStorage.removeItem("dezaOrders");
+    window.dispatchEvent(new Event("cartUpdate"));
     window.location.href = "/";
   };
 

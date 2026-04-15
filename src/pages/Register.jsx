@@ -164,6 +164,15 @@ export default function Register() {
     setLoading(true);
     try {
       const data = await apiRegister(formData);
+      
+      // ✅ Reset local state for fresh new user experience
+      localStorage.removeItem("deza_cart");
+      localStorage.removeItem("deza_wishlist");
+      localStorage.removeItem("lastOrder");
+      localStorage.removeItem("checkoutInfo");
+      localStorage.removeItem("dezaOrders");
+      window.dispatchEvent(new Event("cartUpdate"));
+
       login(data.user, data.token);
       toast.success("Registration Successful! Welcome to DEZA! 🎉");
       navigate("/");

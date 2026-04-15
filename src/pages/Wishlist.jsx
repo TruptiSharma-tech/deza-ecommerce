@@ -1,27 +1,15 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { useNavigate } from "react-router-dom";
 import "./Wishlist.css";
+import { useShop } from "../context/ShopContext";
 
 export default function Wishlist() {
-  const [wishlist, setWishlist] = useState([]);
   const navigate = useNavigate();
-
-  const STORAGE_KEY = "deza_wishlist";
-  const currentUser = JSON.parse(localStorage.getItem("currentUser"));
-
-  useEffect(() => {
-    if (!currentUser) {
-      setWishlist([]);
-      return;
-    }
-    const storedWishlist = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-    setWishlist(storedWishlist);
-  }, []);
+  const { currentUser, wishlist, updateWishlist } = useShop();
 
   const handleRemove = (_id) => {
     const updated = wishlist.filter((item) => item._id !== _id);
-    setWishlist(updated);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+    updateWishlist(updated);
   };
 
   if (!currentUser) {
@@ -50,7 +38,6 @@ export default function Wishlist() {
       ) : (
         <div className="wishlist-grid">
           {wishlist.map((item) => {
-            // 👇 SAME PRICE LOGIC AS SHOP
             const minPrice =
               item.sizePrices && item.sizePrices.length > 0
                 ? Math.min(...item.sizePrices.map((s) => Number(s.price)))
@@ -58,16 +45,13 @@ export default function Wishlist() {
 
             return (
               <div className="wishlist-card" key={item._id}>
-                <img src={item.image} alt={item.title} />
-
-                <h3>{item.title}</h3>
-
+                <img src={item.image} alt={item.title || item.name} />
+                <h3>{item.title || item.name}</h3>
                 <p className="wishlist-price">
                   {minPrice
                     ? `₹ ${minPrice.toLocaleString("en-IN")}`
-                    : "Price Not Available"}
+                    : (item.price ? `₹ ${item.price.toLocaleString("en-IN")}` : "Price Not Available")}
                 </p>
-
                 <div className="wishlist-btns">
                   <button
                     className="view-btn"
@@ -75,7 +59,6 @@ export default function Wishlist() {
                   >
                     View Product
                   </button>
-
                   <button
                     className="remove-btn"
                     onClick={() => handleRemove(item._id)}

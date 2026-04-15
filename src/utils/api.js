@@ -19,10 +19,11 @@ const CACHE_EXPIRY = 5 * 60 * 1000; // 5 minutes
 
 async function request(path, options = {}) {
     const isGet = !options.method || options.method === "GET";
+    const isSensitive = path.includes("/me") || path.includes("/sync");
     const cacheKey = path;
 
-    // Return cached data if available and not expired
-    if (isGet) {
+    // Return cached data if available, not expired, and NOT sensitive
+    if (isGet && !isSensitive) {
         const cached = apiCache.get(cacheKey);
         if (cached && (Date.now() - cached.timestamp < CACHE_EXPIRY)) {
             // Return cached data immediately, but trigger a background refresh (stale-while-revalidate)
@@ -98,6 +99,9 @@ export const apiResetPassword = (payload) =>
 export const apiCreateAdmin = (payload) =>
     request("/auth/create-admin", { method: "POST", body: JSON.stringify(payload) });
 
+export const apiSyncUserData = (payload) =>
+    request("/auth/sync", { method: "POST", body: JSON.stringify(payload) });
+
 // ══════════════════════════════════════════════════════════════
 //  PRODUCTS
 // ══════════════════════════════════════════════════════════════
@@ -127,7 +131,7 @@ export const apiUnarchiveProduct = (id) =>
 // ══════════════════════════════════════════════════════════════
 export const apiGetOrders = () => request("/orders");
 
-export const apiGetMyOrders = (email) => request(`/orders/my/${encodeURIComponent(email)}`);
+export const apiGetMyOrders = () => request("/orders/me");
 
 export const apiCreateOrder = (payload) =>
     request("/orders", { method: "POST", body: JSON.stringify(payload) });

@@ -17,6 +17,11 @@ export default function OrderSuccess() {
       localStorage.removeItem("lastOrder");
     }
 
+    // EXTRA SAFE: Force clear cart and checkout info upon success screen load
+    localStorage.removeItem("deza_cart");
+    localStorage.removeItem("checkoutInfo");
+    window.dispatchEvent(new Event("cartUpdate"));
+
     // Stop confetti after 5 seconds
     const timer = setTimeout(() => setShowConfetti(false), 5000);
     return () => clearTimeout(timer);

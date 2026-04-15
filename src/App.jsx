@@ -44,96 +44,99 @@ const LoadingScreen = () => (
 );
 
 import { AuthProvider } from "./context/AuthContext";
+import { ShopProvider } from "./context/ShopContext";
 import ScrollProgress from "./components/ScrollProgress";
 
 export default function App() {
   return (
     <AuthProvider>
-      <Router>
-        <ScrollProgress />
-        <Toaster
-        position="top-center"
-        toastOptions={{
-          style: {
-            background: '#1a1a1a',
-            color: '#fff',
-            border: '1px solid rgba(212, 175, 55, 0.3)',
-            fontFamily: 'Poppins, sans-serif',
-            fontSize: '14px',
-            borderRadius: '12px',
-            padding: '12px 24px',
-          },
-          success: {
-            iconTheme: {
-              primary: '#D4AF37',
-              secondary: '#1a1a1a',
-            },
-          },
-          error: {
-            iconTheme: {
-              primary: '#ff4b4b',
-              secondary: '#1a1a1a',
-            },
-          },
-        }}
-      />
-      <ScrollToTop />
-      <Navbar />
-
-      <Suspense fallback={<LoadingScreen />}>
-        <Routes>
-          {/* MAIN PAGES */}
-          <Route path="/" element={<Home />} />
-          <Route path="/shop" element={<Shop />} />
-          <Route path="/about" element={<About />} />
-          <Route path="/contact" element={<Contact />} />
-
-          {/* PRODUCT */}
-          <Route path="/product/:id" element={<ProductDetails />} />
-
-          {/* CART & WISHLIST */}
-          <Route path="/cart" element={<Cart />} />
-          <Route path="/wishlist" element={<Wishlist />} />
-
-          {/* AUTH */}
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/reset-password" element={<ResetPassword />} />
-
-          {/* CHECKOUT FLOW */}
-          <Route path="/checkout" element={<Checkout />} />
-          <Route path="/payment" element={<PaymentGateway />} />
-          <Route path="/checkout/success" element={<OrderSuccess />} />
-
-          {/* ORDERS */}
-          <Route path="/orders" element={<Orders />} />
-          <Route path="/track-order/:orderId" element={<OrderTracking />} />
-          <Route path="/my-tickets" element={<MyTickets />} />
-
-          {/* POLICIES */}
-          <Route path="/terms" element={<Terms />} />
-          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-          <Route path="/return-refund" element={<ReturnRefund />} />
-
-          {/* ADMIN */}
-          <Route path="/admin-login" element={<AdminLogin />} />
-          <Route
-            path="/admin"
-            element={
-              <AdminProtectedRoute>
-                <Admin />
-              </AdminProtectedRoute>
-            }
+      <ShopProvider>
+        <Router>
+          <ScrollProgress />
+          <Toaster
+            position="top-center"
+            toastOptions={{
+              style: {
+                background: '#1a1a1a',
+                color: '#fff',
+                border: '1px solid rgba(212, 175, 55, 0.3)',
+                fontFamily: 'Poppins, sans-serif',
+                fontSize: '14px',
+                borderRadius: '12px',
+                padding: '12px 24px',
+              },
+              success: {
+                iconTheme: {
+                  primary: '#D4AF37',
+                  secondary: '#1a1a1a',
+                },
+              },
+              error: {
+                iconTheme: {
+                  primary: '#ff4b4b',
+                  secondary: '#1a1a1a',
+                },
+              },
+            }}
           />
+          <ScrollToTop />
+          <Navbar />
 
-          {/* 404 CATCH-ALL */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </Suspense>
+          <Suspense fallback={<LoadingScreen />}>
+            <Routes>
+              {/* MAIN PAGES */}
+              <Route path="/" element={<Home />} />
+              <Route path="/shop" element={<Shop />} />
+              <Route path="/about" element={<About />} />
+              <Route path="/contact" element={<Contact />} />
 
-      <Footer />
-      </Router>
+              {/* PRODUCT */}
+              <Route path="/product/:id" element={<ProductDetails />} />
+
+              {/* CART & WISHLIST */}
+              <Route path="/cart" element={<Cart />} />
+              <Route path="/wishlist" element={<Wishlist />} />
+
+              {/* AUTH */}
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
+
+              {/* CHECKOUT FLOW */}
+              <Route path="/checkout" element={<Checkout />} />
+              <Route path="/payment" element={<PaymentGateway />} />
+              <Route path="/checkout/success" element={<OrderSuccess />} />
+
+              {/* ORDERS */}
+              <Route path="/orders" element={<Orders />} />
+              <Route path="/track-order/:orderId" element={<OrderTracking />} />
+              <Route path="/my-tickets" element={<MyTickets />} />
+
+              {/* POLICIES */}
+              <Route path="/terms" element={<Terms />} />
+              <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+              <Route path="/return-refund" element={<ReturnRefund />} />
+
+              {/* ADMIN */}
+              <Route path="/admin-login" element={<AdminLogin />} />
+              <Route
+                path="/admin"
+                element={
+                  <AdminProtectedRoute>
+                    <Admin />
+                  </AdminProtectedRoute>
+                }
+              />
+
+              {/* 404 CATCH-ALL */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </Suspense>
+
+          <Footer />
+        </Router>
+      </ShopProvider>
     </AuthProvider>
   );
 }

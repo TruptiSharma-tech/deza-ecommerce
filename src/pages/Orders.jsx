@@ -33,14 +33,9 @@ export default function Orders() {
     setLoading(true);
     setFetchError(null);
     try {
-      const email = currentUser?.email;
-      if (email) {
-        console.log("📦 Fetching orders for:", email);
-        const data = await apiGetMyOrders(email);
-        setOrders(Array.isArray(data) ? data : []);
-      } else {
-        setOrders([]);
-      }
+      console.log("📦 Fetching your secure orders...");
+      const data = await apiGetMyOrders();
+      setOrders(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error("Failed to load orders:", err);
       setFetchError(err.message || "Failed to load orders");
@@ -157,7 +152,9 @@ export default function Orders() {
           {orders.map((o) => (
             <div className="order-card" key={o._id}>
               <div className="order-head">
-                <h2>Order #{o.orderId || "DZ-" + String(o._id).slice(-6).toUpperCase()}</h2>
+                <div>
+                  <h2>Order #{o.orderId || "DZ-" + String(o._id).slice(-6).toUpperCase()}</h2>
+                </div>
                 <span className="order-status">{o.status || "Placed"}</span>
               </div>
 

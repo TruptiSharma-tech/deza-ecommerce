@@ -32,6 +32,13 @@ const userSchema = new mongoose.Schema(
             }
         ],
         wishlist: [{ type: mongoose.Schema.Types.ObjectId, ref: "Product" }],
+        cart: [
+            {
+                product: { type: mongoose.Schema.Types.ObjectId, ref: "Product" },
+                qty: { type: Number, default: 1 },
+                selectedSize: { type: String, default: "" }
+            }
+        ],
         verifiedAt: { type: Date, default: null },
         isActive: { type: Boolean, default: true },
         lastLogin: { type: Date, default: null },
