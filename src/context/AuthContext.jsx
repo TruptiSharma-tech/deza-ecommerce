@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import { getCart, cartKey, clearUserData } from "../utils/userStorage";
+import { apiSyncUserData } from "../utils/api";
 
 const AuthContext = createContext();
 
@@ -38,39 +39,71 @@ export function AuthProvider({ children }) {
     localStorage.setItem("currentUser", JSON.stringify(userData));
     if (token) localStorage.setItem("deza_token", token);
 
-    // 2. Fetch the latest cart/wishlist from the backend response
-    // and save to user-scoped storage
     const email = userData.email;
-    
-    // Transform backend cart to frontend cart structure
+
+    // 2. Safely parse Backend Data
+    let frontendCart = [];
     if (userData.cart && Array.isArray(userData.cart)) {
-      const frontendCart = userData.cart.map(item => ({
+      frontendCart = userData.cart.map(item => ({
         _id: item.product?._id,
         name: item.product?.name,
         price: item.product?.price,
         image: Array.isArray(item.product?.images) ? item.product.images[0] : item.product?.image,
         qty: item.qty,
         selectedSize: item.selectedSize
-      })).filter(i => i._id); // Filter out any broken references
-      
-      localStorage.setItem(`deza_cart_${email}`, JSON.stringify(frontendCart));
-    } else {
-      localStorage.setItem(`deza_cart_${email}`, JSON.stringify([]));
+      })).filter(i => i._id);
     }
-
-    // Transform backend wishlist to frontend wishlist structure (just IDs or full products?)
-    // Based on User model, wishlist is ref: "Product"
+    
+    let frontendWishlist = [];
     if (userData.wishlist && Array.isArray(userData.wishlist)) {
-      localStorage.setItem(`deza_wishlist_${email}`, JSON.stringify(userData.wishlist));
-    } else {
-      localStorage.setItem(`deza_wishlist_${email}`, JSON.stringify([]));
+      frontendWishlist = userData.wishlist;
     }
 
-    // 3. Clear any generic legacy keys
+    // 3. ⭐ MERGE WITH GUEST DATA ⭐
+    const guestCart = JSON.parse(localStorage.getItem("deza_cart_guest") || localStorage.getItem("deza_cart") || "[]");
+    const guestWishlist = JSON.parse(localStorage.getItem("deza_wishlist_guest") || localStorage.getItem("deza_wishlist") || "[]");
+    
+    // Merge Cart: If same product & size, sum qty. Else push.
+    guestCart.forEach(guestItem => {
+        const existing = frontendCart.find(fk => String(fk._id) === String(guestItem._id) && fk.selectedSize === guestItem.selectedSize);
+        if (existing) {
+             existing.qty += guestItem.qty;
+        } else {
+             frontendCart.push(guestItem);
+        }
+    });
+
+    // Merge Wishlist: Add if not exists
+    const mergedWishlist = [...frontendWishlist];
+    guestWishlist.forEach(guestItem => {
+        const existing = mergedWishlist.find(fk => String(fk._id) === String(guestItem._id) || String(fk) === String(guestItem._id));
+        if (!existing) mergedWishlist.push(guestItem);
+    });
+
+    // 4. Save merged data back to user-scoped localStorage
+    localStorage.setItem(`deza_cart_${email}`, JSON.stringify(frontendCart));
+    localStorage.setItem(`deza_wishlist_${email}`, JSON.stringify(mergedWishlist));
+
+    // 5. Clear guest/legacy keys
     localStorage.removeItem("deza_cart");
     localStorage.removeItem("deza_wishlist");
+    localStorage.removeItem("deza_cart_guest");
+    localStorage.removeItem("deza_wishlist_guest");
 
     syncState();
+
+    // 6. Push merged data back to the database
+    if (guestCart.length > 0 || guestWishlist.length > 0) {
+        const syncPayload = {
+            cart: frontendCart.map(item => ({
+                product: item._id,
+                qty: item.qty,
+                selectedSize: item.selectedSize
+            })),
+            wishlist: mergedWishlist.map(p => p._id || p)
+        };
+        apiSyncUserData(syncPayload).catch(err => console.error("Login Sync failed:", err));
+    }
   };
 
   const logout = () => {
