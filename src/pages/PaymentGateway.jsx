@@ -10,6 +10,8 @@ export default function PaymentGateway() {
   const navigate = useNavigate();
   const [paymentDone, setPaymentDone] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [showUPIModal, setShowUPIModal] = useState(false);
+  const [dummyProcessing, setDummyProcessing] = useState(false);
 
   const checkoutInfo = JSON.parse(localStorage.getItem("checkoutInfo")) || {};
   const rawTotal = checkoutInfo.total || 0;
@@ -107,22 +109,6 @@ export default function PaymentGateway() {
           method: selectedType.toLowerCase() === "upi" ? "upi" : "card"
         },
         theme: { color: "#D4AF37" },
-        config: {
-          display: {
-            blocks: {
-              upi: {
-                name: "Pay via UPI / QR",
-                instruments: [{ method: "upi" }]
-              },
-              card: {
-                name: "Pay via Card",
-                instruments: [{ method: "card" }]
-              }
-            },
-            sequence: [selectedType.toLowerCase() === "upi" ? "block.upi" : "block.card"],
-            preferences: { show_default_blocks: true }
-          }
-        },
         modal: {
           ondismiss: () => setLoading(false)
         }
@@ -139,6 +125,23 @@ export default function PaymentGateway() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleDummyUPIPayment = async () => {
+    setDummyProcessing(true);
+    setTimeout(async () => {
+      try {
+        await saveOrder("UPI (Dummy)", "Paid", "DUMMY_UPI_" + Date.now());
+        setPaymentDone(true);
+        setShowUPIModal(false);
+        toast.success("Dummy UPI Payment Successful! 🎉");
+        setTimeout(() => navigate("/checkout/success"), 2000);
+      } catch (err) {
+        toast.error("Failed to save dummy order");
+      } finally {
+        setDummyProcessing(false);
+      }
+    }, 2000);
   };
 
   const handleCOD = async () => {
@@ -162,8 +165,8 @@ export default function PaymentGateway() {
         {/* UPI BUTTON */}
         <button
           className="payment-btn upi-btn"
-          onClick={() => handleRazorpayPayment("UPI")}
-          disabled={loading}
+          onClick={() => setShowUPIModal(true)}
+          disabled={loading || dummyProcessing}
         >
           <div className="icon-stack">
             <img src="https://img.icons8.com/color/48/000000/upi.png" alt="UPI" />
@@ -239,6 +242,36 @@ export default function PaymentGateway() {
           ))}
         </div>
       </div>
+
+      {/* DUMMY UPI MODAL */}
+      {showUPIModal && (
+        <div className="upi-modal-overlay">
+          <div className="upi-modal-content">
+            <button className="close-modal" onClick={() => setShowUPIModal(false)}>×</button>
+            <h2>Scan to Pay</h2>
+            <p className="upi-id-text">deza@dummyupi</p>
+            
+            <div className="qr-container">
+              <img 
+                src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=upi://pay?pa=deza@dummyupi&pn=DEZA%20Luxury&am=${total}&cu=INR`} 
+                alt="UPI QR Code" 
+                className="qr-code-img"
+              />
+            </div>
+            
+            <p className="amount-to-pay">Amount: <span>₹{total}</span></p>
+
+            <button 
+              className="simulate-success-btn" 
+              onClick={handleDummyUPIPayment}
+              disabled={dummyProcessing}
+            >
+              {dummyProcessing ? "Processing..." : "Simulate Payment Success"}
+            </button>
+            <p className="test-mode-note">This is a dummy payment for testing purposes.</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

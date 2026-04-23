@@ -28,6 +28,8 @@ export default function Home() {
     subheadline: "Original & Recreational Collections by DEZA. Bold, long-lasting fragrances crafted for those who define their own luxury.",
     ctaText: "EXPLORE COLLECTION",
     ctaLink: "/shop",
+    bannerHeight: "75vh",
+    objectFit: "cover",
   });
 
   useEffect(() => {
@@ -85,7 +87,7 @@ export default function Home() {
     <div className="home">
 
       {/* ═══════════ HERO CAROUSEL ═══════════ */}
-      <section className="hero-banner">
+      <section className="hero-banner" style={{ height: heroData.bannerHeight || "75vh" }}>
         {banners.map((banner, idx) => (
           <div className={`hero-slide ${idx === currentSlide ? "active" : ""}`} key={idx}>
             <img 
@@ -93,6 +95,7 @@ export default function Home() {
               alt={banner.title || `DEZA Slide ${idx + 1}`} 
               fetchpriority={idx === 0 ? "high" : "low"}
               loading={idx === 0 ? "eager" : "lazy"}
+              style={{ objectFit: heroData.objectFit || "cover" }}
             />
           </div>
         ))}

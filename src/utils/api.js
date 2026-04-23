@@ -23,7 +23,8 @@ async function request(path, options = {}) {
     const cacheKey = path;
 
     // Return cached data if available, not expired, and NOT sensitive
-    if (isGet && !isSensitive) {
+    const isAdminPath = path.startsWith("/admin");
+    if (isGet && !isSensitive && !isAdminPath) {
         const cached = apiCache.get(cacheKey);
         if (cached && (Date.now() - cached.timestamp < CACHE_EXPIRY)) {
             // Return cached data immediately, but trigger a background refresh (stale-while-revalidate)

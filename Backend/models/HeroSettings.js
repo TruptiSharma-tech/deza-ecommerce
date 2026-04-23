@@ -20,6 +20,8 @@ const heroSettingsSchema = new mongoose.Schema(
         subheadline: { type: String, default: "Discover the signature fragrance collection by DEZA. Elegant, bold, long-lasting perfumes designed to match your personality." },
         ctaText: { type: String, default: "Find Your Scent ✨" },
         ctaLink: { type: String, default: "/shop" },
+        bannerHeight: { type: String, default: "75vh" },
+        objectFit: { type: String, default: "cover" },
     },
     { timestamps: true }
 );

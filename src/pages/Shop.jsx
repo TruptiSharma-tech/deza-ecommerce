@@ -107,12 +107,14 @@ export default function Shop() {
     const matchesCategory =
       category === "All" ||
       (Array.isArray(p.categories)
-        ? p.categories.includes(category)
-        : p.categories === category);
+        ? p.categories.some(c => c.toLowerCase() === category.toLowerCase())
+        : p.categories?.toLowerCase() === category.toLowerCase());
 
     const matchesType =
       type === "All" ||
-      (Array.isArray(p.types) ? p.types.includes(type) : p.types === type);
+      (Array.isArray(p.types)
+        ? p.types.some(t => t.toLowerCase() === type.toLowerCase())
+        : p.types?.toLowerCase() === type.toLowerCase());
 
     return matchesSearch && matchesCategory && matchesType;
   });

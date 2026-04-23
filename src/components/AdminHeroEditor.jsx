@@ -9,6 +9,8 @@ export default function AdminHeroEditor() {
     const [subheadline, setSubheadline] = useState("");
     const [ctaText, setCtaText] = useState("");
     const [ctaLink, setCtaLink] = useState("");
+    const [bannerHeight, setBannerHeight] = useState("75vh");
+    const [objectFit, setObjectFit] = useState("cover");
     const [banners, setBanners] = useState([]);
 
     useEffect(() => {
@@ -23,6 +25,8 @@ export default function AdminHeroEditor() {
             setSubheadline(data.subheadline || "");
             setCtaText(data.ctaText || "");
             setCtaLink(data.ctaLink || "/shop");
+            setBannerHeight(data.bannerHeight || "75vh");
+            setObjectFit(data.objectFit || "cover");
             setBanners(data.banners || []);
         } catch {
             toast.error("Failed to load hero settings.");
@@ -46,6 +50,8 @@ export default function AdminHeroEditor() {
                 subheadline,
                 ctaText,
                 ctaLink,
+                bannerHeight,
+                objectFit,
                 banners,
             });
             toast.success("Hero section updated! Changes are live. ✨");
@@ -169,14 +175,51 @@ export default function AdminHeroEditor() {
                     />
                 </div>
 
-                <div>
-                    <label style={labelStyle}>CTA Button Link</label>
-                    <input
-                        value={ctaLink}
-                        onChange={(e) => setCtaLink(e.target.value)}
-                        placeholder="/shop"
-                        style={{ ...inputStyle, maxWidth: "300px" }}
-                    />
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                    <div>
+                        <label style={labelStyle}>CTA Button Link</label>
+                        <input
+                            value={ctaLink}
+                            onChange={(e) => setCtaLink(e.target.value)}
+                            placeholder="/shop"
+                            style={inputStyle}
+                        />
+                    </div>
+                </div>
+            </div>
+
+            {/* Banner Dimensions */}
+            <div style={{
+                background: "rgba(255,255,255,0.03)",
+                border: "1px solid rgba(255,255,255,0.08)",
+                borderRadius: "12px",
+                padding: "24px",
+                marginBottom: "24px",
+            }}>
+                <h3 style={{ color: "#d4af37", fontSize: "16px", marginBottom: "16px" }}>📏 Banner Dimensions & Style</h3>
+
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                    <div>
+                        <label style={labelStyle}>Banner Height (e.g. 100vh, 75vh, 500px)</label>
+                        <input
+                            value={bannerHeight}
+                            onChange={(e) => setBannerHeight(e.target.value)}
+                            placeholder="75vh"
+                            style={inputStyle}
+                        />
+                    </div>
+                    <div>
+                        <label style={labelStyle}>Image Fit Style</label>
+                        <select
+                            value={objectFit}
+                            onChange={(e) => setObjectFit(e.target.value)}
+                            style={inputStyle}
+                        >
+                            <option value="cover">Cover (Fills banner, crops edges)</option>
+                            <option value="contain">Contain (Shows full image, adds bars)</option>
+                            <option value="fill">Fill (Stretches image to fit)</option>
+                        </select>
+                    </div>
                 </div>
             </div>
 

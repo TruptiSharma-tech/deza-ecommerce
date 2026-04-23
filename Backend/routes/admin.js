@@ -94,17 +94,19 @@ router.get("/hero-settings", async (req, res) => {
 
 router.put("/hero-settings", auth, adminOnly, async (req, res) => {
     try {
-        const { banners, headline, subheadline, ctaText, ctaLink } = req.body;
+        const { banners, headline, subheadline, ctaText, ctaLink, bannerHeight, objectFit } = req.body;
 
         let settings = await HeroSettings.findOne();
         if (!settings) {
-            settings = await HeroSettings.create({ banners, headline, subheadline, ctaText, ctaLink });
+            settings = await HeroSettings.create({ banners, headline, subheadline, ctaText, ctaLink, bannerHeight, objectFit });
         } else {
             if (banners !== undefined) settings.banners = banners;
             if (headline !== undefined) settings.headline = headline;
             if (subheadline !== undefined) settings.subheadline = subheadline;
             if (ctaText !== undefined) settings.ctaText = ctaText;
             if (ctaLink !== undefined) settings.ctaLink = ctaLink;
+            if (bannerHeight !== undefined) settings.bannerHeight = bannerHeight;
+            if (objectFit !== undefined) settings.objectFit = objectFit;
             await settings.save();
         }
 

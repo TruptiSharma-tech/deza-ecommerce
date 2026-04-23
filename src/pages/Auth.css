@@ -7,18 +7,19 @@
 .auth-page {
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: flex-start;
   min-height: 100vh;
-  padding: 40px 20px;
+  padding: 40px 20px 60px;
   background: #0a0a0a;
   background-image:
     radial-gradient(circle at 20% 30%, rgba(212, 175, 55, 0.08) 0%, transparent 40%),
     radial-gradient(circle at 80% 70%, rgba(212, 175, 55, 0.05) 0%, transparent 40%);
   font-family: 'Poppins', sans-serif;
+  box-sizing: border-box;
 }
 
 .auth-card {
-  background: rgba(18, 18, 18, 0.85);
+  background: rgba(18, 18, 18, 0.95);
   backdrop-filter: blur(15px);
   -webkit-backdrop-filter: blur(15px);
   padding: 50px 40px;
@@ -28,8 +29,10 @@
   width: 100%;
   text-align: center;
   position: relative;
-  overflow: hidden;
+  /* FIXED: was overflow: hidden which clipped register form */
+  overflow: visible;
   animation: fadeInAuth 0.8s ease-out;
+  margin: 20px auto;
 }
 
 @keyframes fadeInAuth {
@@ -52,6 +55,7 @@
   width: 100%;
   height: 4px;
   background: linear-gradient(90deg, transparent, #d4af37, transparent);
+  border-radius: 24px 24px 0 0;
 }
 
 .auth-title {
@@ -82,6 +86,7 @@
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   width: 100%;
   box-sizing: border-box;
+  font-family: 'Poppins', sans-serif;
 }
 
 .auth-form input:focus,
@@ -97,28 +102,81 @@
   cursor: not-allowed;
 }
 
+.auth-form input::placeholder {
+  color: rgba(255, 255, 255, 0.35);
+}
+
 .auth-form select option {
   background-color: #1a1a1a;
   color: #ffffff;
   padding: 10px;
 }
 
+/* Password wrapper with show/hide toggle */
+.password-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.password-wrapper input {
+  padding-right: 100px;
+}
+
+.suggest-pass-btn {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: #d4af37;
+  font-size: 12px;
+  cursor: pointer;
+  font-weight: 600;
+  font-family: 'Poppins', sans-serif;
+  transition: color 0.2s;
+}
+
+.suggest-pass-btn:hover {
+  color: #f5dc8c;
+}
+
+.show-hide-btn {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.4);
+  font-size: 18px;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+  transition: color 0.2s;
+}
+
+.show-hide-btn:hover {
+  color: #d4af37;
+}
+
 .auth-btn {
   padding: 16px;
   border-radius: 14px;
   border: none;
-  background: #d4af37;
+  background: linear-gradient(135deg, #d4af37, #c9a227);
   color: #0c0c0c;
-  font-weight: 600;
-  font-size: 16px;
+  font-weight: 700;
+  font-size: 15px;
   cursor: pointer;
   transition: all 0.3s ease;
   letter-spacing: 0.5px;
   text-transform: uppercase;
+  font-family: 'Poppins', sans-serif;
 }
 
 .auth-btn:hover:not(:disabled) {
-  background: #f5dc8c;
+  background: linear-gradient(135deg, #f5dc8c, #d4af37);
   transform: translateY(-2px);
   box-shadow: 0 10px 20px rgba(212, 175, 55, 0.3);
 }
@@ -127,11 +185,20 @@
   transform: translateY(0);
 }
 
-.auth-btn.disabled {
+.auth-btn.disabled,
+.auth-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
   transform: none !important;
   box-shadow: none !important;
+}
+
+/* Strength Meter */
+.strength-meter {
+  margin-bottom: 5px;
+  margin-top: -8px;
+  text-align: left;
+  padding: 0 4px;
 }
 
 /* OTP Flow Styling */
@@ -224,6 +291,11 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   cursor: pointer;
 }
 
+/* Date input placeholder color */
+input[type="date"]:not([value]):not(:focus) {
+  color: rgba(255, 255, 255, 0.35);
+}
+
 /* Scrollbar for forms if needed */
 .auth-card::-webkit-scrollbar {
   width: 4px;
@@ -232,4 +304,38 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .auth-card::-webkit-scrollbar-thumb {
   background: #d4af37;
   border-radius: 10px;
+}
+
+/* ── RESPONSIVE ─────────────────────────────────────────── */
+@media (max-width: 520px) {
+  .auth-page {
+    padding: 20px 16px 50px;
+    align-items: flex-start;
+  }
+
+  .auth-card {
+    padding: 36px 22px 40px;
+    border-radius: 18px;
+  }
+
+  .auth-title {
+    font-size: 26px;
+    letter-spacing: 1px;
+    margin-bottom: 24px;
+  }
+
+  .auth-form {
+    gap: 14px;
+  }
+
+  .auth-form input,
+  .auth-form select {
+    font-size: 14px;
+    padding: 13px 14px;
+  }
+
+  .auth-btn {
+    font-size: 14px;
+    padding: 14px;
+  }
 }

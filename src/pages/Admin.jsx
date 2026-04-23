@@ -129,8 +129,8 @@ export default function Admin() {
         position: 'top',
         labels: {
           color: "#fff",
-          font: { family: 'Poppins', size: 12, weight: '600' },
-          padding: 20,
+          font: { family: 'Poppins', size: 16, weight: '800' },
+          padding: 25,
           usePointStyle: true,
         },
       },
@@ -140,7 +140,7 @@ export default function Admin() {
         bodyColor: "#fff",
         borderColor: "rgba(212, 175, 55, 0.4)",
         borderWidth: 1,
-        padding: 12,
+        padding: 14,
         cornerRadius: 10,
         displayColors: false,
       },
@@ -148,11 +148,11 @@ export default function Admin() {
     scales: {
       x: {
         grid: { color: "rgba(255, 255, 255, 0.05)", drawBorder: false },
-        ticks: { color: "rgba(255, 255, 255, 0.5)", font: { size: 11 } },
+        ticks: { color: "rgba(255, 255, 255, 0.9)", font: { size: 14, weight: '700' } },
       },
       y: {
         grid: { color: "rgba(255, 255, 255, 0.05)", drawBorder: false },
-        ticks: { color: "rgba(255, 255, 255, 0.5)", font: { size: 11 } },
+        ticks: { color: "rgba(255, 255, 255, 0.9)", font: { size: 14, weight: '700' } },
         beginAtZero: true,
       },
     },
@@ -684,10 +684,34 @@ export default function Admin() {
     .filter(o => o.orderSource === "WhatsApp" && o.status !== "Cancelled" && o.status !== "Returned")
     .reduce((acc, o) => acc + (o.totalPrice || 0), 0);
 
+  // ✅ New Time-based totals for Top Card
+  const now = new Date();
+  const dailyTotalRev = orders.filter(o => 
+    new Date(o.createdAt || o.date).toDateString() === now.toDateString() && o.status !== "Cancelled" && o.status !== "Returned"
+  ).reduce((sum, o) => sum + (o.totalPrice || 0), 0);
+
+  const weeklyTotalRev = orders.filter(o => {
+    const d = new Date(o.createdAt || o.date);
+    const weekAgo = new Date(); weekAgo.setDate(now.getDate() - 7);
+    return d >= weekAgo && o.status !== "Cancelled" && o.status !== "Returned";
+  }).reduce((sum, o) => sum + (o.totalPrice || 0), 0);
+
+  const monthlyTotalRev = orders.filter(o => {
+    const d = new Date(o.createdAt || o.date);
+    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear() && o.status !== "Cancelled" && o.status !== "Returned";
+  }).reduce((sum, o) => sum + (o.totalPrice || 0), 0);
+
+  const yearlyTotalRev = orders.filter(o => {
+    const d = new Date(o.createdAt || o.date);
+    return d.getFullYear() === now.getFullYear() && o.status !== "Cancelled" && o.status !== "Returned";
+  }).reduce((sum, o) => sum + (o.totalPrice || 0), 0);
+
   // Filter Products for the List Tab
   const productsToDisplay = products.filter((p) => {
-    const catMatch = filterCategory === "All" || (p.categories || []).includes(filterCategory);
-    const typeMatch = filterType === "All" || (p.types || []).includes(filterType);
+    const catMatch = filterCategory === "All" || 
+      (p.categories || []).some(c => c.toLowerCase() === filterCategory.toLowerCase());
+    const typeMatch = filterType === "All" || 
+      (p.types || []).some(t => t.toLowerCase() === filterType.toLowerCase());
     return catMatch && typeMatch;
   });
 
@@ -756,9 +780,9 @@ export default function Admin() {
         data: revenueValues,
         borderColor: "#D4AF37",
         backgroundColor: "rgba(212,175,55,0.15)",
-        borderWidth: 3,
+        borderWidth: 5,
         tension: 0.4,
-        pointRadius: 4,
+        pointRadius: 6,
         pointBackgroundColor: "#D4AF37",
         pointBorderColor: "#000",
         fill: true,
@@ -1025,6 +1049,39 @@ export default function Admin() {
               </div>
             )}
 
+            {/* ENHANCED: 4-WAY SALES PERFORMANCE OVERVIEW */}
+            <div className="admin-section" style={{ 
+              background: 'linear-gradient(135deg, #1e1e22, #0b0b0d)', 
+              marginBottom: '30px', 
+              border: '1px solid rgba(212, 175, 55, 0.3)',
+              boxShadow: '0 15px 35px rgba(0,0,0,0.4)',
+              padding: '30px',
+              borderRadius: '15px'
+            }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '30px', alignItems: 'center' }}>
+                <div style={{ borderRight: '1px solid rgba(212,175,55,0.1)', paddingRight: '15px' }}>
+                  <span style={{ fontSize: '10px', color: '#d4af37', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '1px' }}>Daily Revenue</span>
+                  <h2 style={{ fontSize: '32px', color: reportPeriod === 'daily' ? '#d4af37' : '#fff', margin: '5px 0', fontWeight: '900' }}>₹{dailyTotalRev.toLocaleString()}</h2>
+                  {reportPeriod === 'daily' && <small style={{ color: '#d4af37', fontSize: '10px' }}>● Selected Period</small>}
+                </div>
+                <div style={{ borderRight: '1px solid rgba(212,175,55,0.1)', paddingRight: '15px' }}>
+                  <span style={{ fontSize: '10px', color: '#d4af37', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '1px' }}>Weekly Revenue</span>
+                  <h2 style={{ fontSize: '32px', color: reportPeriod === 'weekly' ? '#d4af37' : '#fff', margin: '5px 0', fontWeight: '900' }}>₹{weeklyTotalRev.toLocaleString()}</h2>
+                  {reportPeriod === 'weekly' && <small style={{ color: '#d4af37', fontSize: '10px' }}>● Selected Period</small>}
+                </div>
+                <div style={{ borderRight: '1px solid rgba(212,175,55,0.1)', paddingRight: '15px' }}>
+                  <span style={{ fontSize: '10px', color: '#d4af37', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '1px' }}>Monthly Revenue</span>
+                  <h2 style={{ fontSize: '32px', color: reportPeriod === 'monthly' ? '#d4af37' : '#fff', margin: '5px 0', fontWeight: '900' }}>₹{monthlyTotalRev.toLocaleString()}</h2>
+                  {reportPeriod === 'monthly' && <small style={{ color: '#d4af37', fontSize: '10px' }}>● Selected Period</small>}
+                </div>
+                <div>
+                  <span style={{ fontSize: '10px', color: '#d4af37', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '1px' }}>Yearly Revenue</span>
+                  <h2 style={{ fontSize: '32px', color: reportPeriod === 'yearly' || reportPeriod === 'all' ? '#d4af37' : '#fff', margin: '5px 0', fontWeight: '900' }}>₹{yearlyTotalRev.toLocaleString()}</h2>
+                  {(reportPeriod === 'yearly' || reportPeriod === 'all') && <small style={{ color: '#d4af37', fontSize: '10px' }}>● Selected Period</small>}
+                </div>
+              </div>
+            </div>
+
             <div className="admin-cards">
               <div className="admin-card myntra-card blue">
                 <div className="card-icon">👥</div>
@@ -1093,21 +1150,6 @@ export default function Admin() {
                 </div>
               </div>
 
-              <div className="admin-card myntra-card green">
-                <div className="card-icon">💳</div>
-                <div className="card-content">
-                  <h3>Txn Success</h3>
-                  <p>{successfulTransactions}</p>
-                </div>
-              </div>
-
-              <div className="admin-card myntra-card" style={{ background: "linear-gradient(135deg, #e53935, #b71c1c)" }}>
-                <div className="card-icon">❌</div>
-                <div className="card-content">
-                  <h3>Txn Failed</h3>
-                  <p>{failedTransactions}</p>
-                </div>
-              </div>
 
               {/* WHATSAPP REVENUE CARD */}
               <div className="admin-card myntra-card" style={{ background: "linear-gradient(135deg, #25D366, #128C7E)" }}>
@@ -1237,33 +1279,91 @@ export default function Admin() {
               </div>
             </div>
 
-            {/* CHARTS GRID */}
-            <div className="charts-grid">
-              <div className="chart-box">
-                <h3>Revenue Trend</h3>
-                <div className="chart-container-inner" style={{ flex: 1, paddingBottom: '20px' }}>
-                  <Line data={revenueChart} options={chartOptions} />
+            {/* REVENUE TREND - SCROLLABLE FOR DATES */}
+            <div className="chart-box" style={{ width: '100%', marginBottom: '30px', overflow: 'hidden', padding: '0', background: '#0b0b0d', minHeight: 'auto' }}>
+              <h3 style={{ padding: '20px 20px 0 20px', borderBottom: 'none' }}>📊 Sales Velocity & Momentum (Slide ↔️)</h3>
+              <div className="charts-scroll-container" style={{ overflowX: 'scroll', overflowY: 'hidden', cursor: 'grab', width: '100%' }}>
+                <div style={{ minWidth: `${(revenueLabels.length / 7) * 100}%`, height: '400px', marginBottom: '-10px' }}>
+                  <Line 
+                    data={revenueChart} 
+                    options={{ 
+                      ...chartOptions, 
+                      maintainAspectRatio: false,
+                      layout: {
+                        padding: {
+                          bottom: 0,
+                          left: 0,
+                          right: 0
+                        }
+                      },
+                      scales: {
+                        ...chartOptions.scales,
+                        x: { 
+                          ...chartOptions.scales.x, 
+                          grid: { display: false },
+                          ticks: { ...chartOptions.scales.x.ticks, padding: 0 }
+                        },
+                        y: {
+                          ...chartOptions.scales.y,
+                          display: true,
+                          grid: { color: 'rgba(255,255,255,0.03)' },
+                          ticks: { ...chartOptions.scales.y.ticks, padding: 10 }
+                        }
+                      }
+                    }} 
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* OTHER CHARTS - RESPONSIVE GRID */}
+            <div className="charts-grid" style={{ 
+              display: 'grid', 
+              gridTemplateColumns: 'repeat(auto-fit, minmax(450px, 1fr))', 
+              gap: '30px',
+              width: '100%'
+            }}>
+              <div className="chart-box" style={{ width: '100%', padding: '0', background: '#0b0b0d', overflow: 'hidden', height: '480px', display: 'flex', flexDirection: 'column' }}>
+                <h3 style={{ padding: '20px 20px 0 20px', borderBottom: 'none', margin: '0' }}>Products by Category</h3>
+                <div style={{ flex: 1, width: '100%', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '10px' }}>
+                  <Pie 
+                    data={categoryChart} 
+                    options={{ 
+                      ...chartOptions, 
+                      maintainAspectRatio: false,
+                      layout: { padding: 10 },
+                      plugins: { 
+                        ...chartOptions.plugins, 
+                        legend: { ...chartOptions.plugins.legend, position: 'bottom', labels: { ...chartOptions.plugins.legend.labels, padding: 15 } } 
+                      } 
+                    }} 
+                  />
                 </div>
               </div>
 
-              <div className="chart-box">
-                <h3>Products by Category</h3>
-                <div className="chart-container-inner" style={{ flex: 1, paddingBottom: '20px' }}>
-                  <Pie data={categoryChart} options={chartOptions} />
-                </div>
-              </div>
-
-              <div className="chart-box">
-                <h3>Products by Type</h3>
-                <div className="chart-container-inner" style={{ flex: 1, paddingBottom: '20px' }}>
-                  <Bar data={typeChart} options={chartOptions} />
-                </div>
-              </div>
-
-              <div className="chart-box">
-                <h3>Ratings Overview</h3>
-                <div className="chart-container-inner" style={{ flex: 1, paddingBottom: '20px' }}>
-                  <Bar data={ratingsChart} options={chartOptions} />
+              <div className="chart-box" style={{ width: '100%', padding: '0', background: '#0b0b0d', overflow: 'hidden', height: '480px', display: 'flex', flexDirection: 'column' }}>
+                <h3 style={{ padding: '20px 20px 0 20px', borderBottom: 'none', margin: '0' }}>Products by Type</h3>
+                <div style={{ flex: 1, width: '100%', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '10px' }}>
+                  <Bar 
+                    data={typeChart} 
+                    options={{ 
+                      ...chartOptions, 
+                      maintainAspectRatio: false,
+                      layout: { padding: 20 },
+                      scales: {
+                        ...chartOptions.scales,
+                        x: { 
+                          ...chartOptions.scales.x, 
+                          grid: { display: false },
+                          ticks: { ...chartOptions.scales.x.ticks, padding: 10 } 
+                        },
+                        y: {
+                          ...chartOptions.scales.y,
+                          ticks: { ...chartOptions.scales.y.ticks, padding: 10 }
+                        }
+                      }
+                    }} 
+                  />
                 </div>
               </div>
             </div>
@@ -1587,6 +1687,7 @@ export default function Admin() {
                     <th>Customer</th>
                     <th>Address</th>
                     <th>Source</th>
+                    <th>Payment</th>
                     <th>Items</th>
                     <th>Total</th>
                     <th>Status</th>
@@ -1638,6 +1739,19 @@ export default function Admin() {
                           textTransform: 'uppercase'
                         }}>
                           {o.orderSource || "Website"}
+                        </span>
+                      </td>
+                      <td>
+                        <span style={{ 
+                          padding: '4px 8px', 
+                          borderRadius: '6px', 
+                          fontSize: '10px', 
+                          fontWeight: '800',
+                          background: 'rgba(212,175,55,0.05)',
+                          color: '#D4AF37',
+                          border: '1px solid rgba(212,175,55,0.2)'
+                        }}>
+                          {o.paymentMethod || "COD"}
                         </span>
                       </td>
 
@@ -1942,7 +2056,7 @@ export default function Admin() {
                   {reviews.map((r) => (
                     <tr key={r._id}>
                       <td>{r.userName}</td>
-                      <td>{products.find(p => p._id === r.productId)?.title || "Unknown"}</td>
+                      <td>{products.find(p => String(p._id) === String(r.productId))?.title || "Unknown"}</td>
                       <td style={{ color: "#D4AF37" }}>{"⭐".repeat(r.rating)}</td>
                       <td>{r.comment}</td>
                       <td>

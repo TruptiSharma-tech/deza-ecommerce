@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { apiGetMyOrders, apiCancelOrder, apiReturnOrder, apiRefundOrder } from "../utils/api";
+import { apiGetMyOrders, apiCancelOrder, apiReturnOrder, apiRefundOrder, apiSubmitReview } from "../utils/api";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import toast from "react-hot-toast";
@@ -12,7 +12,14 @@ export default function Orders() {
 
   // Return Modal states
   const [showReturnModal, setShowReturnModal] = useState(false);
+  const [showReviewModal, setShowReviewModal] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
+  const [selectedItem, setSelectedItem] = useState(null);
+  
+  // Review State
+  const [rating, setRating] = useState(5);
+  const [comment, setComment] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [returnType, setReturnType] = useState("Refund");
   const [returnReason, setReturnReason] = useState("Wrong Product Received");
@@ -89,6 +96,32 @@ export default function Orders() {
     setReturnReason("Wrong Product Received");
     setReturnMessage("");
     setShowReturnModal(true);
+  };
+
+  const openReviewModal = (order, item) => {
+    setSelectedOrder(order);
+    setSelectedItem(item);
+    setRating(5);
+    setComment("");
+    setShowReviewModal(true);
+  };
+
+  const submitReview = async () => {
+    if (!comment.trim()) return toast.error("Please write a short review!");
+    setIsSubmitting(true);
+    try {
+      await apiSubmitReview({
+        productId: selectedItem.id || selectedItem._id,
+        rating,
+        comment,
+      });
+      toast.success("Review submitted! Thank you ✨");
+      setShowReviewModal(false);
+    } catch (err) {
+      toast.error(err.message || "Failed to submit review");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   // ✅ Submit Return Request
@@ -269,16 +302,24 @@ export default function Orders() {
                       src={item.image || "https://via.placeholder.com/75"}
                       alt={item.name || "Item"}
                     />
-                    <div>
+                    <div style={{ flex: 1 }}>
                       <p className="order-item-name">
                         {item.name || "Unnamed Item"}
                       </p>
-                      <p>Size: {item.selectedSize || "N/A"}</p>
-                      <p>Qty: {item.qty || 1}</p>
+                      <p style={{ fontSize: '0.85rem', opacity: 0.7 }}>Size: {item.selectedSize || "N/A"} | Qty: {item.qty || 1}</p>
                       <p className="order-item-price">
                         ₹{(item.price || 0) * (item.qty || 1)}
                       </p>
                     </div>
+                    {o.status === "Delivered" && (
+                      <button 
+                        className="track-order-btn" 
+                        style={{ width: 'auto', padding: '6px 12px', fontSize: '0.8rem', margin: 0 }}
+                        onClick={() => openReviewModal(o, item)}
+                      >
+                        ⭐ Review
+                      </button>
+                    )}
                   </div>
                 ))}
               </div>
@@ -291,7 +332,53 @@ export default function Orders() {
         </div>
       )}
 
-      {/* RETURN MODAL */}
+      {/* REVIEW MODAL */}
+      {showReviewModal && (
+        <div className="return-modal-overlay">
+          <div className="return-modal" style={{ textAlign: 'center' }}>
+            <h2>Rate & Review ✨</h2>
+            <p style={{ color: '#d4af37', marginBottom: '15px' }}>{selectedItem?.name}</p>
+
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginBottom: '20px' }}>
+              {[1, 2, 3, 4, 5].map((num) => (
+                <span 
+                  key={num} 
+                  style={{ fontSize: '2rem', cursor: 'pointer', color: num <= rating ? '#d4af37' : '#444' }}
+                  onClick={() => setRating(num)}
+                >
+                  ★
+                </span>
+              ))}
+            </div>
+
+            <textarea
+              placeholder="Tell us what you loved about this fragrance..."
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              style={{ minHeight: '100px' }}
+            />
+
+            <div className="return-actions">
+              <button
+                className="cancel-btn"
+                style={{ background: "#444" }}
+                onClick={() => setShowReviewModal(false)}
+              >
+                Cancel
+              </button>
+
+              <button
+                className="cancel-btn"
+                style={{ background: "#d4af37", color: "#111" }}
+                onClick={submitReview}
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? "Submitting..." : "Post Review"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {showReturnModal && (
         <div className="return-modal-overlay">
           <div className="return-modal">

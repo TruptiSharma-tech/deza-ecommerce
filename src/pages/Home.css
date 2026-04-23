@@ -30,7 +30,7 @@
 .hero-banner {
   position: relative;
   width: 100%;
-  height: 100vh; /* Full screen height */
+  height: 75vh; /* Reduced height as requested */
   min-height: 500px;
   overflow: hidden;
   background: #000;
@@ -865,9 +865,8 @@
   }
 
   .showcase-grid {
-    grid-template-columns: 1fr;
-    max-width: 450px;
-    margin: 0 auto;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
   }
 
   .browse-bar {
@@ -906,6 +905,12 @@
 
   .hero-main-title {
     font-size: 32px;
+  }
+
+  .showcase-grid {
+    grid-template-columns: 1fr;
+    max-width: 400px;
+    margin: 0 auto;
   }
 
   .hero-cta-primary,

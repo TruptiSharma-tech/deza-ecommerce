@@ -9,6 +9,11 @@
   background: #0b0b0d;
   font-family: "Inter", "Poppins", sans-serif;
   color: #ffffff;
+  box-sizing: border-box;
+}
+
+.admin-page *, .admin-page *::before, .admin-page *::after {
+  box-sizing: border-box;
 }
 
 /* ============================
@@ -467,16 +472,18 @@
 /* Chart Box */
 .chart-box {
   background: rgba(18, 18, 22, 0.95);
-  border-radius: 20px;
-  padding: 30px;
-  border: 1px solid rgba(255, 255, 255, 0.07);
-  box-shadow: 0px 14px 40px rgba(0, 0, 0, 0.55);
-  height: 500px;
-  /* Taller charts for more detail */
+  border-radius: 16px;
+  padding: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: 0px 10px 30px rgba(0, 0, 0, 0.5);
+  min-height: 450px;
+  height: auto;
+  /* Dynamic height based on content */
   overflow: hidden;
   display: flex;
   flex-direction: column;
   transition: 0.3s ease;
+  box-sizing: border-box;
 }
 
 .chart-box:hover {
@@ -497,12 +504,23 @@
 /* Chart Fix */
 .chart-box canvas {
   width: 100% !important;
-  height: 400px !important;
+  height: 300px !important;
 }
 
-/* ============================
-   TABLES
-============================ */
+/* Custom scrollbar for charts */
+.charts-scroll-container::-webkit-scrollbar {
+  height: 6px;
+}
+
+.charts-scroll-container::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+}
+
+.charts-scroll-container::-webkit-scrollbar-thumb {
+  background: linear-gradient(90deg, #d4af37, #f1c40f);
+  border-radius: 10px;
+}
 
 .table-wrapper {
   width: 100%;
