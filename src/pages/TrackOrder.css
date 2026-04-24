@@ -338,6 +338,17 @@ html, body {
   50%     { box-shadow: 0 0 16px rgba(212,175,55,0.9); }
 }
 
+.to-est-tag {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: #d4af37;
+  padding: 2px 8px;
+  border-radius: 6px;
+  border: 1px solid rgba(212,175,55,0.3);
+  background: rgba(212,175,55,0.08);
+  text-transform: uppercase;
+}
 .to-step-location {
   font-size: 13px;
   font-weight: 600;

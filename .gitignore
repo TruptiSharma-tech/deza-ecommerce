@@ -25,3 +25,7 @@ dist-ssr
 .env
 Backend/node_modules/
 Backend/.env
+
+# Temp and scratch directories
+tmp_restore/
+scratch/

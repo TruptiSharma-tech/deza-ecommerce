@@ -365,42 +365,6 @@ export default function TrackOrder() {
         <div className="to-left-col">
           
           {/* ═══ PREMIUM ROAD VISUAL ═════════════════════════ */}
-          {!isCancelled && !isDelivered && (
-            <div className="to-map-card no-pad">
-               <div className="to-route-visual">
-                  <div className="to-section-label-small">🚚 Current Journey</div>
-                  
-                  <div className="to-road">
-                    <div className="to-road-dashes" />
-                    <div className="to-road-fill" style={{ width: `${vehiclePos}%` }} />
-                    
-                    <div className="to-vehicle" style={{ left: `${vehiclePos}%` }}>
-                      <div className="to-vehicle-ping" />
-                      <div className="to-vehicle-icon">🚛</div>
-                      <div className="to-vehicle-shadow" />
-                    </div>
-                  </div>
-
-                  <div className="to-checkpoints">
-                    <div className="to-checkpoint">
-                        <div className="to-cp-dot origin-cp" />
-                        <p>{originArea || "HUB"}</p>
-                        <small>{originCity}</small>
-                    </div>
-                    <div className="to-checkpoint">
-                        <div className="to-cp-dot mid-cp" style={{ opacity: vehiclePos > 40 ? 1 : 0.2 }} />
-                        <p>Sorting</p>
-                        <small>In Transit</small>
-                    </div>
-                    <div className="to-checkpoint">
-                        <div className="to-cp-dot dest-cp" style={{ opacity: vehiclePos > 95 ? 1 : 0.2 }} />
-                        <p>Your Door</p>
-                        <small>{destCity}</small>
-                    </div>
-                  </div>
-               </div>
-            </div>
-          )}
 
           <div className="to-timeline-card">
             <div className="to-section-label">📍 Shipment Updates</div>
@@ -430,6 +394,10 @@ export default function TrackOrder() {
                       <div className="to-step-header-row">
                         <p className={`to-step-title ${done ? "title-done" : ""}`}>{step.label}</p>
                         {current && <span className="to-current-badge">ACTIVE</span>}
+                        {/* Show Estimated Date on Delivered Step if not delivered yet */}
+                        {step.key === "Delivered" && !isDelivered && !isCancelled && eta && (
+                          <span className="to-est-tag">Est. {eta}</span>
+                        )}
                       </div>
                       {done && (
                         <>
@@ -439,7 +407,9 @@ export default function TrackOrder() {
                         </>
                       )}
                       {!done && !isCancelled && (
-                        <p className="to-step-pending">Coming up next</p>
+                        <p className="to-step-pending">
+                          {step.key === "Delivered" ? `Estimated arrival by ${eta}` : "Coming up next"}
+                        </p>
                       )}
                     </div>
                   </div>
@@ -459,8 +429,23 @@ export default function TrackOrder() {
               )}
             </div>
           </div>
+        </div>
 
-          {/* 📦 SHIPMENT ITEMS */}
+        <div className="to-right-col">
+          <div className="to-addr-card">
+            <div className="to-section-label">🏠 Delivery To</div>
+            <div className="to-addr-body">
+              <p className="to-addr-name">{order.customerName}</p>
+              <p className="to-addr-text">{destFull}</p>
+              <p className="to-addr-phone">📞 {formatPhone(order.customerPhone)}</p>
+            </div>
+            <div className="to-origin-row">
+              <div className="to-origin-label">SHIPPED FROM</div>
+              <div className="to-origin-val">{originName} · {originCity}</div>
+            </div>
+          </div>
+
+          {/* 📦 SHIPMENT ITEMS moved to right side */}
           {order.items && order.items.length > 0 && (
             <div className="to-items-box-compact">
               <div className="to-section-label">🛒 Shipment Contents ({order.items.length})</div>
@@ -478,77 +463,6 @@ export default function TrackOrder() {
               </div>
             </div>
           )}
-        </div>
-
-        <div className="to-right-col">
-          {/* Live GSP Map with Multi-Markers */}
-          {!isCancelled && (
-            <div className="to-map-card">
-              <div className="to-section-label">
-                <span className="to-live-dot" />
-                Precise GPS Tracking
-              </div>
-
-              <div className="to-map-container" style={{ height: "420px", borderRadius: "18px", overflow: "hidden", margin: "12px 0", border: "1px solid rgba(212,175,55,0.25)", boxShadow: "0 10px 40px rgba(0,0,0,0.5)" }}>
-                <MapContainer 
-                  center={[order.liveTracking?.lat || 19.1726, order.liveTracking?.lng || 72.9425]} 
-                  zoom={12} 
-                  style={{ height: "100%", width: "100%" }}
-                  zoomControl={false}
-                >
-                  <TileLayer
-                    url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-                    attribution='&copy; OpenStreetMap'
-                  />
-                  
-                  {/* Origin (Dynamic Shop) */}
-                  <Marker position={[originLat, originLng]} icon={warehouseIcon}>
-                    <Popup><b>{originName}</b> (Shipment Origin)</Popup>
-                  </Marker>
-
-                  {/* Delivery Partner */}
-                  <Marker 
-                    position={[order.liveTracking?.lat || 19.1726, order.liveTracking?.lng || 72.9425]} 
-                    icon={deliveryIcon}
-                  >
-                    <Popup>
-                      <b>DEZA Courier</b><br />
-                      Status: On the Move
-                    </Popup>
-                  </Marker>
-
-                  <RecenterMap lat={order.liveTracking?.lat} lng={order.liveTracking?.lng} />
-                </MapContainer>
-              </div>
-
-              <div className="to-current-loc-box">
-                  <div className="to-cur-loc-left">
-                    <span className="to-cur-loc-icon">🚚</span>
-                    <div>
-                      <small>CURRENT LOCATION</small>
-                      <p>{order.liveTracking?.isActive ? "Your courier is on the way!" : "Package processed at hub."}</p>
-                    </div>
-                  </div>
-                  <div className="to-refresh-tag">
-                    <span className="to-live-dot small" />
-                    LIVE
-                  </div>
-              </div>
-            </div>
-          )}
-
-          <div className="to-addr-card">
-            <div className="to-section-label">🏠 Delivery To</div>
-            <div className="to-addr-body">
-              <p className="to-addr-name">{order.customerName}</p>
-              <p className="to-addr-text">{destFull}</p>
-              <p className="to-addr-phone">📞 {formatPhone(order.customerPhone)}</p>
-            </div>
-            <div className="to-origin-row">
-              <div className="to-origin-label">SHIPPED FROM</div>
-              <div className="to-origin-val">{originName} · {originCity}</div>
-            </div>
-          </div>
 
           <div className="to-help-card">
             <span>📞</span>

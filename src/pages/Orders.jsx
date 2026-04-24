@@ -182,153 +182,107 @@ export default function Orders() {
         <p className="empty-msg">No Orders Yet 💛</p>
       ) : (
         <div className="orders-grid">
-          {orders.map((o) => (
-            <div className="order-card" key={o._id}>
-              <div className="order-head">
-                <div>
-                  <h2>Order #{o.orderId || "DZ-" + String(o._id).slice(-6).toUpperCase()}</h2>
-                </div>
-                <span className="order-status">{o.status || "Placed"}</span>
-              </div>
+          {orders.map((o) => {
+            const firstItem = (o.items || [])[0];
+            const orderNum = o.orderNumber || o.orderId || "DZ-" + String(o._id).slice(-6).toUpperCase();
+            const orderDate = o.createdAt ? new Date(o.createdAt).toLocaleDateString("en-IN", { day: 'numeric', month: 'short', year: 'numeric' }) : "Recently";
+            const total = o.totalPrice || o.totalAmount || 0;
+            const statusColor = {
+              "Delivered": "#4caf50",
+              "Cancelled": "#f44336",
+              "Shipped": "#2196f3",
+              "Out for Delivery": "#ff9800",
+              "Processing": "#d4af37",
+              "Packed": "#9c27b0",
+            }[o.status] || "#d4af37";
 
-              <p className="order-date">
-                <b>Date:</b> {o.createdAt ? new Date(o.createdAt).toLocaleDateString("en-IN", { day: 'numeric', month: 'short', year: 'numeric' }) : "Recently Placed"}
-              </p>
-              <p>
-                <b>Total:</b> ₹{o.totalPrice || o.totalAmount || o.total || 0}
-              </p>
-              <p>
-                <b>Payment:</b> {o.paymentMethod || "N/A"}
-              </p>
+            return (
+              <div className="order-row" key={o._id}>
+                {/* ── MAIN BAR ── */}
+                <div className="order-bar">
+                  {/* Product thumbnail */}
+                  <img
+                    src={firstItem?.image || "https://via.placeholder.com/50"}
+                    alt={firstItem?.name || "Product"}
+                    className="order-bar-img"
+                  />
 
-              {/* Return Refund Status */}
-              <p>
-                <b>Return Status:</b>{" "}
-                <span style={{ color: "#d4af37" }}>
-                  {o.returnStatus || "Not Requested"}
-                </span>
-              </p>
-
-              <p>
-                <b>Refund Status:</b>{" "}
-                <span style={{ color: "#d4af37" }}>
-                  {o.refundStatus || "Not Requested"}
-                </span>
-              </p>
-
-
-
-              {/* Progress Bar */}
-              <div className="progress-bar-container">
-                {[
-                  "Placed",
-                  "Packed",
-                  "Shipped",
-                  "Out for Delivery",
-                  "Delivered",
-                ].map((step, index) => (
-                  <div
-                    key={step}
-                    className={`progress-step ${index < getProgressStep(o.status) ? "active" : ""}`}
-                  >
-                    {step}
+                  {/* Order number + date */}
+                  <div className="order-bar-info">
+                    <span className="order-bar-num">#{orderNum}</span>
+                    <span className="order-bar-date">{orderDate}</span>
                   </div>
-                ))}
-              </div>
 
-              {/* Track Order Button */}
-              {o.status !== "Cancelled" && (
-                <button
-                  className="track-order-btn"
-                  onClick={() => navigate(`/track-order/${o.orderId || o._id}`)}
-                >
-                  📍 Track Order
-                </button>
-              )}
-
-              {/* Cancel only before Delivered */}
-              {o.status !== "Delivered" && o.status !== "Cancelled" && (
-                <button
-                  className="cancel-btn"
-                  onClick={() => cancelOrder(o._id)}
-                >
-                  Cancel Order
-                </button>
-              )}
-
-              {/* Return / Refund after Delivered */}
-              {o.status === "Delivered" && (
-                <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginTop: "12px" }}>
-                  {isReturnAllowed(o) ? (
-                    <div style={{ display: "flex", gap: "10px" }}>
-                      <button
-                        className="cancel-btn"
-                        style={{ background: "#444" }}
-                        onClick={() => openReturnModal(o)}
-                        disabled={o.returnStatus === "Return Requested"}
-                      >
-                        {o.returnStatus === "Return Requested"
-                          ? "Return Requested ✅"
-                          : "Request Return / Exchange"}
-                      </button>
-
-                      <button
-                        className="cancel-btn"
-                        style={{ background: "#d4af37", color: "#111" }}
-                        onClick={() => requestRefund(o._id)}
-                        disabled={o.refundStatus === "Refund Requested"}
-                      >
-                        {o.refundStatus === "Refund Requested"
-                          ? "Refund Requested ✅"
-                          : "Request Refund"}
-                      </button>
-                    </div>
-                  ) : (
-                    <p className="return-expired">
-                      ⚠️ Return/Exchange window closed (48h expired)
-                    </p>
-                  )}
-                </div>
-              )}
-
-              {/* Items */}
-              <div className="order-items">
-                {(o.items || []).map((item, idx) => (
-                  <div
-                    key={`${item.id || idx}-${item.selectedSize}`}
-                    className="order-item"
-                  >
-                    <img
-                      src={item.image || "https://via.placeholder.com/75"}
-                      alt={item.name || "Item"}
-                    />
-                    <div style={{ flex: 1 }}>
-                      <p className="order-item-name">
-                        {item.name || "Unnamed Item"}
-                      </p>
-                      <p style={{ fontSize: '0.85rem', opacity: 0.7 }}>Size: {item.selectedSize || "N/A"} | Qty: {item.qty || 1}</p>
-                      <p className="order-item-price">
-                        ₹{(item.price || 0) * (item.qty || 1)}
-                      </p>
-                    </div>
-                    {o.status === "Delivered" && (
-                      <button 
-                        className="track-order-btn" 
-                        style={{ width: 'auto', padding: '6px 12px', fontSize: '0.8rem', margin: 0 }}
-                        onClick={() => openReviewModal(o, item)}
-                      >
-                        ⭐ Review
-                      </button>
-                    )}
+                  {/* Items count */}
+                  <div className="order-bar-items">
+                    {(o.items || []).length} item{(o.items || []).length > 1 ? "s" : ""}
                   </div>
-                ))}
-              </div>
 
-              <div className="order-footer-note">
-                ✨ Thank you for shopping with DEZA
+                  {/* Total */}
+                  <div className="order-bar-total">₹{total.toLocaleString()}</div>
+
+                  {/* Payment */}
+                  <div className="order-bar-pay">{o.paymentMethod || "N/A"}</div>
+
+                  {/* Status & Actions section (Stuck to right) */}
+                  <div className="order-right-section">
+                    <div className="order-bar-status" style={{ color: statusColor, borderColor: statusColor }}>
+                      {o.status || "Placed"}
+                    </div>
+
+                    <div className="order-bar-actions">
+                      {o.status !== "Cancelled" && (
+                        <button
+                          className="obar-btn obar-track"
+                          onClick={() => navigate(`/track-order/${o.orderId || o._id}`)}
+                        >
+                          📍 Track
+                        </button>
+                      )}
+                      {o.status !== "Delivered" && o.status !== "Cancelled" && (
+                        <button
+                          className="obar-btn obar-cancel"
+                          onClick={() => cancelOrder(o._id)}
+                        >
+                          ✕ Cancel
+                        </button>
+                      )}
+                      {o.status === "Delivered" && isReturnAllowed(o) && !o.returnStatus?.includes("Requested") && (
+                        <button
+                          className="obar-btn obar-return"
+                          onClick={() => openReturnModal(o)}
+                        >
+                          ↩ Return
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* ── EXPANDABLE ITEMS ROW ── */}
+                <div className="order-items-bar">
+                  {(o.items || []).map((item, idx) => (
+                    <div key={`${item.id || idx}`} className="oitem-bar">
+                      <img src={item.image || "https://via.placeholder.com/40"} alt={item.name} className="oitem-bar-img" />
+                      <div className="oitem-bar-info">
+                        <span className="oitem-bar-name">{item.name || "Item"}</span>
+                        <span className="oitem-bar-meta">Size: {item.selectedSize || "N/A"} · Qty: {item.qty || 1} · ₹{(item.price || 0) * (item.qty || 1)}</span>
+                      </div>
+                      {o.status === "Delivered" && (
+                        <button
+                          className="obar-btn obar-track"
+                          style={{ fontSize: '0.72rem', padding: '4px 10px' }}
+                          onClick={() => openReviewModal(o, item)}
+                        >
+                          ⭐ Review
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
