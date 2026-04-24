@@ -4,6 +4,7 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import ScrollToTop from "./components/ScrollToTop";
+import MobileBottomNav from "./components/MobileBottomNav";
 
 // ✅ LAZY LOADED PAGES FOR FASTER INITIAL LOAD TIME
 const Home = lazy(() => import("./pages/Home"));
@@ -135,6 +136,7 @@ export default function App() {
           </Suspense>
 
           <Footer />
+          <MobileBottomNav />
         </Router>
       </ShopProvider>
     </AuthProvider>

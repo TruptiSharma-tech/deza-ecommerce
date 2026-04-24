@@ -141,6 +141,9 @@
 }
 /* RESPONSIVE BASE */
 @media (max-width: 768px) {
+  body {
+    padding-bottom: 75px; /* Space for MobileBottomNav */
+  }
   .home {
     padding: 20px 15px;
   }
