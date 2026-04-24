@@ -60,6 +60,7 @@ export default function Admin() {
   const dashboardRef = useRef();
 
   const [activeTab, setActiveTab] = useState("dashboard");
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   // Products & Reviews
   const [products, setProducts] = useState([]);
@@ -912,108 +913,139 @@ export default function Admin() {
   };
 
   return (
-    <div className="admin-page">
+    <div className={`admin-page ${isSidebarOpen ? "sidebar-open" : ""}`}>
+      {/* MOBILE HEADER */}
+      <div className="admin-mobile-header">
+        <button className="menu-toggle" onClick={() => setIsSidebarOpen(!isSidebarOpen)}>
+          {isSidebarOpen ? "✕" : "☰"}
+        </button>
+        <h2 className="mobile-logo">DEZA ADMIN</h2>
+        <div className="header-actions">
+          <button className="notification-btn-mobile">🔔</button>
+        </div>
+      </div>
+
+      {/* OVERLAY FOR MOBILE */}
+      {isSidebarOpen && <div className="admin-sidebar-overlay" onClick={() => setIsSidebarOpen(false)}></div>}
+
       {/* SIDEBAR */}
-      <div className="admin-sidebar">
-        <h2 className="admin-logo">DEZA Admin</h2>
+      <div className={`admin-sidebar ${isSidebarOpen ? "open" : ""}`}>
+        <div className="sidebar-header-desktop">
+          <h2 className="admin-logo">DEZA Admin</h2>
+        </div>
 
-        <button
-          className={activeTab === "dashboard" ? "active" : ""}
-          onClick={() => setActiveTab("dashboard")}
-        >
-          📊 Dashboard
-        </button>
+        <div className="sidebar-menu-scroll">
+          <SidebarBtn
+            icon="📊"
+            label="Dashboard"
+            active={activeTab === "dashboard"}
+            onClick={() => { setActiveTab("dashboard"); setIsSidebarOpen(false); }}
+          />
 
-        <button
-          className={activeTab === "add" ? "active" : ""}
-          onClick={() => {
-            setActiveTab("add");
-            setEditingProduct(null);
-            setTitle("");
-            setStock("");
-            setCategoriesSelected([]);
-            setTypesSelected([]);
-            setFragrance("");
-            setDescription("");
-            setImages([]);
-          }}
-        >
-          ➕ Add Product
-        </button>
+          <SidebarBtn
+            icon="➕"
+            label="Add Product"
+            active={activeTab === "add"}
+            onClick={() => {
+              setActiveTab("add");
+              setEditingProduct(null);
+              setTitle("");
+              setStock("");
+              setCategoriesSelected([]);
+              setTypesSelected([]);
+              setFragrance("");
+              setDescription("");
+              setImages([]);
+              setIsSidebarOpen(false);
+            }}
+          />
 
-        <button
-          className={activeTab === "list" ? "active" : ""}
-          onClick={() => setActiveTab("list")}
-        >
-          🛍 Product List
-        </button>
+          <SidebarBtn
+            icon="🛍"
+            label="Product List"
+            active={activeTab === "list"}
+            onClick={() => { setActiveTab("list"); setIsSidebarOpen(false); }}
+          />
 
-        <button
-          className={activeTab === "orders" ? "active" : ""}
-          onClick={() => setActiveTab("orders")}
-        >
-          📦 Orders
-        </button>
+          <SidebarBtn
+            icon="📦"
+            label="Orders"
+            active={activeTab === "orders"}
+            onClick={() => { setActiveTab("orders"); setIsSidebarOpen(false); }}
+          />
 
-        <button
-          className={activeTab === "support" ? "active" : ""}
-          onClick={() => setActiveTab("support")}
-        >
-          💬 Support
-        </button>
+          <SidebarBtn
+            icon="💬"
+            label="Support"
+            active={activeTab === "support"}
+            onClick={() => { setActiveTab("support"); setIsSidebarOpen(false); }}
+          />
 
-        <button
-          className={activeTab === "users" ? "active" : ""}
-          onClick={() => setActiveTab("users")}
-        >
-          👥 Users
-        </button>
+          <SidebarBtn
+            icon="👥"
+            label="Users"
+            active={activeTab === "users"}
+            onClick={() => { setActiveTab("users"); setIsSidebarOpen(false); }}
+          />
 
-        <button
-          className={activeTab === "reviews" ? "active" : ""}
-          onClick={() => setActiveTab("reviews")}
-        >
-          ⭐ Reviews
-        </button>
+          <SidebarBtn
+            icon="⭐"
+            label="Reviews"
+            active={activeTab === "reviews"}
+            onClick={() => { setActiveTab("reviews"); setIsSidebarOpen(false); }}
+          />
 
-        <button
-          className={activeTab === "audit" ? "active" : ""}
-          onClick={() => setActiveTab("audit")}
-        >
-          📜 Audit Logs
-        </button>
+          <SidebarBtn
+            icon="📜"
+            label="Audit Logs"
+            active={activeTab === "audit"}
+            onClick={() => { setActiveTab("audit"); setIsSidebarOpen(false); }}
+          />
 
-        <button
-          className={activeTab === "categories" ? "active" : ""}
-          onClick={() => setActiveTab("categories")}
-        >
-          🏷️ Categories
-        </button>
+          <SidebarBtn
+            icon="🏷️"
+            label="Categories"
+            active={activeTab === "categories"}
+            onClick={() => { setActiveTab("categories"); setIsSidebarOpen(false); }}
+          />
 
-        <button
-          className={activeTab === "brands" ? "active" : ""}
-          onClick={() => setActiveTab("brands")}
-        >
-          ✨ Brands
-        </button>
+          <SidebarBtn
+            icon="✨"
+            label="Brands"
+            active={activeTab === "brands"}
+            onClick={() => { setActiveTab("brands"); setIsSidebarOpen(false); }}
+          />
 
-        <button
-          className={activeTab === "subscribers" ? "active" : ""}
-          onClick={() => setActiveTab("subscribers")}
-        >
-          📧 Subscribers
-        </button>
+          <SidebarBtn
+            icon="📧"
+            label="Subscribers"
+            active={activeTab === "subscribers"}
+            onClick={() => { setActiveTab("subscribers"); setIsSidebarOpen(false); }}
+          />
 
-        <button
-          className={activeTab === "hero" ? "active" : ""}
-          onClick={() => setActiveTab("hero")}
-        >
-          🏠 Hero Section
-        </button>
+          <SidebarBtn
+            icon="🎟️"
+            label="Coupons"
+            active={activeTab === "coupons"}
+            onClick={() => { setActiveTab("coupons"); setIsSidebarOpen(false); }}
+          />
 
-        <button className="logout-btn" onClick={handleLogout}>
-          🚪 Logout
-        </button>
+          <SidebarBtn
+            icon="🏠"
+            label="Hero Settings"
+            active={activeTab === "hero"}
+            onClick={() => { setActiveTab("hero"); setIsSidebarOpen(false); }}
+          />
+
+          <div className="sidebar-divider"></div>
+
+          <SidebarBtn
+            icon="👋"
+            label="Logout"
+            className="logout-btn"
+            onClick={handleLogout}
+          />
+        </div>
       </div>
 
       {/* CONTENT */}
@@ -2414,5 +2446,14 @@ export default function Admin() {
         )}
       </div>
     </div>
+  );
+}
+
+function SidebarBtn({ icon, label, active, onClick, className = "" }) {
+  return (
+    <button className={`sidebar-btn ${active ? "active" : ""} ${className}`} onClick={onClick}>
+      <span className="btn-icon">{icon}</span>
+      <span className="btn-label">{label}</span>
+    </button>
   );
 }

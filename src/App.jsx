@@ -1,10 +1,16 @@
 import React, { Suspense, lazy } from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { Routes, Route, useLocation } from "react-router-dom";
+import { AnimatePresence } from "framer-motion";
 
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import ScrollToTop from "./components/ScrollToTop";
 import MobileBottomNav from "./components/MobileBottomNav";
+import AccountSidebar from "./components/AccountSidebar";
+import ScrollProgress from "./components/ScrollProgress";
+import PageWrapper from "./components/PageWrapper";
+import AdminProtectedRoute from "./components/AdminProtectedRoute";
+import { Toaster } from "react-hot-toast";
 
 // ✅ LAZY LOADED PAGES FOR FASTER INITIAL LOAD TIME
 const Home = lazy(() => import("./pages/Home"));
@@ -34,8 +40,6 @@ const ReturnRefund = lazy(() => import("./pages/ReturnRefund"));
 const AdminLogin = lazy(() => import("./pages/AdminLogin"));
 const Admin = lazy(() => import("./pages/Admin"));
 const NotFound = lazy(() => import("./pages/NotFound"));
-import AdminProtectedRoute from "./components/AdminProtectedRoute";
-import { Toaster } from "react-hot-toast";
 
 // PRELOADER FOR SUSPENSE
 const LoadingScreen = () => (
@@ -44,101 +48,98 @@ const LoadingScreen = () => (
   </div>
 );
 
-import { AuthProvider } from "./context/AuthContext";
-import { ShopProvider } from "./context/ShopContext";
-import ScrollProgress from "./components/ScrollProgress";
-
 export default function App() {
+  const location = useLocation();
+
   return (
-    <AuthProvider>
-      <ShopProvider>
-        <Router>
-          <ScrollProgress />
-          <Toaster
-            position="top-center"
-            toastOptions={{
-              style: {
-                background: '#1a1a1a',
-                color: '#fff',
-                border: '1px solid rgba(212, 175, 55, 0.3)',
-                fontFamily: 'Poppins, sans-serif',
-                fontSize: '14px',
-                borderRadius: '12px',
-                padding: '12px 24px',
-              },
-              success: {
-                iconTheme: {
-                  primary: '#D4AF37',
-                  secondary: '#1a1a1a',
-                },
-              },
-              error: {
-                iconTheme: {
-                  primary: '#ff4b4b',
-                  secondary: '#1a1a1a',
-                },
-              },
-            }}
-          />
-          <ScrollToTop />
-          <Navbar />
+    <>
+      <ScrollProgress />
+      <Toaster
+        position="top-center"
+        toastOptions={{
+          style: {
+            background: '#1a1a1a',
+            color: '#fff',
+            border: '1px solid rgba(212, 175, 55, 0.3)',
+            fontFamily: 'Poppins, sans-serif',
+            fontSize: '14px',
+            borderRadius: '12px',
+            padding: '12px 24px',
+          },
+          success: {
+            iconTheme: {
+              primary: '#D4AF37',
+              secondary: '#1a1a1a',
+            },
+          },
+          error: {
+            iconTheme: {
+              primary: '#ff4b4b',
+              secondary: '#1a1a1a',
+            },
+          },
+        }}
+      />
+      <ScrollToTop />
+      <Navbar />
 
-          <Suspense fallback={<LoadingScreen />}>
-            <Routes>
-              {/* MAIN PAGES */}
-              <Route path="/" element={<Home />} />
-              <Route path="/shop" element={<Shop />} />
-              <Route path="/about" element={<About />} />
-              <Route path="/contact" element={<Contact />} />
+      <Suspense fallback={<LoadingScreen />}>
+        <AnimatePresence mode="wait">
+          <Routes location={location} key={location.pathname}>
+            {/* MAIN PAGES */}
+            <Route path="/" element={<PageWrapper><Home /></PageWrapper>} />
+            <Route path="/shop" element={<PageWrapper><Shop /></PageWrapper>} />
+            <Route path="/about" element={<PageWrapper><About /></PageWrapper>} />
+            <Route path="/contact" element={<PageWrapper><Contact /></PageWrapper>} />
 
-              {/* PRODUCT */}
-              <Route path="/product/:id" element={<ProductDetails />} />
+            {/* PRODUCT */}
+            <Route path="/product/:id" element={<PageWrapper><ProductDetails /></PageWrapper>} />
 
-              {/* CART & WISHLIST */}
-              <Route path="/cart" element={<Cart />} />
-              <Route path="/wishlist" element={<Wishlist />} />
+            {/* CART & WISHLIST */}
+            <Route path="/cart" element={<PageWrapper><Cart /></PageWrapper>} />
+            <Route path="/wishlist" element={<PageWrapper><Wishlist /></PageWrapper>} />
 
-              {/* AUTH */}
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
-              <Route path="/forgot-password" element={<ForgotPassword />} />
-              <Route path="/reset-password" element={<ResetPassword />} />
+            {/* AUTH */}
+            <Route path="/login" element={<PageWrapper><Login /></PageWrapper>} />
+            <Route path="/register" element={<PageWrapper><Register /></PageWrapper>} />
+            <Route path="/forgot-password" element={<PageWrapper><ForgotPassword /></PageWrapper>} />
+            <Route path="/reset-password" element={<PageWrapper><ResetPassword /></PageWrapper>} />
 
-              {/* CHECKOUT FLOW */}
-              <Route path="/checkout" element={<Checkout />} />
-              <Route path="/payment" element={<PaymentGateway />} />
-              <Route path="/checkout/success" element={<OrderSuccess />} />
+            {/* CHECKOUT FLOW */}
+            <Route path="/checkout" element={<PageWrapper><Checkout /></PageWrapper>} />
+            <Route path="/payment" element={<PageWrapper><PaymentGateway /></PageWrapper>} />
+            <Route path="/checkout/success" element={<PageWrapper><OrderSuccess /></PageWrapper>} />
 
-              {/* ORDERS */}
-              <Route path="/orders" element={<Orders />} />
-              <Route path="/track-order/:orderId" element={<OrderTracking />} />
-              <Route path="/my-tickets" element={<MyTickets />} />
+            {/* ORDERS */}
+            <Route path="/orders" element={<PageWrapper><Orders /></PageWrapper>} />
+            <Route path="/track-order/:orderId" element={<PageWrapper><OrderTracking /></PageWrapper>} />
+            <Route path="/my-tickets" element={<PageWrapper><MyTickets /></PageWrapper>} />
 
-              {/* POLICIES */}
-              <Route path="/terms" element={<Terms />} />
-              <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-              <Route path="/return-refund" element={<ReturnRefund />} />
+            {/* POLICIES */}
+            <Route path="/terms" element={<PageWrapper><Terms /></PageWrapper>} />
+            <Route path="/privacy-policy" element={<PageWrapper><PrivacyPolicy /></PageWrapper>} />
+            <Route path="/return-refund" element={<PageWrapper><ReturnRefund /></PageWrapper>} />
 
-              {/* ADMIN */}
-              <Route path="/admin-login" element={<AdminLogin />} />
-              <Route
-                path="/admin"
-                element={
-                  <AdminProtectedRoute>
-                    <Admin />
-                  </AdminProtectedRoute>
-                }
-              />
+            {/* ADMIN */}
+            <Route path="/admin-login" element={<PageWrapper><AdminLogin /></PageWrapper>} />
+            <Route
+              path="/admin"
+              element={
+                <AdminProtectedRoute>
+                  <PageWrapper><Admin /></PageWrapper>
+                </AdminProtectedRoute>
+              }
+            />
 
-              {/* 404 CATCH-ALL */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </Suspense>
+            {/* 404 CATCH-ALL */}
+            <Route path="*" element={<PageWrapper><NotFound /></PageWrapper>} />
+          </Routes>
+        </AnimatePresence>
+      </Suspense>
 
-          <Footer />
-          <MobileBottomNav />
-        </Router>
-      </ShopProvider>
-    </AuthProvider>
+      <Footer />
+      <MobileBottomNav />
+      <AccountSidebar />
+    </>
   );
 }

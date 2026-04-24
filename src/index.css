@@ -142,20 +142,83 @@
 /* RESPONSIVE BASE */
 @media (max-width: 768px) {
   body {
-    padding-bottom: 75px; /* Space for MobileBottomNav */
+    padding-bottom: 80px; /* Space for MobileBottomNav */
   }
+  
   .home {
     padding: 20px 15px;
   }
+  
   .hero {
-    flex-direction: column;
+    flex-direction: column-reverse; /* Image first or text first? Usually text first for SEO but image first looks better on luxury mobile */
     text-align: center;
-    padding: 30px 0;
+    padding: 20px 0 40px;
+    gap: 30px;
   }
+  
   .hero-content h1 {
-    font-size: 36px;
+    font-size: 32px;
+    line-height: 1.2;
   }
+  
+  .hero-content p {
+    font-size: 15px;
+    margin-bottom: 25px;
+  }
+  
   .hero-buttons {
-    justify-content: center;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+  }
+  
+  .btn-primary, .btn-secondary {
+    width: 100%;
+    padding: 14px;
+    font-size: 15px;
+  }
+
+  .hero-image img {
+    width: 100%;
+    max-width: 350px;
+    border-radius: 30px;
+  }
+
+  .featured h2 {
+    font-size: 28px;
+    margin-bottom: 30px;
+  }
+
+  .product-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+  }
+
+  .product-card {
+    padding: 15px;
+    border-radius: 20px;
+  }
+
+  .product-card h3 {
+    font-size: 15px;
+    margin-bottom: 5px;
+  }
+
+  .product-card p {
+    font-size: 12px;
+    margin-bottom: 12px;
+  }
+
+  .product-card button {
+    width: 100%;
+    padding: 10px;
+    font-size: 12px;
+    border-radius: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .product-grid {
+    grid-template-columns: 1fr;
   }
 }

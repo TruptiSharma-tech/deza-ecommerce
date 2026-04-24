@@ -14,11 +14,8 @@ export default function Cart() {
   const userEmail = currentUser?.email;
 
   useEffect(() => {
-    if (!currentUser) {
-      setCart([]);
-      return;
-    }
-    const storedCart = getCart(userEmail);
+    // Load cart regardless of login status (guest cart supported)
+    const storedCart = getCart(userEmail || null);
     setCart(storedCart);
   }, [userEmail]);
 
@@ -66,14 +63,7 @@ export default function Cart() {
     <div className="cart-page">
       <h1 className="cart-title">🛒 Shopping Bag</h1>
 
-      {!currentUser ? (
-        <div className="cart-empty">
-          <p className="empty-msg">Please login to view your cart 💛</p>
-          <button className="back-shop-btn" onClick={() => navigate("/login")}>
-            Login
-          </button>
-        </div>
-      ) : cart.length === 0 ? (
+      {cart.length === 0 ? (
         <div className="cart-empty">
           <p className="empty-msg">Your cart is empty 💛</p>
           <button className="back-shop-btn" onClick={() => navigate("/shop")}>
