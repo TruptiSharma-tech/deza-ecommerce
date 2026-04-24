@@ -12,22 +12,7 @@ export default function Wishlist() {
     updateWishlist(updated);
   };
 
-  if (!currentUser) {
-    return (
-      <div className="wishlist-page">
-        <h1 className="wishlist-title">❤️ My Wishlist</h1>
-        <p className="empty-wishlist">Please login to view your wishlist 💛</p>
-        <div style={{ textAlign: 'center', marginTop: '20px' }}>
-          <button
-            style={{ padding: '12px 30px', background: '#d4af37', color: '#111', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}
-            onClick={() => navigate("/login")}
-          >
-            Login
-          </button>
-        </div>
-      </div>
-    );
-  }
+  // Allow guest wishlist
 
   return (
     <div className="wishlist-page">

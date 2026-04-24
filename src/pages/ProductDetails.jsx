@@ -98,8 +98,7 @@ export default function ProductDetails() {
   };
 
   const handleAddToCart = () => {
-    if (!checkLogin()) return;
-    const email = currentUser.email;
+    const email = currentUser?.email || "guest";
     const cartKey = `deza_cart_${email}`;
     const cart = Array.isArray(JSON.parse(localStorage.getItem(cartKey))) 
       ? JSON.parse(localStorage.getItem(cartKey)) 
@@ -123,14 +122,12 @@ export default function ProductDetails() {
   };
 
   const handleBuyNow = () => {
-    if (!checkLogin()) return;
     handleAddToCart();
     navigate("/cart");
   };
 
   const handleWishlist = () => {
-    if (!checkLogin()) return;
-    const email = currentUser.email;
+    const email = currentUser?.email || "guest";
     const wishKey = `deza_wishlist_${email}`;
     const wishlist = Array.isArray(JSON.parse(localStorage.getItem(wishKey))) 
       ? JSON.parse(localStorage.getItem(wishKey)) 
