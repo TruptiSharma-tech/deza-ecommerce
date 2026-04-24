@@ -688,44 +688,125 @@
 
 @media (max-width: 600px) {
   .pd-page {
-    padding: 20px 4%;
+    padding: 20px 10px;
   }
 
-  .pd-actions {
+  .pd-card {
+    padding: 20px 15px;
+    border-radius: 25px;
+    gap: 25px;
+  }
+
+  .pd-main-name {
+    font-size: 24px;
+  }
+
+  .pd-price {
+    font-size: 24px;
+  }
+
+  /* Compact Size & Qty */
+  .pd-size-qty-row {
     flex-direction: column;
-    gap: 12px;
+    gap: 15px;
+    background: rgba(255,255,255,0.02);
+    padding: 15px;
+    border-radius: 15px;
+    border: 1px solid rgba(255,255,255,0.05);
   }
 
-  .cart-btn, .buy-btn, .wish-btn, .whatsapp-btn {
+  .pd-sizes h4, .pd-qty h4 {
+    margin-bottom: 8px;
+    font-size: 11px;
+  }
+
+  .size-buttons button {
+    padding: 8px 15px;
+    font-size: 13px;
+  }
+
+  .qty-box {
+    gap: 15px;
+    padding: 4px 12px;
+  }
+
+  /* Redesigned Premium Buttons */
+  .pd-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 15px;
+  }
+
+  .cart-btn, .buy-btn {
     width: 100%;
-    max-width: none;
-    min-width: 0;
+    height: 54px;
+    font-size: 14px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+  }
+
+  .cart-btn {
+    background: var(--gold);
+    color: #000;
+    box-shadow: 0 4px 15px rgba(212, 175, 55, 0.2);
+  }
+
+  .buy-btn {
+    background: #fff;
+    color: #000;
+    border: 1px solid #ddd;
   }
 
   .wish-whatsapp {
-    flex-direction: column;
-    gap: 12px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    width: 100%;
   }
 
-  .pd-size-qty-row {
-    flex-direction: column;
-    gap: 20px;
+  .wish-btn, .whatsapp-btn {
+    width: 100%;
+    height: 48px;
+    min-width: 0;
+    border-radius: 14px;
+    font-size: 11px;
+    letter-spacing: 0.5px;
   }
 
-  .main-image {
-    border-radius: 16px;
+  .wish-btn {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+
+  .whatsapp-btn {
+    background: rgba(37, 211, 102, 0.1);
+    border: 1px solid rgba(37, 211, 102, 0.3);
+    color: #25d366;
   }
 
   .pd-delivery-checker-compact {
-    padding: 20px;
+    padding: 15px;
+    border-radius: 18px;
   }
 
   .pincode-wrapper-compact {
-    flex-direction: column;
+    flex-direction: row;
+    gap: 8px;
+  }
+
+  .pincode-wrapper-compact input {
+    padding: 10px 15px;
+    font-size: 14px;
   }
 
   .pincode-wrapper-compact button {
-    height: 50px;
+    padding: 0 15px;
+    font-size: 12px;
+    height: auto;
   }
 }
 

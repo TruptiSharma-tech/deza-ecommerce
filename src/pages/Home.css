@@ -932,8 +932,8 @@
 
 @media (max-width: 600px) {
   .hero-banner {
-    height: 55vh;
-    min-height: 320px;
+    height: 45vh;
+    min-height: 280px;
   }
 
   .hero-overlay {

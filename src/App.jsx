@@ -38,8 +38,8 @@ import { Toaster } from "react-hot-toast";
 
 // PRELOADER FOR SUSPENSE
 const LoadingScreen = () => (
-  <div style={{ height: "100vh", display: "flex", justifyContent: "center", alignItems: "center", background: "#f9f9f9" }}>
-    <h2 style={{ color: "#d4af37", fontFamily: "Times New Roman" }}>DEZA... Loading</h2>
+  <div style={{ height: "100vh", display: "flex", justifyContent: "center", alignItems: "center", background: "#050505" }}>
+    <h2 style={{ color: "#d4af37", fontFamily: "Playfair Display, serif", letterSpacing: "4px" }}>DEZA</h2>
   </div>
 );
 
