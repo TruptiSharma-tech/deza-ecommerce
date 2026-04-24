@@ -17,7 +17,10 @@ export const ShopProvider = ({ children }) => {
     
     // Load user-specific data
     const cart = getCart(email);
-    const storedWishlist = JSON.parse(localStorage.getItem(`deza_wishlist_${email}`)) || [];
+    
+    // Fix: Use consistent guest key
+    const wishKey = `deza_wishlist_${email || "guest"}`;
+    const storedWishlist = JSON.parse(localStorage.getItem(wishKey)) || [];
     
     setCurrentUser(user);
     setWishlist(storedWishlist);
@@ -88,7 +91,8 @@ export const ShopProvider = ({ children }) => {
 
   const updateWishlist = async (newWishlist) => {
     const email = getUserEmail();
-    localStorage.setItem(`deza_wishlist_${email}`, JSON.stringify(newWishlist));
+    const wishKey = `deza_wishlist_${email || "guest"}`;
+    localStorage.setItem(wishKey, JSON.stringify(newWishlist));
     syncState();
 
     if (email && localStorage.getItem("deza_token")) {

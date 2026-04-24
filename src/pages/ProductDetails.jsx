@@ -6,6 +6,7 @@ import { FaHeart, FaRegHeart, FaShoppingCart, FaStar } from "react-icons/fa";
 import { FaWhatsapp } from "react-icons/fa";
 import { apiGetProduct, apiGetProductReviews, apiSubmitReview, apiCreateOrder, apiGetProfile } from "../utils/api";
 import { useShop } from "../context/ShopContext";
+import { getCart } from "../utils/userStorage";
 
 export default function ProductDetails() {
   const { id } = useParams();
@@ -98,11 +99,8 @@ export default function ProductDetails() {
   };
 
   const handleAddToCart = () => {
-    const email = currentUser?.email || "guest";
-    const cartKey = `deza_cart_${email}`;
-    const cart = Array.isArray(JSON.parse(localStorage.getItem(cartKey))) 
-      ? JSON.parse(localStorage.getItem(cartKey)) 
-      : [];
+    const email = currentUser?.email || null;
+    const cart = getCart(email);
       
     const existingIndex = cart.findIndex((x) => String(x._id) === String(product._id) && x.selectedSize === selectedSize);
     if (existingIndex !== -1) {
@@ -127,20 +125,14 @@ export default function ProductDetails() {
   };
 
   const handleWishlist = () => {
-    const email = currentUser?.email || "guest";
-    const wishKey = `deza_wishlist_${email}`;
-    const wishlist = Array.isArray(JSON.parse(localStorage.getItem(wishKey))) 
-      ? JSON.parse(localStorage.getItem(wishKey)) 
-      : [];
-
-    const exists = wishlist.find((x) => String(x._id) === String(product._id));
+    const exists = contextWishlist.find((x) => String(x._id) === String(product._id));
     if (exists) {
-      const updated = wishlist.filter((x) => String(x._id) !== String(product._id));
+      const updated = contextWishlist.filter((x) => String(x._id) !== String(product._id));
       updateWishlist(updated);
       toast.success("Removed from Wishlist! 💔");
       return;
     }
-    const updated = [...wishlist, product];
+    const updated = [...contextWishlist, product];
     updateWishlist(updated);
     toast.success("Added to Wishlist! ❤️");
   };
