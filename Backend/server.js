@@ -40,17 +40,33 @@ app.use(compression());
 app.use(globalLimiter);
 
 // CORS — locked down to configured origin in production
-const allowedOrigins = process.env.ALLOWED_ORIGIN
-    ? process.env.ALLOWED_ORIGIN.split(",").map((o) => o.trim())
-    : ["http://localhost:5173", "http://localhost:4173", "http://127.0.0.1:5173", "http://127.0.0.1:4173"];
+const allowedOrigins = [
+    "http://localhost:5173", 
+    "http://localhost:4173", 
+    "http://127.0.0.1:5173", 
+    "http://127.0.0.1:4173",
+    "https://deza-ecommerce.vercel.app" // Add the default Vercel URL
+];
+
+if (process.env.ALLOWED_ORIGIN) {
+    process.env.ALLOWED_ORIGIN.split(",").forEach(o => allowedOrigins.push(o.trim()));
+}
 
 app.use(
     cors({
         origin: (origin, callback) => {
             // Allow requests with no origin (eg. mobile apps, Postman)
             if (!origin) return callback(null, true);
-            if (allowedOrigins.includes(origin)) return callback(null, true);
-            return callback(new Error(`CORS policy: origin ${origin} not allowed`));
+            
+            // Exact match or ends with .vercel.app for development ease
+            const isAllowed = allowedOrigins.includes(origin) || origin.endsWith(".vercel.app");
+            
+            if (isAllowed) {
+                return callback(null, true);
+            } else {
+                console.warn(`⚠️ Blocked by CORS: ${origin}`);
+                return callback(new Error(`CORS policy: origin ${origin} not allowed`));
+            }
         },
         credentials: true,
     })
