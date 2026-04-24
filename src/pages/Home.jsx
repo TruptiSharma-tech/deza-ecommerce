@@ -22,14 +22,23 @@ export default function Home() {
   const [featured, setFeatured] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentSlide, setCurrentSlide] = useState(0);
-  const [heroData, setHeroData] = useState({
-    banners: DEFAULT_BANNERS,
-    headline: "The Art of\nExquisite Scents",
-    subheadline: "Original & Recreational Collections by DEZA. Bold, long-lasting fragrances crafted for those who define their own luxury.",
-    ctaText: "EXPLORE COLLECTION",
-    ctaLink: "/shop",
-    bannerHeight: "75vh",
-    objectFit: "cover",
+
+  // ⚡ INSTANT INITIALIZATION FROM CACHE
+  const [heroData, setHeroData] = useState(() => {
+    try {
+      const cache = JSON.parse(localStorage.getItem("deza_api_cache") || "[]");
+      const cachedHero = cache.find(([key]) => key === "/admin/hero-settings");
+      if (cachedHero && cachedHero[1]?.data) return cachedHero[1].data;
+    } catch (e) {}
+    return {
+      banners: DEFAULT_BANNERS,
+      headline: "The Art of\nExquisite Scents",
+      subheadline: "Original & Recreational Collections by DEZA. Bold, long-lasting fragrances crafted for those who define their own luxury.",
+      ctaText: "EXPLORE COLLECTION",
+      ctaLink: "/shop",
+      bannerHeight: "75vh",
+      objectFit: "cover",
+    };
   });
 
   useEffect(() => {

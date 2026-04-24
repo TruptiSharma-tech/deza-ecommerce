@@ -320,22 +320,62 @@
 
 /* ── RESPONSIVE ──────────────────────────── */
 @media (max-width: 640px) {
+  .orders-page { padding: 40px 10px; }
+  .orders-title { font-size: 1.5rem; margin-bottom: 20px; }
+
   .order-bar {
-    flex-wrap: wrap;
-    gap: 8px;
-    padding: 10px 12px;
+    padding: 10px;
+    gap: 10px;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
   }
+
+  .order-bar-img { width: 45px; height: 45px; }
+
+  .order-bar-info { gap: 2px; }
+  .order-bar-num { font-size: 0.8rem; }
+  .order-bar-date { font-size: 0.7rem; margin-top: 0; }
 
   .order-bar-items,
   .order-bar-pay {
     display: none;
   }
 
-  .order-bar-info { flex: 1; min-width: 100px; }
-  .order-bar-total { font-size: 0.82rem; }
-  .order-bar-actions { width: 100%; justify-content: flex-end; }
+  .order-bar-total {
+    padding: 0;
+    border-left: none;
+    flex: none;
+    font-size: 0.9rem;
+    color: var(--gold-main);
+  }
 
-  .obar-btn { font-size: 0.68rem; padding: 4px 10px; }
+  .order-right-section {
+    grid-column: span 3;
+    width: 100%;
+    justify-content: space-between;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    gap: 10px;
+  }
 
-  .oitem-bar { padding: 6px 12px; }
+  .order-bar-status {
+    font-size: 0.65rem;
+    padding: 3px 10px;
+  }
+
+  .order-bar-actions {
+    gap: 6px;
+  }
+
+  .obar-btn {
+    font-size: 0.65rem;
+    padding: 4px 8px;
+  }
+
+  .oitem-bar { padding: 8px 10px; }
+  .oitem-bar-img { width: 30px; height: 30px; }
+  .oitem-bar-name { font-size: 0.75rem; }
+  .oitem-bar-meta { font-size: 0.65rem; }
 }

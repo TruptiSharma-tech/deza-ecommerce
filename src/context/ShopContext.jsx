@@ -30,6 +30,12 @@ export const ShopProvider = ({ children }) => {
   useEffect(() => {
     syncState();
 
+    // 🚀 PREFETCH ESSENTIAL DATA FOR INSTANT LOADING
+    import("../utils/api").then(({ apiGetHeroSettings, apiGetProducts }) => {
+      apiGetHeroSettings().catch(() => {});
+      apiGetProducts(false, 1, 12).catch(() => {});
+    });
+
     // Listen to storage changes (for multiple tabs) and custom events
     window.addEventListener("storage", syncState);
     window.addEventListener("cartUpdate", syncState);

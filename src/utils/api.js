@@ -15,27 +15,48 @@ const headers = (extra = {}) => ({
     ...extra,
 });
 
-// ── Simple In-Memory Cache for GET requests ────────────────────────────────
-const apiCache = new Map();
-const CACHE_EXPIRY = 5 * 60 * 1000; // 5 minutes
+// ── Simple Persistent Cache for GET requests ────────────────────────────────
+const CACHE_KEY = "deza_api_cache";
+const CACHE_EXPIRY = 30 * 60 * 1000; // 30 minutes for persistent cache
+
+const getPersistentCache = () => {
+    try {
+        const stored = localStorage.getItem(CACHE_KEY);
+        return stored ? new Map(JSON.parse(stored)) : new Map();
+    } catch (e) {
+        return new Map();
+    }
+};
+
+const savePersistentCache = (cache) => {
+    try {
+        localStorage.setItem(CACHE_KEY, JSON.stringify(Array.from(cache.entries())));
+    } catch (e) {
+        console.warn("Failed to save API cache to localStorage", e);
+    }
+};
+
+const apiCache = getPersistentCache();
 
 async function request(path, options = {}) {
     const isGet = !options.method || options.method === "GET";
-    const isSensitive = path.includes("/me") || path.includes("/sync");
+    const isSensitive = path.includes("/me") || path.includes("/sync") || path.includes("/me");
     const cacheKey = path;
 
     // Return cached data if available, not expired, and NOT sensitive
-    const isAdminPath = path.startsWith("/admin");
+    const isAdminPath = path.startsWith("/admin") && !path.includes("hero-settings"); // Allow caching hero-settings for speed
+    
     if (isGet && !isSensitive && !isAdminPath) {
         const cached = apiCache.get(cacheKey);
         if (cached && (Date.now() - cached.timestamp < CACHE_EXPIRY)) {
-            // Return cached data immediately, but trigger a background refresh (stale-while-revalidate)
-            // if it's older than 1 minute to keep it fresh without blocking the UI
-            if (Date.now() - cached.timestamp > 60 * 1000) {
-                console.log(`🔄 [API] Background refresh for: ${path}`);
+            // stale-while-revalidate: return cached, refresh in background if > 30s old
+            if (Date.now() - cached.timestamp > 30 * 1000) {
                 fetch(`${BASE_URL}${path}`, { headers: headers(), ...options })
                     .then(res => res.json())
-                    .then(data => apiCache.set(cacheKey, { data, timestamp: Date.now() }))
+                    .then(data => {
+                        apiCache.set(cacheKey, { data, timestamp: Date.now() });
+                        savePersistentCache(apiCache);
+                    })
                     .catch(() => {});
             }
             return cached.data;
@@ -56,9 +77,9 @@ async function request(path, options = {}) {
         // Cache successful GET responses
         if (isGet) {
             apiCache.set(cacheKey, { data, timestamp: Date.now() });
+            savePersistentCache(apiCache);
         } else {
             // Invalidate cache for mutations on the same path or related paths
-            // For example, if we update a product, we should clear the products list cache
             if (path.includes("/products")) apiCache.delete("/products");
             if (path.includes("/admin/hero-settings")) apiCache.delete("/admin/hero-settings");
             if (path.includes("/orders")) {
@@ -67,6 +88,7 @@ async function request(path, options = {}) {
                 });
             }
             apiCache.delete(path);
+            savePersistentCache(apiCache);
         }
 
         return data;

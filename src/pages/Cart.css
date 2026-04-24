@@ -192,61 +192,63 @@
 }
 
 @media (max-width: 600px) {
-  .cart-title {
-    font-size: 1.8rem;
-  }
+  .cart-page { padding: 40px 12px; }
+  .cart-title { font-size: 1.6rem; margin-bottom: 25px; }
   
   .cart-card {
-    display: grid;
-    grid-template-columns: 100px 1fr;
-    gap: 15px;
-    align-items: flex-start;
-    text-align: left;
-    padding: 12px;
+    display: flex;
+    flex-direction: row;
+    gap: 12px;
+    padding: 10px;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.02);
   }
 
   .cart-img-wrap img {
-    width: 80px;
-    height: 80px;
-    padding: 5px;
-  }
-
-  .cart-info h3 {
-    font-size: 1rem;
-    margin-bottom: 2px;
-  }
-
-  .qty-box {
-    margin-top: 5px;
-  }
-
-  .qty-box button {
-    width: 28px;
-    height: 28px;
-    font-size: 14px;
-  }
-  
-  .cart-right {
-    grid-column: span 2;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-top: 10px;
-    border-top: 1px solid rgba(255, 255, 255, 0.05);
-    padding-top: 10px;
-    width: 100%;
-    margin-left: 0;
-  }
-
-  .remove-btn {
-    margin-top: 0;
-    padding: 6px 12px;
-    font-size: 12px;
+    width: 75px;
+    height: 75px;
+    padding: 0;
+    object-fit: cover;
     border-radius: 8px;
   }
 
-  .item-total {
-    font-size: 1rem;
-    margin-bottom: 0;
+  .cart-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+
+  .cart-info h3 { font-size: 0.95rem; line-height: 1.2; color: #fff; }
+  .meta { font-size: 0.8rem; margin: 2px 0; }
+  .price { font-size: 0.9rem; color: var(--gold); }
+
+  .qty-box { gap: 8px; margin-top: 4px; }
+  .qty-box button { width: 24px; height: 24px; font-size: 12px; }
+  .qty-box span { font-size: 0.9rem; }
+  
+  .cart-right {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-left: 0;
+    width: auto;
+    text-align: right;
+  }
+
+  .item-total { font-size: 1rem; color: #fff; }
+  .remove-btn { 
+    padding: 4px 8px; 
+    font-size: 10px; 
+    border-radius: 6px; 
+    background: rgba(255, 77, 77, 0.1); 
+    border: 1px solid rgba(255, 77, 77, 0.3);
+    color: #ff4d4d;
+  }
+
+  .cart-summary {
+    padding: 15px;
+    border-radius: 14px;
   }
 }
