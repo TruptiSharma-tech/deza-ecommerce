@@ -51,8 +51,8 @@ export default function Home() {
     apiGetProducts()
       .then((res) => {
         const data = Array.isArray(res) ? res : (res.products || []);
-        const topRated = data.filter(p => (p.rating || 0) >= 4.5);
-        const sorted = (topRated.length >= 2 ? topRated : data)
+        const bestSellers = data.filter(p => p.isBestSeller === true);
+        const sorted = (bestSellers.length >= 2 ? bestSellers : data)
           .sort((a, b) => (b.rating || 0) - (a.rating || 0));
         setFeatured(sorted.slice(0, 4));
       })
