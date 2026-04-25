@@ -17,7 +17,7 @@ const headers = (extra = {}) => ({
 
 // ── Simple Persistent Cache for GET requests ────────────────────────────────
 const CACHE_KEY = "deza_api_cache";
-const CACHE_EXPIRY = 30 * 60 * 1000; // 30 minutes for persistent cache
+const CACHE_EXPIRY = 60 * 1000; // 1 minute for persistent cache
 
 const getPersistentCache = () => {
     try {
