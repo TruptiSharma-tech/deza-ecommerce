@@ -47,7 +47,7 @@ ChartJS.register(
   Filler,
 );
 
-const REFRESH_INTERVAL = 10000; // Real-time sync every 10 seconds to save battery & network ⚡
+const REFRESH_INTERVAL = 2000; // Real-time sync every 2 seconds for faster updates
 
 // ❌ REMOVE THESE (these were making everything black)
 // ChartJS.defaults.color = "#1A1A1A";
