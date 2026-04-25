@@ -8,7 +8,7 @@ import "./Shop.css";
 
 export default function Shop() {
   const navigate = useNavigate();
-  const { updateCart } = useShop();
+  const { updateCart, currentUser } = useShop();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -59,7 +59,6 @@ export default function Shop() {
   };
 
   const handleAddToCart = (product) => {
-    const currentUser = JSON.parse(localStorage.getItem("currentUser"));
     if (!currentUser) {
       toast.error("Please Login First to Continue!");
       navigate("/login");
@@ -67,16 +66,17 @@ export default function Shop() {
     }
 
     const email = currentUser.email;
-    const cart = Array.isArray(JSON.parse(localStorage.getItem(`deza_cart_${email}`))) 
-      ? JSON.parse(localStorage.getItem(`deza_cart_${email}`)) 
-      : [];
+    const cartKey = `deza_cart_${email}`;
+    let cart = [];
+    try {
+      cart = JSON.parse(localStorage.getItem(cartKey)) || [];
+      if (!Array.isArray(cart)) cart = [];
+    } catch (e) {
+      cart = [];
+    }
 
-    const selectedSize = product.sizePrices && product.sizePrices.length > 0
-      ? product.sizePrices[0].size
-      : "Default";
-    const price = product.sizePrices && product.sizePrices.length > 0
-      ? Number(product.sizePrices[0].price)
-      : (product.price || 0);
+    const selectedSize = product.sizePrices?.[0]?.size || "Default";
+    const price = product.sizePrices?.[0]?.price ? Number(product.sizePrices[0].price) : (product.price || 0);
 
     const existingIndex = cart.findIndex(
       (x) => String(x._id) === String(product._id) && x.selectedSize === selectedSize,
@@ -89,7 +89,7 @@ export default function Shop() {
         _id: product._id,
         name: product.title,
         price: price,
-        image: product.image || product.mainImage || (product.images && product.images[0]),
+        image: product.image || product.mainImage || product.images?.[0],
         selectedSize,
         qty: 1,
       });
@@ -99,51 +99,46 @@ export default function Shop() {
     toast.success("Added to Cart! 🛒");
   };
 
-  /* ================= FILTER ================= */
+  /* ================= FILTER & SORT (MEMOIZED) ================= */
+  const filteredProducts = React.useMemo(() => {
+    let result = products.filter((p) => {
+      const matchesSearch = p.title?.toLowerCase().includes(search.toLowerCase());
 
-  let filteredProducts = products.filter((p) => {
-    const matchesSearch = p.title?.toLowerCase().includes(search.toLowerCase());
+      const matchesCategory =
+        category === "All" ||
+        (Array.isArray(p.categories)
+          ? p.categories.some(c => c.toLowerCase() === category.toLowerCase())
+          : p.categories?.toLowerCase() === category.toLowerCase());
 
-    const matchesCategory =
-      category === "All" ||
-      (Array.isArray(p.categories)
-        ? p.categories.some(c => c.toLowerCase() === category.toLowerCase())
-        : p.categories?.toLowerCase() === category.toLowerCase());
+      const matchesType =
+        type === "All" ||
+        (Array.isArray(p.types)
+          ? p.types.some(t => t.toLowerCase() === type.toLowerCase())
+          : p.types?.toLowerCase() === type.toLowerCase());
 
-    const matchesType =
-      type === "All" ||
-      (Array.isArray(p.types)
-        ? p.types.some(t => t.toLowerCase() === type.toLowerCase())
-        : p.types?.toLowerCase() === type.toLowerCase());
+      return matchesSearch && matchesCategory && matchesType;
+    });
 
-    return matchesSearch && matchesCategory && matchesType;
-  });
+    if (sort === "priceLow") {
+      result.sort((a, b) => {
+        const pA = a.sizePrices?.length ? Math.min(...a.sizePrices.map(s => Number(s.price))) : (a.price || 0);
+        const pB = b.sizePrices?.length ? Math.min(...b.sizePrices.map(s => Number(s.price))) : (b.price || 0);
+        return pA - pB;
+      });
+    } else if (sort === "priceHigh") {
+      result.sort((a, b) => {
+        const pA = a.sizePrices?.length ? Math.min(...a.sizePrices.map(s => Number(s.price))) : (a.price || 0);
+        const pB = b.sizePrices?.length ? Math.min(...b.sizePrices.map(s => Number(s.price))) : (b.price || 0);
+        return pB - pA;
+      });
+    } else if (sort === "ratingHigh") {
+      result.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+    } else if (sort === "ratingLow") {
+      result.sort((a, b) => (a.rating || 0) - (b.rating || 0));
+    }
 
-  /* ================= SORT ================= */
-
-  if (sort === "priceLow") {
-    filteredProducts.sort(
-      (a, b) =>
-        Math.min(...(a.sizePrices || []).map((s) => Number(s.price))) -
-        Math.min(...(b.sizePrices || []).map((s) => Number(s.price))),
-    );
-  }
-
-  if (sort === "priceHigh") {
-    filteredProducts.sort(
-      (a, b) =>
-        Math.min(...(b.sizePrices || []).map((s) => Number(s.price))) -
-        Math.min(...(a.sizePrices || []).map((s) => Number(s.price))),
-    );
-  }
-
-  if (sort === "ratingHigh") {
-    filteredProducts.sort((a, b) => (b.rating || 0) - (a.rating || 0));
-  }
-
-  if (sort === "ratingLow") {
-    filteredProducts.sort((a, b) => (a.rating || 0) - (b.rating || 0));
-  }
+    return result;
+  }, [products, search, category, type, sort]);
 
   return (
     <div className="shop-page">

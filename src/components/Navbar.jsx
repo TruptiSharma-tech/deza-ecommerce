@@ -48,11 +48,6 @@ export default function Navbar() {
           <Link to="/" onMouseEnter={() => { preloadPage("Home"); apiGetHeroSettings(); }}>Home</Link>
           <Link to="/shop" onMouseEnter={() => { preloadPage("Shop"); apiGetProducts(); }}>Shop</Link>
           <Link to="/about" onMouseEnter={() => preloadPage("About")}>About</Link>
-          {isAdmin && (
-            <button className="admin-btn" onClick={() => navigate("/admin")}>
-              🛠 Admin Panel
-            </button>
-          )}
         </div>
 
         {/* MOBILE SEARCH */}
@@ -97,11 +92,6 @@ export default function Navbar() {
                 <Link to="/privacy-policy" onClick={() => setMenuOpen(false)}>Privacy Policy</Link>
                 <Link to="/terms" onClick={() => setMenuOpen(false)}>Terms & Conditions</Link>
                 <Link to="/return-refund" onClick={() => setMenuOpen(false)}>Return/Refund</Link>
-                {isAdmin && (
-                  <button className="admin-link" onClick={() => { setMenuOpen(false); navigate("/admin"); }}>
-                    🛠 Admin Panel
-                  </button>
-                )}
               </div>
             )}
           </div>

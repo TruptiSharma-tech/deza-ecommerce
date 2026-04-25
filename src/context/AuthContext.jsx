@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect } from "react";
-import { getCart, cartKey, clearUserData } from "../utils/userStorage";
+import { getCart, setCart, setWishlist, cartKey, clearUserData } from "../utils/userStorage";
 import { apiSyncUserData } from "../utils/api";
 
 const AuthContext = createContext();
@@ -11,7 +11,12 @@ export function AuthProvider({ children }) {
   const [isAccountSidebarOpen, setIsAccountSidebarOpen] = useState(false);
 
   const syncState = () => {
-    const storedUser = JSON.parse(localStorage.getItem("currentUser"));
+    let storedUser = null;
+    try {
+      storedUser = JSON.parse(localStorage.getItem("currentUser"));
+    } catch (e) {
+      storedUser = null;
+    }
     const token = localStorage.getItem("deza_token");
     const email = storedUser?.email || null;
     
@@ -20,7 +25,12 @@ export function AuthProvider({ children }) {
     setCartCount(count);
 
     const wishKey = `deza_wishlist_${email || "guest"}`;
-    const storedWishlist = JSON.parse(localStorage.getItem(wishKey)) || [];
+    let storedWishlist = [];
+    try {
+      storedWishlist = JSON.parse(localStorage.getItem(wishKey)) || [];
+    } catch (e) {
+      storedWishlist = [];
+    }
     setWishlist(storedWishlist);
 
     if (storedUser && token) {
@@ -78,8 +88,12 @@ export function AuthProvider({ children }) {
   };
 
   const login = (userData, token) => {
-    setUser(userData);
-    localStorage.setItem("currentUser", JSON.stringify(userData));
+    const safeUserData = { ...userData };
+    delete safeUserData.cart;
+    delete safeUserData.wishlist;
+
+    setUser(safeUserData);
+    localStorage.setItem("currentUser", JSON.stringify(safeUserData));
     if (token) localStorage.setItem("deza_token", token);
 
     const email = userData.email;
@@ -100,8 +114,14 @@ export function AuthProvider({ children }) {
       frontendWishlist = userData.wishlist;
     }
 
-    const guestCart = JSON.parse(localStorage.getItem("deza_cart_guest") || localStorage.getItem("deza_cart") || "[]");
-    const guestWishlist = JSON.parse(localStorage.getItem("deza_wishlist_guest") || localStorage.getItem("deza_wishlist") || "[]");
+    let guestCart = [];
+    try {
+      guestCart = JSON.parse(localStorage.getItem("deza_cart_guest") || localStorage.getItem("deza_cart") || "[]");
+    } catch(e) {}
+    let guestWishlist = [];
+    try {
+      guestWishlist = JSON.parse(localStorage.getItem("deza_wishlist_guest") || localStorage.getItem("deza_wishlist") || "[]");
+    } catch(e) {}
     
     guestCart.forEach(guestItem => {
         const existing = frontendCart.find(fk => String(fk._id) === String(guestItem._id) && fk.selectedSize === guestItem.selectedSize);

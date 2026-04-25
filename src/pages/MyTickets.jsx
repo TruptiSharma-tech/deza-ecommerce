@@ -16,7 +16,10 @@ export default function MyTickets() {
             loadTickets();
         } else {
             // Check localStorage if context is still loading
-            const stored = JSON.parse(localStorage.getItem("currentUser"));
+            let stored = null;
+            try {
+              stored = JSON.parse(localStorage.getItem("currentUser"));
+            } catch(e) {}
             if (!stored) {
                 const timer = setTimeout(() => {
                     if (!user) navigate("/login");

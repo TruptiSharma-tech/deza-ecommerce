@@ -60,7 +60,15 @@ export default function Home() {
       .finally(() => setLoading(false));
   }, []);
 
-  const banners = heroData.banners.length > 0 ? heroData.banners : DEFAULT_BANNERS;
+  const banners = React.useMemo(() => 
+    heroData.banners.length > 0 ? heroData.banners : DEFAULT_BANNERS, 
+    [heroData.banners]
+  );
+
+  const processedFeatured = React.useMemo(() => {
+    if (loading) return [];
+    return featured;
+  }, [featured, loading]);
 
   const goNext = useCallback(() => {
     setCurrentSlide((prev) => (prev + 1) % banners.length);
@@ -239,8 +247,8 @@ export default function Home() {
                 </div>
               </div>
             ))
-          ) : featured.length > 0 ? (
-            featured.map((p, idx) => {
+          ) : processedFeatured.length > 0 ? (
+            processedFeatured.map((p, idx) => {
               const minPrice = getMinPrice(p);
               return (
                 <div className="showcase-card" key={p._id} onClick={() => navigate(`/product/${p._id}`)}>

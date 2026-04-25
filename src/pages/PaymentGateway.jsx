@@ -19,7 +19,7 @@ export default function PaymentGateway() {
   const { name, phone, address, cart = [] } = checkoutInfo;
   const cleanPhone = (phone || "").replace(/\D/g, "");
 
-  const currentUser = JSON.parse(localStorage.getItem("currentUser"));
+  const { user: currentUser } = useAuth();
 
   useEffect(() => {
     if (!cart || cart.length === 0) navigate("/checkout");

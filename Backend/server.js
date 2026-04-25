@@ -58,8 +58,8 @@ app.use(
             // Allow requests with no origin (eg. mobile apps, Postman)
             if (!origin) return callback(null, true);
             
-            // Exact match or ends with .vercel.app for development ease
-            const isAllowed = allowedOrigins.includes(origin) || origin.endsWith(".vercel.app");
+            // Allow all localhost and local network IP variations (192.168.*.*)
+            const isAllowed = allowedOrigins.includes(origin) || origin.endsWith(".vercel.app") || origin.startsWith("http://192.168.") || origin.startsWith("http://10.");
             
             if (isAllowed) {
                 return callback(null, true);

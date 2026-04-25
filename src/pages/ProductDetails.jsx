@@ -11,7 +11,7 @@ import { getCart } from "../utils/userStorage";
 export default function ProductDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { updateCart, wishlist: contextWishlist, updateWishlist } = useShop();
+  const { updateCart, wishlist: contextWishlist, updateWishlist, currentUser } = useShop();
 
   const [product, setProduct] = useState(null);
   const [selectedSize, setSelectedSize] = useState("");
@@ -35,7 +35,6 @@ export default function ProductDetails() {
   const [waPhone, setWaPhone] = useState("");
   const [waAddress, setWaAddress] = useState("");
 
-  const currentUser = JSON.parse(localStorage.getItem("currentUser"));
 
   useEffect(() => {
     // Update local 'wish' state when contextWishlist changes

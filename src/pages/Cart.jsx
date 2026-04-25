@@ -8,9 +8,7 @@ import { useShop } from "../context/ShopContext";
 export default function Cart() {
   const [cart, setCart] = useState([]);
   const navigate = useNavigate();
-  const { updateCart } = useShop();
-
-  const currentUser = JSON.parse(localStorage.getItem("currentUser"));
+  const { updateCart, currentUser } = useShop();
   const userEmail = currentUser?.email;
 
   useEffect(() => {

@@ -2,7 +2,10 @@ import React from "react";
 import { Navigate } from "react-router-dom";
 
 export default function AdminProtectedRoute({ children }) {
-  const currentUser = JSON.parse(localStorage.getItem("currentUser"));
+  let currentUser = null;
+  try {
+    currentUser = JSON.parse(localStorage.getItem("currentUser"));
+  } catch(e) {}
   const adminRoles = ["superadmin", "manager", "support", "admin"];
 
   const isAuthorized = currentUser && (adminRoles.includes(currentUser.role) || currentUser.isAdmin === true);
