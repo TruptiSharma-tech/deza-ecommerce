@@ -109,7 +109,7 @@ export default function Register() {
     const upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
     const lower = "abcdefghijklmnopqrstuvwxyz";
     const nums = "0123456789";
-    const specials = "!@#$%^&*()_+";
+    const specials = "@$!%*?&";
     const charset = upper + lower + nums + specials;
 
     let password = "";
@@ -124,6 +124,7 @@ export default function Register() {
 
     password = password.split('').sort(() => 0.5 - Math.random()).join('');
     setFormData({ ...formData, password });
+    setShowPassword(true);
     toast.success("Strong password generated! Make sure to save it. 🔐");
   };
 
