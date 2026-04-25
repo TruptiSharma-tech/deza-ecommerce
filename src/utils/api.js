@@ -44,7 +44,7 @@ async function request(path, options = {}) {
     const cacheKey = path;
 
     // Return cached data if available, not expired, and NOT sensitive
-    const isAdminPath = path.startsWith("/admin") && !path.includes("hero-settings"); // Allow caching hero-settings for speed
+    const isAdminPath = path.startsWith("/admin"); // Bypass cache for all admin paths including hero-settings
     
     if (isGet && !isSensitive && !isAdminPath) {
         const cached = apiCache.get(cacheKey);
