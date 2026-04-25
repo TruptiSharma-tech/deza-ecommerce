@@ -98,6 +98,7 @@ export default function ProductDetails() {
   };
 
   const handleAddToCart = () => {
+    if (!checkLogin()) return;
     const email = currentUser?.email || null;
     const cart = getCart(email);
       
@@ -124,6 +125,7 @@ export default function ProductDetails() {
   };
 
   const handleWishlist = () => {
+    if (!checkLogin()) return;
     const exists = contextWishlist.find((x) => String(x._id) === String(product._id));
     if (exists) {
       const updated = contextWishlist.filter((x) => String(x._id) !== String(product._id));

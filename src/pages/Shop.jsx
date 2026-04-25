@@ -4,6 +4,7 @@ import { apiGetProducts, apiGetCategories, apiGetBrands } from "../utils/api";
 import { FaStar } from "react-icons/fa";
 import toast from "react-hot-toast";
 import { useShop } from "../context/ShopContext";
+import { getCart } from "../utils/userStorage";
 import "./Shop.css";
 
 export default function Shop() {
@@ -64,16 +65,8 @@ export default function Shop() {
       navigate("/login");
       return;
     }
-
-    const email = currentUser.email;
-    const cartKey = `deza_cart_${email}`;
-    let cart = [];
-    try {
-      cart = JSON.parse(localStorage.getItem(cartKey)) || [];
-      if (!Array.isArray(cart)) cart = [];
-    } catch (e) {
-      cart = [];
-    }
+    const email = currentUser?.email || null;
+    let cart = getCart(email);
 
     const selectedSize = product.sizePrices?.[0]?.size || "Default";
     const price = product.sizePrices?.[0]?.price ? Number(product.sizePrices[0].price) : (product.price || 0);
