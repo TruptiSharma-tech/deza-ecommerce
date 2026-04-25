@@ -4,6 +4,7 @@ import Confetti from "react-confetti";
 import { apiCreateOrder, apiCreateRazorpayOrder, apiVerifyRazorpayPayment } from "../utils/api";
 import toast from "react-hot-toast";
 import { getUserEmail, cartKey } from "../utils/userStorage";
+import { useAuth } from "../context/AuthContext";
 import "./PaymentGateway.css";
 
 export default function PaymentGateway() {
