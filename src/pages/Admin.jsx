@@ -269,16 +269,21 @@ export default function Admin() {
         qrys.forEach(q => prevQueryIdsRef.current.add(q._id));
       }
 
-      // ✅ NEW: Return Request Notification Logic
-      const pendingReturns = ords.filter(o => o.returnDetails?.status === "Pending" || o.status === "Return Requested");
+      // ✅ NEW: Return & Refund Request Notification Logic
+      const pendingReturns = ords.filter(o => 
+        o.returnDetails?.status === "Pending" || 
+        o.status === "Return Requested" ||
+        o.refundStatus === "Refund Requested"
+      );
       if (pendingReturns.length > 0) {
         const newReturns = pendingReturns.filter(o => !prevReturnIdsRef.current.has(o._id));
         if (!firstLoadRef.current && newReturns.length > 0) {
           newReturns.forEach(o => {
             const orderId = o.orderId || `DZ-${String(o._id).slice(-6).toUpperCase()}`;
+            const typeLabel = o.refundStatus === "Refund Requested" ? "Refund" : "Return";
             setNotifications(prev => [{
               id: Date.now() + Math.random(),
-              message: `↩️ Return Requested! (Order: ${orderId})`,
+              message: `↩️ ${typeLabel} Requested! (Order: ${orderId})`,
               time: new Date().toLocaleTimeString(),
               type: 'return'
             }, ...prev].slice(0, 30));
@@ -1848,7 +1853,29 @@ export default function Admin() {
                       </td>
 
                       <td>₹{o.totalPrice}</td>
-                      <td>{o.status}</td>
+                      <td>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                          <span style={{ 
+                            padding: '4px 8px', 
+                            borderRadius: '4px', 
+                            background: o.status === "Delivered" ? "#2ecc71" : o.status === "Cancelled" ? "#e74c3c" : "#333",
+                            fontSize: '11px',
+                            fontWeight: '700'
+                          }}>
+                            {o.status}
+                          </span>
+                          {o.returnDetails?.status === "Pending" && (
+                            <span style={{ background: "#f39c12", color: "#fff", padding: "2px 6px", borderRadius: "4px", fontSize: "10px", fontWeight: "900" }}>
+                              ↩ RETURN REQ
+                            </span>
+                          )}
+                          {o.refundStatus === "Refund Requested" && (
+                            <span style={{ background: "#e74c3c", color: "#fff", padding: "2px 6px", borderRadius: "4px", fontSize: "10px", fontWeight: "900" }}>
+                              💸 REFUND REQ
+                            </span>
+                          )}
+                        </div>
+                      </td>
                       <td>
                         <select
                           value={o.status}
