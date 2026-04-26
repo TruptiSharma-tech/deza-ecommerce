@@ -3,7 +3,9 @@ import "./TrackOrder.css";
 import { useParams, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+let API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+if (API_URL.endsWith("/")) API_URL = API_URL.slice(0, -1);
+if (!API_URL.endsWith("/api")) API_URL += "/api";
 
 // Fallback Origin (in case shopId is missing)
 const DEFAULT_ORIGIN = {
