@@ -8,9 +8,10 @@ const supportTicketSchema = new mongoose.Schema(
         orderId: { type: String, default: "" }, 
         ticketType: {
             type: String,
-            enum: ["General Query", "Return Request", "Refund Request", "Exchange Request", "General Support"],
+            enum: ["General Query", "Return Request", "Refund Request", "Exchange Request", "Return / Refund", "General Support"],
             default: "General Query"
         },
+        issueType: { type: String, default: "Other" },
         priority: {
             type: String,
             enum: ["Low", "Medium", "High", "Urgent"],
@@ -18,6 +19,7 @@ const supportTicketSchema = new mongoose.Schema(
         },
         subject: { type: String, default: "" },
         message: { type: String, required: true },
+        image: { type: String, default: "" }, // Legacy single image support
         images: { type: [String], default: [] }, // Support multiple images
         status: { 
             type: String, 
