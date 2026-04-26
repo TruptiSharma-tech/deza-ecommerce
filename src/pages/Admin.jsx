@@ -168,8 +168,9 @@ export default function Admin() {
     const saved = localStorage.getItem("admin_notifications");
     return saved ? JSON.parse(saved) : [];
   });
-  const prevOrderRef = useRef(""); // Store latest ID instead of length
-  const prevQueryRef = useRef(""); // Store latest ID instead of length
+  const prevOrderIdsRef = useRef(new Set()); 
+  const prevQueryIdsRef = useRef(new Set());
+  const prevReturnIdsRef = useRef(new Set()); // Track notified returns
   const firstLoadRef = useRef(true);
 
   // Auto-save notifications
@@ -233,44 +234,58 @@ export default function Admin() {
 
       console.log(`[⚡ Admin Sync] ${silent ? "Fast Sync" : "Full Sync"} at ${new Date().toLocaleTimeString()}`);
 
-      // ✅ New Order Notification Logic (ID based for accuracy)
+      // ✅ New Order Notification Logic (Robust ID set)
       if (ords.length > 0) {
-        const latestOrderId = ords[0]?._id;
-        if (!firstLoadRef.current && latestOrderId && latestOrderId !== prevOrderRef.current) {
-          const orderId = ords[0]?.orderId || `DZ-${String(latestOrderId).slice(-6).toUpperCase()}`;
-          setNotifications(prev => {
-            // Deduplicate if by some chance it was already added
-            const isDuplicate = prev.some(n => n.message.includes(orderId));
-            if (isDuplicate) return prev;
-
-            return [{
-              id: Date.now(),
+        const newOrds = ords.filter(o => !prevOrderIdsRef.current.has(o._id));
+        if (!firstLoadRef.current && newOrds.length > 0) {
+          newOrds.forEach(o => {
+            const orderId = o.orderId || `DZ-${String(o._id).slice(-6).toUpperCase()}`;
+            setNotifications(prev => [{
+              id: Date.now() + Math.random(),
               message: `🎉 New Order Received! (${orderId})`,
-              time: new Date().toLocaleTimeString()
-            }, ...prev].slice(0, 15);
+              time: new Date().toLocaleTimeString(),
+              type: 'order'
+            }, ...prev].slice(0, 30));
           });
-
-          try {
-            new Audio("https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3").play();
-          } catch (e) { }
+          try { new Audio("https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3").play(); } catch (e) { }
         }
-        prevOrderRef.current = latestOrderId;
+        ords.forEach(o => prevOrderIdsRef.current.add(o._id));
       }
 
       // ✅ New Query Notification Logic
       if (qrys.length > 0) {
-        const latestQryId = qrys[0]?._id;
-        if (!firstLoadRef.current && latestQryId && latestQryId !== prevQueryRef.current) {
-          setNotifications(prev => [{
-            id: Date.now() + 1,
-            message: `📬 New Support Query! (${qrys[0]?.name})`,
-            time: new Date().toLocaleTimeString()
-          }, ...prev].slice(0, 15));
-          try {
-            new Audio("https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3").play();
-          } catch (e) { }
+        const newQrys = qrys.filter(q => !prevQueryIdsRef.current.has(q._id));
+        if (!firstLoadRef.current && newQrys.length > 0) {
+          newQrys.forEach(q => {
+            setNotifications(prev => [{
+              id: Date.now() + Math.random(),
+              message: `📬 New Support Query! (${q.name})`,
+              time: new Date().toLocaleTimeString(),
+              type: 'query'
+            }, ...prev].slice(0, 30));
+          });
+          try { new Audio("https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3").play(); } catch (e) { }
         }
-        prevQueryRef.current = latestQryId;
+        qrys.forEach(q => prevQueryIdsRef.current.add(q._id));
+      }
+
+      // ✅ NEW: Return Request Notification Logic
+      const pendingReturns = ords.filter(o => o.returnDetails?.status === "Pending" || o.status === "Return Requested");
+      if (pendingReturns.length > 0) {
+        const newReturns = pendingReturns.filter(o => !prevReturnIdsRef.current.has(o._id));
+        if (!firstLoadRef.current && newReturns.length > 0) {
+          newReturns.forEach(o => {
+            const orderId = o.orderId || `DZ-${String(o._id).slice(-6).toUpperCase()}`;
+            setNotifications(prev => [{
+              id: Date.now() + Math.random(),
+              message: `↩️ Return Requested! (Order: ${orderId})`,
+              time: new Date().toLocaleTimeString(),
+              type: 'return'
+            }, ...prev].slice(0, 30));
+          });
+          try { new Audio("https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3").play(); } catch (e) { }
+        }
+        pendingReturns.forEach(o => prevReturnIdsRef.current.add(o._id));
       }
 
       firstLoadRef.current = false;
@@ -1240,7 +1255,7 @@ export default function Admin() {
                 <div className="notifications-list">
                   {notifications.length > 0 ? (
                     notifications.map(n => (
-                      <div key={n.id} className="notify-item">
+                      <div key={n.id} className={`notify-item ${n.type || ""}`}>
                         <p>{n.message}</p>
                         <span>{n.time}</span>
                       </div>

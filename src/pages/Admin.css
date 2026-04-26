@@ -400,8 +400,8 @@
 
 .notify-item {
   padding: 14px 18px;
-  background: rgba(212, 175, 55, 0.08);
-  border: 1px solid rgba(212, 175, 55, 0.2);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-left: 4px solid #d4af37;
   border-radius: 12px;
   margin-bottom: 12px;
@@ -409,6 +409,21 @@
   justify-content: space-between;
   align-items: center;
   animation: slideInNotify 0.3s ease-out;
+}
+
+.notify-item.order {
+  border-left-color: #69f0ae; /* Green for new orders */
+  background: rgba(105, 240, 174, 0.05);
+}
+
+.notify-item.query {
+  border-left-color: #4fc3f7; /* Blue for support queries */
+  background: rgba(79, 195, 247, 0.05);
+}
+
+.notify-item.return {
+  border-left-color: #ffab40; /* Orange for returns */
+  background: rgba(255, 171, 64, 0.05);
 }
 
 @keyframes slideInNotify {
@@ -426,11 +441,12 @@
 .notify-item p {
   font-size: 14px;
   margin: 0;
+  font-weight: 600;
 }
 
 .notify-item span {
   font-size: 11px;
-  opacity: 0.5;
+  opacity: 0.6;
 }
 
 .stat-row {
