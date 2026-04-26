@@ -149,11 +149,6 @@ router.post("/:id/refund", auth, adminOnly, async (req, res) => {
         const ticket = await SupportTicket.findById(req.params.id);
         if (!ticket) return res.status(404).json({ error: "Ticket not found." });
 
-        // Update ticket status
-        ticket.status = "Resolved";
-        ticket.resolved = true;
-        await ticket.save();
-
         // ✅ NEW: RAZORPAY AUTOMATED REFUND INTEGRATION
         let razorpayRefundId = "N/A";
         if (ticket.orderId) {
@@ -166,7 +161,16 @@ router.post("/:id/refund", auth, adminOnly, async (req, res) => {
                     ] 
                 });
 
-                if (order && order.paymentMethod !== "Cash On Delivery" && order.paymentDetails?.paymentId) {
+                if (!order) {
+                    return res.status(404).json({ 
+                        error: `Order "${ticket.orderId}" not found. Please verify the Order ID is correct in the ticket.` 
+                    });
+                }
+
+                if (order.paymentMethod === "Cash On Delivery") {
+                     // For COD, we just proceed with the notification email
+                     console.log("COD Order: Skipping Razorpay, proceeding with notification.");
+                } else if (order.paymentDetails?.paymentId) {
                     console.log(`💸 Attempting Razorpay Refund for Payment: ${order.paymentDetails.paymentId}`);
                     try {
                         const refund = await razorpay.payments.refund(order.paymentDetails.paymentId, {
@@ -179,31 +183,36 @@ router.post("/:id/refund", auth, adminOnly, async (req, res) => {
                         razorpayRefundId = refund.id;
                         console.log(`✅ Razorpay Refund Success: ${refund.id}`);
                         
-                        // Save Refund ID to Ticket for record
-                        ticket.refundStatus = "Completed";
-                        ticket.razorpayRefundId = refund.id;
-                        await ticket.save();
-
-                        // Update Order Status too
+                        // Update Order Status
                         order.refundStatus = "Completed";
                         order.statusHistory.push({ status: "Refund Completed", comment: `Razorpay Refund ID: ${refund.id}` });
                         await order.save();
+                        
+                        // Update Ticket too
+                        ticket.refundStatus = "Completed";
+                        ticket.razorpayRefundId = refund.id;
                     } catch (rzpErr) {
                         const rzpMsg = rzpErr.description || rzpErr.message || "Unknown Razorpay Error";
                         console.error("❌ Razorpay API Refund failed:", rzpMsg);
                         return res.status(400).json({ 
-                            error: `Razorpay Refund Failed: ${rzpMsg}. You may need to refund manually from the Razorpay Dashboard.` 
+                            error: `Razorpay API Error: ${rzpMsg}. Please refund manually in Razorpay Dashboard.` 
                         });
                     }
-                } else if (order && order.paymentMethod !== "Cash On Delivery" && !order.paymentDetails?.paymentId) {
+                } else {
                     return res.status(400).json({ 
-                        error: "Order was prepaid but no Razorpay Payment ID was found. Please refund manually." 
+                        error: "This order is prepaid but missing a Razorpay Payment ID. Please refund manually." 
                     });
                 }
-            } catch (findErr) {
-                console.error("Order lookup failed during refund:", findErr);
+            } catch (err) {
+                console.error("Order lookup error:", err);
+                return res.status(500).json({ error: "Internal error while looking up order." });
             }
         }
+
+        // Only save ticket as Resolved IF we successfully processed the logic above
+        ticket.status = "Resolved";
+        ticket.resolved = true;
+        await ticket.save();
 
         // Send Professional Refund Email
         try {
