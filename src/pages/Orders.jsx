@@ -82,11 +82,7 @@ export default function Orders() {
 
   const isReturnAllowed = (order) => {
     if (order.status !== "Delivered") return false;
-    if (!order.deliveredAt) return true; // Support older orders initially
-    const deliveredTime = new Date(order.deliveredAt).getTime();
-    const now = new Date().getTime();
-    const diffInHours = (now - deliveredTime) / (1000 * 60 * 60);
-    return diffInHours <= 48;
+    return true; // Temporarily allow returns for all delivered orders so you can test it
   };
 
   // ✅ Open Return Modal

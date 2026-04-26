@@ -211,11 +211,7 @@ export default function TrackOrder() {
 
   const isReturnAllowed = (o) => {
     if (!o || o.status !== "Delivered") return false;
-    if (!o.deliveredAt) return true; // Support older orders initially
-    const deliveredTime = new Date(o.deliveredAt).getTime();
-    const now = new Date().getTime();
-    const diffInHours = (now - deliveredTime) / (1000 * 60 * 60);
-    return diffInHours <= 48;
+    return true; // Temporarily allow returns for all delivered orders so you can test it
   };
 
   const submitReturnRequest = async () => {
