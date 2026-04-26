@@ -26,6 +26,8 @@ const supportTicketSchema = new mongoose.Schema(
             enum: ["Pending", "In Progress", "Closed", "Resolved", "Waiting for Customer"], 
             default: "Pending" 
         },
+        refundStatus: { type: String, default: "None" },
+        razorpayRefundId: { type: String, default: "" },
         adminReply: { type: String, default: "" },
         repliedBy: { type: mongoose.Schema.Types.ObjectId, ref: "Admin" },
         repliedAt: { type: Date },

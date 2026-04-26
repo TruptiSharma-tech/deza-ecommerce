@@ -158,33 +158,50 @@ router.post("/:id/refund", auth, adminOnly, async (req, res) => {
         let razorpayRefundId = "N/A";
         if (ticket.orderId) {
             try {
-                // Find order by Number or ID
+                // Find order by Number or ID (Case-insensitive)
                 const order = await Order.findOne({ 
                     $or: [
-                        { orderNumber: ticket.orderId }, 
-                        { _id: ticket.orderId.match(/^[0-9a-fA-F]{24}$/) ? ticket.orderId : null }
+                        { orderNumber: { $regex: new RegExp(`^${ticket.orderId?.trim()}$`, 'i') } }, 
+                        { _id: ticket.orderId?.match(/^[0-9a-fA-F]{24}$/) ? ticket.orderId : null }
                     ] 
                 });
 
                 if (order && order.paymentMethod !== "Cash On Delivery" && order.paymentDetails?.paymentId) {
                     console.log(`💸 Attempting Razorpay Refund for Payment: ${order.paymentDetails.paymentId}`);
-                    const refund = await razorpay.payments.refund(order.paymentDetails.paymentId, {
-                        amount: Math.round(order.totalAmount * 100), // Full refund in paise
-                        notes: {
-                            ticketId: String(ticket._id),
-                            customerEmail: ticket.email
-                        }
+                    try {
+                        const refund = await razorpay.payments.refund(order.paymentDetails.paymentId, {
+                            amount: Math.round(order.totalAmount * 100), // Full refund in paise
+                            notes: {
+                                ticketId: String(ticket._id),
+                                customerEmail: ticket.email
+                            }
+                        });
+                        razorpayRefundId = refund.id;
+                        console.log(`✅ Razorpay Refund Success: ${refund.id}`);
+                        
+                        // Save Refund ID to Ticket for record
+                        ticket.refundStatus = "Completed";
+                        ticket.razorpayRefundId = refund.id;
+                        await ticket.save();
+
+                        // Update Order Status too
+                        order.refundStatus = "Completed";
+                        order.statusHistory.push({ status: "Refund Completed", comment: `Razorpay Refund ID: ${refund.id}` });
+                        await order.save();
+                    } catch (rzpErr) {
+                        const rzpMsg = rzpErr.description || rzpErr.message || "Unknown Razorpay Error";
+                        console.error("❌ Razorpay API Refund failed:", rzpMsg);
+                        return res.status(400).json({ 
+                            error: `Razorpay Refund Failed: ${rzpMsg}. You may need to refund manually from the Razorpay Dashboard.` 
+                        });
+                    }
+                } else if (order && order.paymentMethod !== "Cash On Delivery" && !order.paymentDetails?.paymentId) {
+                    return res.status(400).json({ 
+                        error: "Order was prepaid but no Razorpay Payment ID was found. Please refund manually." 
                     });
-                    razorpayRefundId = refund.id;
-                    console.log(`✅ Razorpay Refund Success: ${refund.id}`);
-                    
-                    // Update Order Status too
-                    order.refundStatus = "Completed";
-                    order.statusHistory.push({ status: "Refund Completed", comment: `Razorpay Refund ID: ${refund.id}` });
-                    await order.save();
                 }
-            } catch (rzpErr) {
-                console.error("⚠️ Razorpay API Refund failed (might need manual dashboard refund):", rzpErr.description || rzpErr.message);
+            } catch (findErr) {
+                console.error("Order lookup failed during refund:", findErr);
             }
         }
 
