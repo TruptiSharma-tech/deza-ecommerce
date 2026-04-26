@@ -516,25 +516,25 @@ export default function TrackOrder() {
             <select
               value={returnType}
               onChange={(e) => setReturnType(e.target.value)}
-              style={{ background: '#0e0e0e', color: '#fff', padding: '10px', borderRadius: '8px', border: '1px solid #333' }}
+              style={{ background: '#1a1a1a', color: '#fff', padding: '12px', borderRadius: '8px', border: '1px solid rgba(212,175,55,0.3)', outline: 'none' }}
             >
-              <option value="Refund">Refund</option>
-              <option value="Exchange">Exchange</option>
+              <option value="Refund" style={{ background: '#1a1a1a', color: '#fff' }}>Refund</option>
+              <option value="Exchange" style={{ background: '#1a1a1a', color: '#fff' }}>Exchange</option>
             </select>
 
             <label style={{ fontSize: '12px', color: '#f0ece4' }}>Reason</label>
             <select
               value={returnReason}
               onChange={(e) => setReturnReason(e.target.value)}
-              style={{ background: '#0e0e0e', color: '#fff', padding: '10px', borderRadius: '8px', border: '1px solid #333' }}
+              style={{ background: '#1a1a1a', color: '#fff', padding: '12px', borderRadius: '8px', border: '1px solid rgba(212,175,55,0.3)', outline: 'none' }}
             >
-              <option>Wrong Product Received</option>
-              <option>Damaged Product</option>
-              <option>Leakage / Broken Bottle</option>
-              <option>Not Satisfied With Smell</option>
-              <option>Allergic Reaction</option>
-              <option>Delivery Late</option>
-              <option>Other</option>
+              <option style={{ background: '#1a1a1a', color: '#fff' }}>Wrong Product Received</option>
+              <option style={{ background: '#1a1a1a', color: '#fff' }}>Damaged Product</option>
+              <option style={{ background: '#1a1a1a', color: '#fff' }}>Leakage / Broken Bottle</option>
+              <option style={{ background: '#1a1a1a', color: '#fff' }}>Not Satisfied With Smell</option>
+              <option style={{ background: '#1a1a1a', color: '#fff' }}>Allergic Reaction</option>
+              <option style={{ background: '#1a1a1a', color: '#fff' }}>Delivery Late</option>
+              <option style={{ background: '#1a1a1a', color: '#fff' }}>Other</option>
             </select>
 
             <label style={{ fontSize: '12px', color: '#f0ece4' }}>Message (Optional)</label>
@@ -542,7 +542,7 @@ export default function TrackOrder() {
               placeholder="Explain your issue..."
               value={returnMessage}
               onChange={(e) => setReturnMessage(e.target.value)}
-              style={{ background: '#0e0e0e', color: '#fff', padding: '10px', borderRadius: '8px', border: '1px solid #333', minHeight: '80px' }}
+              style={{ background: '#1a1a1a', color: '#fff', padding: '12px', borderRadius: '8px', border: '1px solid rgba(212,175,55,0.3)', minHeight: '80px', outline: 'none' }}
             />
 
             <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
