@@ -7,6 +7,7 @@ import Shop from "../models/Shop.js";
 import { auth, adminOnly } from "../middleware/auth.js";
 import User from "../models/User.js";
 import AuditLog from "../models/AuditLog.js";
+import SupportTicket from "../models/SupportTicket.js";
 import { sendEmail, getBrandedTemplate } from "../utils/emailHelper.js";
 import { sendWhatsApp } from "../utils/whatsappHelper.js";
 
@@ -440,6 +441,21 @@ router.patch("/:id/return", auth, async (req, res) => {
 
         await order.save();
 
+        // ✅ NEW: Create a Support Ticket (Query) for this Return Request
+        try {
+            await SupportTicket.create({
+                name: order.customerName || "Customer",
+                email: order.customerEmail || req.user.email,
+                message: `[AUTO-GENERATED RETURN REQUEST]\nType: ${returnType}\nReason: ${reason}\nMessage: ${message || "No additional message."}`,
+                orderId: order.orderNumber,
+                ticketType: "Return / Refund",
+                issueType: returnType === "Refund" ? "Refund Request" : "Exchange Request",
+                status: "Pending"
+            });
+        } catch (ticketErr) {
+            console.error("Failed to auto-create support ticket for return:", ticketErr);
+        }
+
         res.json({
             ...order.toObject(),
             totalPrice: order.totalAmount,
@@ -460,6 +476,21 @@ router.patch("/:id/refund", auth, async (req, res) => {
         order.statusHistory.push({ status: "Refund Requested", comment: "Refund requested by User" });
 
         await order.save();
+
+        // ✅ NEW: Create a Support Ticket (Query) for this Refund Request
+        try {
+            await SupportTicket.create({
+                name: order.customerName || "Customer",
+                email: order.customerEmail || req.user.email,
+                message: `[AUTO-GENERATED REFUND REQUEST]\nThe user has requested a refund for order ${order.orderNumber}.`,
+                orderId: order.orderNumber,
+                ticketType: "Return / Refund",
+                issueType: "Refund Request",
+                status: "Pending"
+            });
+        } catch (ticketErr) {
+            console.error("Failed to auto-create support ticket for refund:", ticketErr);
+        }
 
         res.json({
             ...order.toObject(),
