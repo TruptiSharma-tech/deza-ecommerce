@@ -1,8 +1,10 @@
 import express from "express";
 import SupportTicket from "../models/SupportTicket.js";
+import Order from "../models/Order.js";
 import AuditLog from "../models/AuditLog.js";
 import { auth, adminOnly } from "../middleware/auth.js";
 import { sendEmail, getBrandedTemplate } from "../utils/emailHelper.js";
+import razorpay from "../utils/razorpay.js";
 
 const router = express.Router();
 
@@ -152,6 +154,40 @@ router.post("/:id/refund", auth, adminOnly, async (req, res) => {
         ticket.resolved = true;
         await ticket.save();
 
+        // ✅ NEW: RAZORPAY AUTOMATED REFUND INTEGRATION
+        let razorpayRefundId = "N/A";
+        if (ticket.orderId) {
+            try {
+                // Find order by Number or ID
+                const order = await Order.findOne({ 
+                    $or: [
+                        { orderNumber: ticket.orderId }, 
+                        { _id: ticket.orderId.match(/^[0-9a-fA-F]{24}$/) ? ticket.orderId : null }
+                    ] 
+                });
+
+                if (order && order.paymentMethod !== "Cash On Delivery" && order.paymentDetails?.paymentId) {
+                    console.log(`💸 Attempting Razorpay Refund for Payment: ${order.paymentDetails.paymentId}`);
+                    const refund = await razorpay.payments.refund(order.paymentDetails.paymentId, {
+                        amount: Math.round(order.totalAmount * 100), // Full refund in paise
+                        notes: {
+                            ticketId: String(ticket._id),
+                            customerEmail: ticket.email
+                        }
+                    });
+                    razorpayRefundId = refund.id;
+                    console.log(`✅ Razorpay Refund Success: ${refund.id}`);
+                    
+                    // Update Order Status too
+                    order.refundStatus = "Completed";
+                    order.statusHistory.push({ status: "Refund Completed", comment: `Razorpay Refund ID: ${refund.id}` });
+                    await order.save();
+                }
+            } catch (rzpErr) {
+                console.error("⚠️ Razorpay API Refund failed (might need manual dashboard refund):", rzpErr.description || rzpErr.message);
+            }
+        }
+
         // Send Professional Refund Email
         try {
             const emailBody = `
@@ -164,6 +200,7 @@ router.post("/:id/refund", auth, adminOnly, async (req, res) => {
                         <h3 style="color: #d4af37; margin-top: 0; text-transform: uppercase; letter-spacing: 2px; font-size: 14px;">Refund Details</h3>
                         <p style="margin: 5px 0;"><b>Reference ID:</b> DZ-RFND-${Date.now().toString().slice(-6)}</p>
                         <p style="margin: 5px 0;"><b>Order ID:</b> ${ticket.orderId || "N/A"}</p>
+                        <p style="margin: 5px 0;"><b>Refund Transaction ID:</b> ${razorpayRefundId}</p>
                         <p style="margin: 5px 0;"><b>Processing Period:</b> Within 24 Business Hours</p>
                     </div>
 

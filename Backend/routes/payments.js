@@ -2,15 +2,13 @@ import express from "express";
 import Razorpay from "razorpay";
 import crypto from "crypto";
 import dotenv from "dotenv";
+import razorpay from "../utils/razorpay.js";
 
 dotenv.config();
 
 const router = express.Router();
 
-const razorpay = new Razorpay({
-    key_id: process.env.RAZORPAY_KEY_ID || "rzp_test_SdJA8ZBmvE42IN",
-    key_secret: process.env.RAZORPAY_KEY_SECRET || "c7vWYCsia23VKeyiXnWKkzn4",
-});
+import razorpay from "../utils/razorpay.js";
 
 // ─── POST - Create Razorpay Order ─────────────────────────────────────────────
 // No auth required — user identity is tracked on the order itself (POST /orders)
