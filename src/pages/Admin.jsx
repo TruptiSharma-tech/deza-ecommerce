@@ -1201,10 +1201,11 @@ export default function Admin() {
               </div>
 
               <div className="admin-card myntra-card green">
-                <div className="card-icon">💰</div>
+                <div className="card-icon">📈</div>
                 <div className="card-content">
-                  <h3>Total Sales (Net)</h3>
-                  <p>₹{totalRevenue.toLocaleString()}</p>
+                  <h3>Gross Sales</h3>
+                  <p>₹{(totalRevenue + totalRefunded).toLocaleString()}</p>
+                  <small style={{ opacity: 0.7, fontSize: '10px' }}>Total amount received</small>
                 </div>
               </div>
 
@@ -1213,6 +1214,16 @@ export default function Admin() {
                 <div className="card-content">
                   <h3 style={{ color: '#e74c3c' }}>Total Refunded</h3>
                   <p style={{ color: '#e74c3c' }}>₹{totalRefunded.toLocaleString()}</p>
+                  <small style={{ color: '#e74c3c', opacity: 0.7, fontSize: '10px' }}>Money sent back</small>
+                </div>
+              </div>
+
+              <div className="admin-card myntra-card gold" style={{ background: 'linear-gradient(135deg, #d4af37, #aa8822)', border: '1px solid #d4af37' }}>
+                <div className="card-icon">💰</div>
+                <div className="card-content">
+                  <h3 style={{ color: '#000' }}>Net Revenue</h3>
+                  <p style={{ color: '#000', fontWeight: '900' }}>₹{totalRevenue.toLocaleString()}</p>
+                  <small style={{ color: '#000', opacity: 0.8, fontSize: '10px' }}>Actual Profit (Gross - Refunded)</small>
                 </div>
               </div>
 
@@ -2414,6 +2425,21 @@ export default function Admin() {
                   🔄 Refresh
                 </button>
               </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '15px', marginBottom: '25px', background: 'rgba(0,0,0,0.2)', padding: '15px', borderRadius: '10px', border: '1px solid #333' }}>
+               <div style={{ textAlign: 'center' }}>
+                 <span style={{ fontSize: '10px', color: '#888', textTransform: 'uppercase' }}>Gross Sales</span>
+                 <p style={{ margin: 0, fontWeight: 'bold' }}>₹{(totalRevenue + totalRefunded).toLocaleString()}</p>
+               </div>
+               <div style={{ textAlign: 'center', borderLeft: '1px solid #333', borderRight: '1px solid #333' }}>
+                 <span style={{ fontSize: '10px', color: '#e74c3c', textTransform: 'uppercase' }}>Total Refunded</span>
+                 <p style={{ margin: 0, fontWeight: 'bold', color: '#e74c3c' }}>- ₹{totalRefunded.toLocaleString()}</p>
+               </div>
+               <div style={{ textAlign: 'center' }}>
+                 <span style={{ fontSize: '10px', color: '#d4af37', textTransform: 'uppercase' }}>Net Revenue</span>
+                 <p style={{ margin: 0, fontWeight: 'bold', color: '#d4af37' }}>₹{totalRevenue.toLocaleString()}</p>
+               </div>
             </div>
 
             <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
