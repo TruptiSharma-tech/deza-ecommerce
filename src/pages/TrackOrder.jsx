@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from "react";
 import "./TrackOrder.css";
 import { useParams, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
+import { apiReturnOrder } from "../utils/api";
 
 let API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 if (API_URL.endsWith("/")) API_URL = API_URL.slice(0, -1);
@@ -140,6 +141,13 @@ export default function TrackOrder() {
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [vehiclePos, setVehiclePos] = useState(0); // 0–100% across route
+  
+  // Return & Refund States
+  const [showReturnModal, setShowReturnModal] = useState(false);
+  const [returnType, setReturnType] = useState("Refund");
+  const [returnReason, setReturnReason] = useState("Wrong Product Received");
+  const [returnMessage, setReturnMessage] = useState("");
+  
   const animRef = useRef(null);
   const pollRef = useRef(null);
 
@@ -198,6 +206,31 @@ export default function TrackOrder() {
       navigate("/orders");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const isReturnAllowed = (o) => {
+    if (!o || o.status !== "Delivered") return false;
+    if (!o.deliveredAt) return true; // Support older orders initially
+    const deliveredTime = new Date(o.deliveredAt).getTime();
+    const now = new Date().getTime();
+    const diffInHours = (now - deliveredTime) / (1000 * 60 * 60);
+    return diffInHours <= 48;
+  };
+
+  const submitReturnRequest = async () => {
+    if (!order) return;
+    try {
+      const updated = await apiReturnOrder(order._id || orderId, {
+        returnType,
+        reason: returnReason,
+        message: returnMessage,
+      });
+      setOrder(updated);
+      toast.success("Return Request Sent Successfully! ✨");
+      setShowReturnModal(false);
+    } catch (err) {
+      toast.error(err.message || "Failed to submit return request");
     }
   };
 
@@ -317,10 +350,24 @@ export default function TrackOrder() {
       {isDelivered && (
         <div className="to-delivered-banner">
           <span className="to-bounce">🎉</span>
-          <div>
+          <div style={{ flex: 1 }}>
             <p className="to-delv-title">Delivered successfully!</p>
             <p className="to-delv-sub">Enjoy your premium fragrance experience.</p>
           </div>
+          {isReturnAllowed(order) && !order.returnStatus?.includes("Requested") && (
+            <button 
+              className="to-back-btn" 
+              style={{ borderColor: "#ff6b6b", color: "#ff6b6b", marginLeft: "auto" }}
+              onClick={() => setShowReturnModal(true)}
+            >
+              ↩ Return / Refund
+            </button>
+          )}
+          {order.returnStatus?.includes("Requested") && (
+            <span style={{ fontSize: '12px', color: '#ff9f43', fontWeight: 'bold', marginLeft: 'auto' }}>
+              Return Requested
+            </span>
+          )}
         </div>
       )}
 
@@ -450,6 +497,71 @@ export default function TrackOrder() {
       <div className="to-footer-note">
         ✨ DEZA Luxury Fragrances · Professional Logistics Partner · Mumbai
       </div>
+
+      {/* RETURN MODAL */}
+      {showReturnModal && (
+        <div className="to-modal-overlay" style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0,0,0,0.8)', zIndex: 9999,
+          display: 'flex', alignItems: 'center', justifyContent: 'center'
+        }}>
+          <div className="to-modal-content" style={{
+            background: '#161616', padding: '30px', borderRadius: '20px',
+            width: '90%', maxWidth: '400px', border: '1px solid rgba(212,175,55,0.3)',
+            display: 'flex', flexDirection: 'column', gap: '15px'
+          }}>
+            <h2 style={{ color: '#d4af37', margin: '0 0 10px', fontSize: '20px' }}>Return Request</h2>
+
+            <label style={{ fontSize: '12px', color: '#f0ece4' }}>Return Type</label>
+            <select
+              value={returnType}
+              onChange={(e) => setReturnType(e.target.value)}
+              style={{ background: '#0e0e0e', color: '#fff', padding: '10px', borderRadius: '8px', border: '1px solid #333' }}
+            >
+              <option value="Refund">Refund</option>
+              <option value="Exchange">Exchange</option>
+            </select>
+
+            <label style={{ fontSize: '12px', color: '#f0ece4' }}>Reason</label>
+            <select
+              value={returnReason}
+              onChange={(e) => setReturnReason(e.target.value)}
+              style={{ background: '#0e0e0e', color: '#fff', padding: '10px', borderRadius: '8px', border: '1px solid #333' }}
+            >
+              <option>Wrong Product Received</option>
+              <option>Damaged Product</option>
+              <option>Leakage / Broken Bottle</option>
+              <option>Not Satisfied With Smell</option>
+              <option>Allergic Reaction</option>
+              <option>Delivery Late</option>
+              <option>Other</option>
+            </select>
+
+            <label style={{ fontSize: '12px', color: '#f0ece4' }}>Message (Optional)</label>
+            <textarea
+              placeholder="Explain your issue..."
+              value={returnMessage}
+              onChange={(e) => setReturnMessage(e.target.value)}
+              style={{ background: '#0e0e0e', color: '#fff', padding: '10px', borderRadius: '8px', border: '1px solid #333', minHeight: '80px' }}
+            />
+
+            <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+              <button
+                style={{ flex: 1, padding: '10px', background: '#333', color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}
+                onClick={() => setShowReturnModal(false)}
+              >
+                Close
+              </button>
+              <button
+                style={{ flex: 1, padding: '10px', background: '#d4af37', color: '#000', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}
+                onClick={submitReturnRequest}
+              >
+                Submit Request
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
