@@ -662,14 +662,25 @@ export default function Admin() {
   };
 
   const handleRefund = async (id) => {
-    if (!window.confirm("Are you sure you want to initiate a full refund for this query? This cannot be undone.")) return;
+    if (!window.confirm("Are you sure you want to INITIATE a full refund via Razorpay? This cannot be undone.")) return;
 
     try {
-      const { query } = await apiInitiateRefund(id);
-      setQueries(queries.map((q) => (q._id === id ? { ...q, refundStatus: "Initiated" } : q)));
-      toast.success("Refund successfully initiated and customer has been notified via email.");
+      const response = await apiInitiateRefund(id);
+      // Backend returns { message, ticket }
+      const updatedTicket = response.ticket || response.query;
+
+      if (updatedTicket) {
+        setQueries(queries.map((q) => (q._id === id ? { ...q, ...updatedTicket } : q)));
+      }
+      
+      toast.success("Refund Processed Successfully! ✨");
+      
+      // ✅ CRITICAL: Refresh all data (including orders) so sales numbers update
+      setTimeout(() => {
+        loadAll(true);
+      }, 1000);
     } catch (err) {
-      toast.error("Failed to initiate refund: " + err.message);
+      toast.error("Refund Failed: " + (err.message || "Unknown error"));
     }
   };
 
