@@ -709,9 +709,16 @@ export default function Admin() {
   const totalProducts = products.length;
   const totalOrders = finalOrders.length;
 
+  const totalRefunded = finalOrders.reduce((acc, o) => {
+    if (o.refundStatus === "Completed" || o.status === "Returned") {
+      return acc + (o.totalPrice || 0);
+    }
+    return acc;
+  }, 0);
+
   const totalRevenue = finalOrders.reduce(
     (acc, o) => {
-      if (o.status === "Cancelled" || o.status === "Returned") return acc;
+      if (o.status === "Cancelled" || o.status === "Returned" || o.refundStatus === "Completed") return acc;
       return acc + (o.totalPrice || 0);
     },
     0,
@@ -730,29 +737,32 @@ export default function Admin() {
   ).length;
 
   const whatsappRevenue = finalOrders
-    .filter(o => o.orderSource === "WhatsApp" && o.status !== "Cancelled" && o.status !== "Returned")
+    .filter(o => o.orderSource === "WhatsApp" && o.status !== "Cancelled" && o.status !== "Returned" && o.refundStatus !== "Completed")
     .reduce((acc, o) => acc + (o.totalPrice || 0), 0);
 
   // ✅ New Time-based totals for Top Card
   const now = new Date();
   const dailyTotalRev = orders.filter(o => 
-    new Date(o.createdAt || o.date).toDateString() === now.toDateString() && o.status !== "Cancelled" && o.status !== "Returned"
+    new Date(o.createdAt || o.date).toDateString() === now.toDateString() && 
+    o.status !== "Cancelled" && o.status !== "Returned" && o.refundStatus !== "Completed"
   ).reduce((sum, o) => sum + (o.totalPrice || 0), 0);
 
   const weeklyTotalRev = orders.filter(o => {
     const d = new Date(o.createdAt || o.date);
     const weekAgo = new Date(); weekAgo.setDate(now.getDate() - 7);
-    return d >= weekAgo && o.status !== "Cancelled" && o.status !== "Returned";
+    return d >= weekAgo && o.status !== "Cancelled" && o.status !== "Returned" && o.refundStatus !== "Completed";
   }).reduce((sum, o) => sum + (o.totalPrice || 0), 0);
 
   const monthlyTotalRev = orders.filter(o => {
     const d = new Date(o.createdAt || o.date);
-    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear() && o.status !== "Cancelled" && o.status !== "Returned";
+    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear() && 
+           o.status !== "Cancelled" && o.status !== "Returned" && o.refundStatus !== "Completed";
   }).reduce((sum, o) => sum + (o.totalPrice || 0), 0);
 
   const yearlyTotalRev = orders.filter(o => {
     const d = new Date(o.createdAt || o.date);
-    return d.getFullYear() === now.getFullYear() && o.status !== "Cancelled" && o.status !== "Returned";
+    return d.getFullYear() === now.getFullYear() && o.status !== "Cancelled" && 
+           o.status !== "Returned" && o.refundStatus !== "Completed";
   }).reduce((sum, o) => sum + (o.totalPrice || 0), 0);
 
   // Filter Products for the List Tab
@@ -1140,22 +1150,22 @@ export default function Admin() {
             }}>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '30px', alignItems: 'center' }}>
                 <div style={{ borderRight: '1px solid rgba(212,175,55,0.1)', paddingRight: '15px' }}>
-                  <span style={{ fontSize: '10px', color: '#d4af37', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '1px' }}>Daily Revenue</span>
+                  <span style={{ fontSize: '10px', color: '#d4af37', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '1px' }}>Daily Revenue (Net)</span>
                   <h2 style={{ fontSize: '32px', color: reportPeriod === 'daily' ? '#d4af37' : '#fff', margin: '5px 0', fontWeight: '900' }}>₹{dailyTotalRev.toLocaleString()}</h2>
                   {reportPeriod === 'daily' && <small style={{ color: '#d4af37', fontSize: '10px' }}>● Selected Period</small>}
                 </div>
                 <div style={{ borderRight: '1px solid rgba(212,175,55,0.1)', paddingRight: '15px' }}>
-                  <span style={{ fontSize: '10px', color: '#d4af37', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '1px' }}>Weekly Revenue</span>
+                  <span style={{ fontSize: '10px', color: '#d4af37', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '1px' }}>Weekly Revenue (Net)</span>
                   <h2 style={{ fontSize: '32px', color: reportPeriod === 'weekly' ? '#d4af37' : '#fff', margin: '5px 0', fontWeight: '900' }}>₹{weeklyTotalRev.toLocaleString()}</h2>
                   {reportPeriod === 'weekly' && <small style={{ color: '#d4af37', fontSize: '10px' }}>● Selected Period</small>}
                 </div>
                 <div style={{ borderRight: '1px solid rgba(212,175,55,0.1)', paddingRight: '15px' }}>
-                  <span style={{ fontSize: '10px', color: '#d4af37', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '1px' }}>Monthly Revenue</span>
+                  <span style={{ fontSize: '10px', color: '#d4af37', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '1px' }}>Monthly Revenue (Net)</span>
                   <h2 style={{ fontSize: '32px', color: reportPeriod === 'monthly' ? '#d4af37' : '#fff', margin: '5px 0', fontWeight: '900' }}>₹{monthlyTotalRev.toLocaleString()}</h2>
                   {reportPeriod === 'monthly' && <small style={{ color: '#d4af37', fontSize: '10px' }}>● Selected Period</small>}
                 </div>
                 <div>
-                  <span style={{ fontSize: '10px', color: '#d4af37', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '1px' }}>Yearly Revenue</span>
+                  <span style={{ fontSize: '10px', color: '#d4af37', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '1px' }}>Yearly Revenue (Net)</span>
                   <h2 style={{ fontSize: '32px', color: reportPeriod === 'yearly' || reportPeriod === 'all' ? '#d4af37' : '#fff', margin: '5px 0', fontWeight: '900' }}>₹{yearlyTotalRev.toLocaleString()}</h2>
                   {(reportPeriod === 'yearly' || reportPeriod === 'all') && <small style={{ color: '#d4af37', fontSize: '10px' }}>● Selected Period</small>}
                 </div>
@@ -1193,8 +1203,16 @@ export default function Admin() {
               <div className="admin-card myntra-card green">
                 <div className="card-icon">💰</div>
                 <div className="card-content">
-                  <h3>Total Revenue</h3>
+                  <h3>Total Sales (Net)</h3>
                   <p>₹{totalRevenue.toLocaleString()}</p>
+                </div>
+              </div>
+
+              <div className="admin-card myntra-card red" style={{ background: 'rgba(231, 76, 60, 0.1)', border: '1px solid rgba(231, 76, 60, 0.3)' }}>
+                <div className="card-icon">↩️</div>
+                <div className="card-content">
+                  <h3 style={{ color: '#e74c3c' }}>Total Refunded</h3>
+                  <p style={{ color: '#e74c3c' }}>₹{totalRefunded.toLocaleString()}</p>
                 </div>
               </div>
 
