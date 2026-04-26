@@ -661,26 +661,39 @@ export default function Admin() {
     }
   };
 
+  const [refundingIds, setRefundingIds] = useState(new Set());
+
   const handleRefund = async (id) => {
     if (!window.confirm("Are you sure you want to INITIATE a full refund via Razorpay? This cannot be undone.")) return;
 
+    // Visual feedback
+    setRefundingIds(prev => new Set(prev).add(id));
+    
     try {
+      console.log("🚀 Initiating refund for ticket:", id);
       const response = await apiInitiateRefund(id);
-      // Backend returns { message, ticket }
+      
       const updatedTicket = response.ticket || response.query;
-
       if (updatedTicket) {
         setQueries(queries.map((q) => (q._id === id ? { ...q, ...updatedTicket } : q)));
       }
       
       toast.success("Refund Processed Successfully! ✨");
+      window.alert("✅ Refund Successful!\nRazorpay ID: " + (updatedTicket?.razorpayRefundId || "Success"));
       
-      // ✅ CRITICAL: Refresh all data (including orders) so sales numbers update
       setTimeout(() => {
         loadAll(true);
       }, 1000);
     } catch (err) {
+      console.error("❌ Refund error:", err);
       toast.error("Refund Failed: " + (err.message || "Unknown error"));
+      window.alert("❌ Refund Failed!\nReason: " + (err.message || "Check console for details"));
+    } finally {
+      setRefundingIds(prev => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
     }
   };
 
@@ -2598,9 +2611,16 @@ export default function Admin() {
                               <button
                                 className="small-btn edit-btn"
                                 onClick={() => handleRefund(q._id)}
-                                style={{ marginTop: "5px", marginLeft: "5px", background: "#f44336", border: "1px solid #d32f2f" }}
+                                disabled={refundingIds.has(q._id)}
+                                style={{ 
+                                  marginTop: "5px", 
+                                  marginLeft: "5px", 
+                                  background: refundingIds.has(q._id) ? "#555" : "#f44336", 
+                                  border: "1px solid #d32f2f",
+                                  cursor: refundingIds.has(q._id) ? "not-allowed" : "pointer"
+                                }}
                               >
-                                Initiate Refund 💸
+                                {refundingIds.has(q._id) ? "🔄 Processing..." : "Initiate Refund 💸"}
                               </button>
                             )}
                           </>
