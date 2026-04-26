@@ -354,7 +354,7 @@ export default function TrackOrder() {
             <p className="to-delv-title">Delivered successfully!</p>
             <p className="to-delv-sub">Enjoy your premium fragrance experience.</p>
           </div>
-          {isReturnAllowed(order) && !order.returnDetails && (
+          {isReturnAllowed(order) && (!order.returnDetails || order.returnDetails.status === "None") && (
             <button 
               className="to-back-btn" 
               style={{ borderColor: "#ff6b6b", color: "#ff6b6b", marginLeft: "auto" }}
@@ -363,7 +363,7 @@ export default function TrackOrder() {
               ↩ Return / Refund
             </button>
           )}
-          {order.returnDetails && (
+          {order.returnDetails && order.returnDetails.status !== "None" && (
             <span style={{ fontSize: '12px', color: '#ff9f43', fontWeight: 'bold', marginLeft: 'auto' }}>
               Return Requested
             </span>

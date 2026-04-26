@@ -247,7 +247,7 @@ export default function Orders() {
                           ✕ Cancel
                         </button>
                       )}
-                      {o.status === "Delivered" && isReturnAllowed(o) && !o.returnDetails && (
+                      {o.status === "Delivered" && isReturnAllowed(o) && (!o.returnDetails || o.returnDetails.status === "None") && (
                         <button
                           className="obar-btn obar-return"
                           onClick={() => openReturnModal(o)}
