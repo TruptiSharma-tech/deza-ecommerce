@@ -1903,6 +1903,11 @@ export default function Admin() {
                               💸 REFUND REQ
                             </span>
                           )}
+                          {o.refundStatus === "Completed" && (
+                            <span style={{ background: "#2ecc71", color: "#fff", padding: "2px 6px", borderRadius: "4px", fontSize: "10px", fontWeight: "900" }}>
+                              ✅ REFUNDED
+                            </span>
+                          )}
                         </div>
                       </td>
                       <td>
