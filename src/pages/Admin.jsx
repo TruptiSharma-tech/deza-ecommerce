@@ -1999,8 +1999,23 @@ export default function Admin() {
                         <strong>{q.name}</strong><br />
                         <small>{q.email}</small>
                       </td>
-                      <td><span className="badge-premium">{q.ticketType}</span></td>
-                      <td><span style={{ color: "#d4af37" }}>{q.issueType}</span></td>
+                      <td>
+                        <span className="badge-premium" style={{ 
+                          background: q.ticketType === "Return / Refund" ? "rgba(231, 76, 60, 0.2)" : "rgba(212, 175, 55, 0.1)",
+                          color: q.ticketType === "Return / Refund" ? "#e74c3c" : "#d4af37",
+                          border: q.ticketType === "Return / Refund" ? "1px solid rgba(231, 76, 60, 0.4)" : "1px solid rgba(212, 175, 55, 0.3)"
+                        }}>
+                          {q.ticketType}
+                        </span>
+                      </td>
+                      <td>
+                        <span style={{ 
+                          color: q.issueType?.includes("Refund") ? "#e74c3c" : "#d4af37",
+                          fontWeight: q.issueType?.includes("Refund") ? "900" : "600"
+                        }}>
+                          {q.issueType}
+                        </span>
+                      </td>
                       <td>{q.orderId || "N/A"}</td>
                       <td style={{ maxWidth: "200px", fontSize: "12px" }}>{q.message}</td>
 
@@ -2355,6 +2370,191 @@ export default function Admin() {
                   ))}
                   {brandsList.length === 0 && (
                     <tr><td colSpan="5" style={{ textAlign: "center" }}>No brands registered.</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* SUPPORT TICKETS */}
+        {activeTab === "queries" && (
+          <div className="admin-section">
+            <div className="flex-between" style={{ marginBottom: "20px" }}>
+              <div className="admin-header-flex">
+                <div>
+                  <h2 className="admin-title">📬 Support Tickets</h2>
+                  <p className="admin-subtitle">Customer queries, return requests, and refund appeals.</p>
+                </div>
+              </div>
+              <div className="action-buttons">
+                <button 
+                  className="small-btn" 
+                  style={{ background: "#333", color: "#fff" }}
+                  onClick={() => loadAll(true)}
+                >
+                  🔄 Refresh
+                </button>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
+              <button 
+                className="small-btn" 
+                style={{ background: "rgba(212, 175, 55, 0.1)", color: "#d4af37", border: "1px solid #d4af37" }}
+                onClick={() => {
+                   // This is a simple client-side filter simulation if needed, 
+                   // but for now we'll just show the highlight logic we added
+                }}
+              >
+                All Tickets ({queries.length})
+              </button>
+              <button 
+                className="small-btn" 
+                style={{ background: "rgba(231, 76, 60, 0.2)", color: "#e74c3c", border: "1px solid #e74c3c" }}
+              >
+                Returns & Refunds ({queries.filter(q => q.ticketType === "Return / Refund" || q.ticketType === "Refund Request").length})
+              </button>
+            </div>
+
+            <div className="table-wrapper">
+              <table className="queries-table">
+                <thead>
+                  <tr>
+                    <th>Ticket</th>
+                    <th>Customer</th>
+                    <th>Type</th>
+                    <th>Issue</th>
+                    <th>Order ID</th>
+                    <th>Message</th>
+                    <th>Status</th>
+                    <th>Action / Reply</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {queries.map((q) => (
+                    <tr key={q._id}>
+                      <td>{"DZ-TK-" + String(q._id).slice(-6).toUpperCase()}</td>
+                      <td>
+                        <strong>{q.name}</strong><br />
+                        <small>{q.email}</small>
+                      </td>
+                      <td>
+                        <span className="badge-premium" style={{ 
+                          background: q.ticketType === "Return / Refund" ? "rgba(231, 76, 60, 0.2)" : "rgba(212, 175, 55, 0.1)",
+                          color: q.ticketType === "Return / Refund" ? "#e74c3c" : "#d4af37",
+                          border: q.ticketType === "Return / Refund" ? "1px solid rgba(231, 76, 60, 0.4)" : "1px solid rgba(212, 175, 55, 0.3)"
+                        }}>
+                          {q.ticketType}
+                        </span>
+                      </td>
+                      <td>
+                        <span style={{ 
+                          color: q.issueType?.includes("Refund") ? "#e74c3c" : "#d4af37",
+                          fontWeight: q.issueType?.includes("Refund") ? "900" : "600"
+                        }}>
+                          {q.issueType}
+                        </span>
+                      </td>
+                      <td>{q.orderId || "N/A"}</td>
+                      <td style={{ maxWidth: "200px", fontSize: "12px" }}>{q.message}</td>
+
+                      <td>
+                        <select
+                          value={q.status || "Pending"}
+                          onChange={(e) =>
+                            updateQueryField(q._id, "status", e.target.value)
+                          }
+                          style={{
+                            background: q.status === "Resolved" ? "#2e7d32" : (q.status === "In Progress" ? "#f9a825" : "#1a1a1a"),
+                            color: "#fff",
+                            padding: "4px 8px",
+                            borderRadius: "4px"
+                          }}
+                        >
+                          <option value="Pending">Pending</option>
+                          <option value="In Progress">In Progress</option>
+                          <option value="Resolved">Resolved</option>
+                        </select>
+                      </td>
+
+                      <td>
+                        {q.adminReply ? (
+                          <div style={{ color: "#4CAF50" }}>
+                            <strong>Reply:</strong>
+                            <p>{q.adminReply}</p>
+                            <small>{q.repliedAt}</small>
+                          </div>
+                        ) : (
+                          <>
+                            <select
+                              style={{ width: "100%", marginBottom: "5px", padding: "5px", background: "#333", color: "#fff", border: "1px solid #555" }}
+                              onChange={(e) => {
+                                if (e.target.value) {
+                                  setReplyInputs({
+                                    ...replyInputs,
+                                    [q._id]: e.target.value,
+                                  });
+                                }
+                              }}
+                              value={""} // Always empty to allow re-selection
+                            >
+                              <option value="" disabled>✨ Select Reply Template...</option>
+                              <option value="We sincerely apologize for the inconvenience. For the wrong product received, your return pickup has been scheduled. The order will be pickup in 3 days. Replacement will be sent post pickup.">Reply Template: Wrong Item (3-Day Pickup)</option>
+                              <option value="We apologize that the scent did not meet your expectations. We have approved your return request. Please pack the item securely for pickup. Note: Return accepted as per 48h policy.">Reply Template: Scent Return Approved (48h)</option>
+                              <option value="We are terribly sorry about the damaged bottle. We have initiated a full refund to your original payment method. As per our 24-hour promise, the amount will be credited within 24 hours.">Reply Template: Damaged Bottle (Full Refund)</option>
+                              <option value="Your refund request is approved. Our finance team has initiated the transaction. You will receive the credit in your account within 24 business hours as per DEZA luxury standards.">Reply Template: Refund Approved (Initate Transfer)</option>
+                              <option value="Thank you for reaching out. Your exchange request for a different size/fragrance has been noted. Our team will contact you for pickup within 48 hours.">Reply Template: Exchange Acknowledged</option>
+                            </select>
+
+                            <textarea
+                              placeholder="Write reply..."
+                              value={replyInputs[q._id] || ""}
+                              onChange={(e) =>
+                                setReplyInputs({
+                                  ...replyInputs,
+                                  [q._id]: e.target.value,
+                                })
+                              }
+                              style={{ width: "100%", minHeight: "50px" }}
+                            />
+                            <button
+                              className="small-btn edit-btn"
+                              onClick={() => sendAdminReply(q._id)}
+                              style={{ marginTop: "5px" }}
+                            >
+                              Send Reply 🚀
+                            </button>
+                            {q.refundStatus === "Initiated" || q.refundStatus === "Completed" ? (
+                              <button
+                                className="small-btn edit-btn"
+                                disabled
+                                style={{ marginTop: "5px", marginLeft: "5px", background: "#4caf50", border: "1px solid #388e3c", opacity: 0.8 }}
+                              >
+                                Refund Initiated ✅
+                              </button>
+                            ) : (
+                              <button
+                                className="small-btn edit-btn"
+                                onClick={() => handleRefund(q._id)}
+                                style={{ marginTop: "5px", marginLeft: "5px", background: "#f44336", border: "1px solid #d32f2f" }}
+                              >
+                                Initiate Refund 💸
+                              </button>
+                            )}
+                          </>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+
+                  {queries.length === 0 && (
+                    <tr>
+                      <td colSpan="8" style={{ textAlign: "center" }}>
+                        No support tickets found 🎉
+                      </td>
+                    </tr>
                   )}
                 </tbody>
               </table>
