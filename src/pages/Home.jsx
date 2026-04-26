@@ -51,10 +51,21 @@ export default function Home() {
     apiGetProducts()
       .then((res) => {
         const data = Array.isArray(res) ? res : (res.products || []);
-        const bestSellers = data.filter(p => p.isBestSeller === true);
-        const sorted = (bestSellers.length >= 2 ? bestSellers : data)
+        
+        // 🔀 SHUFFLE & BESTSELLERS LOGIC
+        // 1. Separate Bestsellers
+        const bestSellers = data.filter(p => p.isBestSeller === true || p.rating >= 4.7)
           .sort((a, b) => (b.rating || 0) - (a.rating || 0));
-        setFeatured(sorted.slice(0, 4));
+        
+        const others = data.filter(p => !bestSellers.some(bs => bs._id === p._id));
+        
+        // 2. Shuffle Others
+        const shuffledOthers = others.sort(() => Math.random() - 0.5);
+        
+        // 3. Combine: Top 3 Bestsellers first, then others
+        const finalProducts = [...bestSellers.slice(0, 3), ...shuffledOthers];
+        
+        setFeatured(finalProducts.slice(0, 4));
       })
       .catch(() => setFeatured([]))
       .finally(() => setLoading(false));

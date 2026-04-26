@@ -50,7 +50,21 @@ export default function Shop() {
     try {
       const res = await apiGetProducts(false, 1, 100);
       const data = Array.isArray(res) ? res : (res.products || []);
-      setProducts(data);
+      
+      // 🔀 SHUFFLE & BESTSELLERS LOGIC
+      // 1. Separate Bestsellers
+      const bestSellers = data.filter(p => p.isBestSeller === true || p.rating >= 4.7)
+        .sort((a, b) => (b.rating || 0) - (a.rating || 0));
+      
+      const others = data.filter(p => !bestSellers.some(bs => bs._id === p._id));
+      
+      // 2. Shuffle Others
+      const shuffledOthers = others.sort(() => Math.random() - 0.5);
+      
+      // 3. Combine: Top 3 Bestsellers first, then others
+      const combined = [...bestSellers.slice(0, 3), ...shuffledOthers];
+      
+      setProducts(combined);
     } catch (err) {
       console.error("Failed to fetch products:", err);
       setProducts([]);
