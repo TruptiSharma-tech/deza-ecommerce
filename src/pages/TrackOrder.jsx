@@ -2,37 +2,6 @@ import React, { useEffect, useState, useRef } from "react";
 import "./TrackOrder.css";
 import { useParams, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
-import L from 'leaflet';
-
-// Fix for default marker icon in Leaflet
-delete L.Icon.Default.prototype._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
-  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-});
-
-// Custom Delivery Truck Icon
-// Custom Icons for Map
-const deliveryIcon = new L.Icon({
-  iconUrl: 'https://cdn-icons-png.flaticon.com/512/7541/7541900.png',
-  iconSize: [45, 45],
-  iconAnchor: [22, 45],
-  popupAnchor: [0, -45],
-});
-
-const warehouseIcon = new L.Icon({
-  iconUrl: 'https://cdn-icons-png.flaticon.com/512/2897/2897868.png',
-  iconSize: [35, 35],
-  iconAnchor: [17, 35],
-});
-
-const homeIcon = new L.Icon({
-  iconUrl: 'https://cdn-icons-png.flaticon.com/512/1239/1239525.png',
-  iconSize: [35, 35],
-  iconAnchor: [17, 35],
-});
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
@@ -161,14 +130,7 @@ function formatPhone(num) {
   return `+91 ${digits}`;
 }
 
-// Helper to center map when coords change
-function RecenterMap({ lat, lng }) {
-  const map = useMap();
-  useEffect(() => {
-    if (lat && lng) map.setView([lat, lng]);
-  }, [lat, lng]);
-  return null;
-}
+// Removed map recenter helper
 
 export default function TrackOrder() {
   const { orderId } = useParams();
