@@ -50,6 +50,7 @@ const LoadingScreen = () => (
 
 export default function App() {
   const location = useLocation();
+  const isAdminRoute = location.pathname.startsWith("/admin");
 
   return (
     <>
@@ -81,7 +82,7 @@ export default function App() {
         }}
       />
       <ScrollToTop />
-      <Navbar />
+      {!isAdminRoute && <Navbar />}
 
       <Suspense fallback={<LoadingScreen />}>
         <AnimatePresence mode="wait">
@@ -137,9 +138,13 @@ export default function App() {
         </AnimatePresence>
       </Suspense>
 
-      <Footer />
-      <MobileBottomNav />
-      <AccountSidebar />
+      {!isAdminRoute && (
+        <>
+          <Footer />
+          <MobileBottomNav />
+          <AccountSidebar />
+        </>
+      )}
     </>
   );
 }
