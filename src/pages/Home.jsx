@@ -4,18 +4,7 @@ import { apiGetProducts, apiGetHeroSettings } from "../utils/api";
 import { FaStar, FaChevronLeft, FaChevronRight } from "react-icons/fa";
 import "./Home.css";
 
-// New hero images
-import heroMain from "../assets/hero-main.png";
-import heroOriginal from "../assets/hero-original.png";
-import heroRecreational from "../assets/hero-recreational.png";
-import heroPromo from "../assets/hero-promo.png";
-
-const DEFAULT_BANNERS = [
-  { image: heroMain, title: "The DEZA Collection", subtitle: "Noir | Blossom | Oud Royale", isLocal: true },
-  { image: heroOriginal, title: "Original Collection", subtitle: "Crafting timeless elegance in every drop", isLocal: true },
-  { image: heroRecreational, title: "Recreational Collection", subtitle: "Vibrant energy for the spontaneous soul", isLocal: true },
-  { image: heroPromo, title: "", subtitle: "", isLocal: true, hideOverlay: true },
-];
+const DEFAULT_BANNERS = [];
 
 export default function Home() {
   const navigate = useNavigate();
@@ -44,7 +33,7 @@ export default function Home() {
   useEffect(() => {
     apiGetHeroSettings()
       .then((data) => {
-        if (data && data.banners && data.banners.length > 0) setHeroData(data);
+        if (data && data.banners) setHeroData(data);
       })
       .catch(() => { });
 
