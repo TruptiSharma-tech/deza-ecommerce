@@ -167,13 +167,28 @@ router.post("/:id/refund", auth, adminOnly, async (req, res) => {
                     });
                 }
 
+                const paymentId = order.paymentDetails?.paymentId;
+
                 if (order.paymentMethod === "Cash On Delivery") {
                      // For COD, we just proceed with the notification email
                      console.log("COD Order: Skipping Razorpay, proceeding with notification.");
-                } else if (order.paymentDetails?.paymentId) {
-                    console.log(`💸 Attempting Razorpay Refund for Payment: ${order.paymentDetails.paymentId}`);
+                     order.refundStatus = "Completed";
+                     order.statusHistory.push({ status: "Refund Completed", comment: `COD Refund Processed Manually` });
+                     await order.save();
+                     ticket.refundStatus = "Completed";
+                     ticket.razorpayRefundId = "COD_REFUND";
+                } else if (order.paymentMethod === "UPI (Dummy)" || (paymentId && paymentId.startsWith("DUMMY_"))) {
+                     console.log("Dummy Payment Order: Skipping Razorpay, proceeding with notification.");
+                     razorpayRefundId = "DUMMY_REFUND_" + Date.now();
+                     order.refundStatus = "Completed";
+                     order.statusHistory.push({ status: "Refund Completed", comment: `Dummy Refund ID: ${razorpayRefundId}` });
+                     await order.save();
+                     ticket.refundStatus = "Completed";
+                     ticket.razorpayRefundId = razorpayRefundId;
+                } else if (paymentId) {
+                    console.log(`💸 Attempting Razorpay Refund for Payment: ${paymentId}`);
                     try {
-                        const refund = await razorpay.payments.refund(order.paymentDetails.paymentId, {
+                        const refund = await razorpay.payments.refund(paymentId, {
                             amount: Math.round(order.totalAmount * 100), // Full refund in paise
                             notes: {
                                 ticketId: String(ticket._id),
