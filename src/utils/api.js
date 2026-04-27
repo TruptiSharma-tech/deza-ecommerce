@@ -1,7 +1,7 @@
 // Central API utility for DEZA e-commerce
 // All API calls go through this file to the Express + MongoDB backend
 
-let BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+let BASE_URL = import.meta.env.VITE_API_URL || "https://deza-ecommerce.onrender.com/api";
 if (BASE_URL.endsWith("/")) BASE_URL = BASE_URL.slice(0, -1);
 if (!BASE_URL.endsWith("/api")) BASE_URL += "/api";
 

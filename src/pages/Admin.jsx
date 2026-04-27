@@ -225,9 +225,10 @@ export default function Admin() {
         qrys = results[1];
         usrs = results[2];
       } catch (critErr) {
-        console.warn("Silent Sync Critical Error:", critErr);
-        // On error, we keep old states and DON'T trigger notifications
-        if (!silent) throw critErr;
+        console.error("Critical Sync Error:", critErr);
+        if (!silent) {
+          setError(`Sync failed: ${critErr.message || "Network Error"}. Please check your connection or try again.`);
+        }
         return;
       }
 
@@ -317,13 +318,17 @@ export default function Admin() {
       setLastUpdated(new Date());
       setError(null);
     } catch (err) {
-      console.error("Critical Admin Load Error:", err);
-      // If unauthorized, redirect to login
-      if (err.message?.includes("401") || err.message?.includes("Unauthorized")) {
-        toast.error("Session expired. Please login again.");
-        handleLogout();
+      console.error("Root Admin Load Error:", err);
+      const msg = err.message || "";
+      if (msg.includes("401") || msg.includes("Unauthorized") || msg.includes("403")) {
+        toast.error("Session expired or unauthorized. Please login again.");
+        setTimeout(() => {
+          localStorage.removeItem("deza_token");
+          localStorage.removeItem("deza_admin");
+          window.location.href = "/admin-login";
+        }, 2000);
       } else {
-        setError("Failed to connect to server. Real-time sync might be interrupted.");
+        setError(`Failed to connect to server (${msg}). Real-time sync might be interrupted.`);
       }
     } finally {
       setLoading(false);
@@ -1133,7 +1138,15 @@ export default function Admin() {
 
       {/* CONTENT */}
       <div className="admin-content">
-        {error && <div className="admin-error"><h2>{error} ❌</h2><button onClick={() => loadAll()}>Retry</button></div>}
+        {error && (
+          <div className="admin-error">
+            <h2>{error} ❌</h2>
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', marginTop: '10px' }}>
+              <button className="lux-btn" onClick={() => loadAll()}>Retry</button>
+              <button className="lux-btn danger" onClick={() => { localStorage.clear(); window.location.reload(); }}>Clear Cache</button>
+            </div>
+          </div>
+        )}
 
         {/* DASHBOARD */}
         {activeTab === "dashboard" && (
