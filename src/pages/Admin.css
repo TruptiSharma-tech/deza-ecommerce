@@ -3,6 +3,12 @@
    Inspired by Shopify / Nykaa / Zara Admin
 ============================ */
 
+:root {
+  --gold: #d4af37;
+  --dark-bg: #0b0b0d;
+  --sidebar-bg: rgba(12, 12, 15, 0.98);
+}
+
 .admin-page {
   display: flex;
   min-height: 100vh;
@@ -95,10 +101,12 @@
   margin: 15px 0;
 }
 
+
 .admin-mobile-header {
   display: none;
-  background: #0b0b0d;
-  padding: 15px 20px;
+  background: rgba(11, 11, 13, 0.95);
+  backdrop-filter: blur(15px);
+  padding: 12px 18px;
   align-items: center;
   justify-content: space-between;
   border-bottom: 1px solid rgba(212, 175, 55, 0.2);
@@ -111,16 +119,23 @@
   background: transparent;
   border: none;
   color: var(--gold);
-  font-size: 24px;
+  font-size: 28px;
   cursor: pointer;
+  z-index: 1001;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
 }
 
 .mobile-logo {
-  font-size: 18px;
+  font-size: 16px;
   letter-spacing: 2px;
   font-weight: 900;
   color: var(--gold);
   margin: 0;
+  text-transform: uppercase;
 }
 
 .admin-logo {
@@ -1027,6 +1042,16 @@
     padding: 6px 10px;
     font-size: 11px;
   }
+
+  /* Force tables to be scrollable but readable */
+  .table-wrapper {
+    margin-top: 10px;
+    border-radius: 12px;
+  }
+  
+  .product-table, .orders-table, .queries-table {
+    min-width: 600px; /* Ensure content doesn't squash too much */
+  }
 }
 
 /* ============================
@@ -1125,3 +1150,4 @@
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
   font-size: 14px;
 }
+

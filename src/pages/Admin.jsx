@@ -1245,9 +1245,9 @@ export default function Admin() {
               <div className="admin-card myntra-card gold" style={{ background: 'linear-gradient(135deg, #d4af37, #aa8822)', border: '1px solid #d4af37' }}>
                 <div className="card-icon">💰</div>
                 <div className="card-content">
-                  <h3 style={{ color: '#000' }}>Net Revenue</h3>
-                  <p style={{ color: '#000', fontWeight: '900' }}>₹{totalRevenue.toLocaleString()}</p>
-                  <small style={{ color: '#000', opacity: 0.8, fontSize: '10px' }}>Actual Profit (Gross - Refunded)</small>
+                  <h3 style={{ color: '#fff' }}>Net Revenue</h3>
+                  <p style={{ color: '#fff', fontWeight: '900' }}>₹{totalRevenue.toLocaleString()}</p>
+                  <small style={{ color: '#fff', opacity: 0.8, fontSize: '10px' }}>Actual Profit (Gross - Refunded)</small>
                 </div>
               </div>
 
