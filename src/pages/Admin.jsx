@@ -47,7 +47,8 @@ ChartJS.register(
   Filler,
 );
 
-const REFRESH_INTERVAL = 2000; // Real-time sync every 2 seconds for faster updates
+const REFRESH_INTERVAL = 10000; // 10s for production stability
+
 
 // ❌ REMOVE THESE (these were making everything black)
 // ChartJS.defaults.color = "#1A1A1A";
@@ -185,7 +186,7 @@ export default function Admin() {
     if (content) content.scrollTo({ top: 0, left: 0, behavior: 'auto' });
   }, [activeTab]);
 
-  // ✅ Real-time Auto-Refresh (3s)
+  // ✅ Real-time Auto-Refresh (10s)
   useEffect(() => {
     loadAll();
     const interval = setInterval(() => {
