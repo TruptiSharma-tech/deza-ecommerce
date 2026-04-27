@@ -8,8 +8,6 @@ dotenv.config();
 
 const router = express.Router();
 
-import razorpay from "../utils/razorpay.js";
-
 // ─── POST - Create Razorpay Order ─────────────────────────────────────────────
 // No auth required — user identity is tracked on the order itself (POST /orders)
 router.post("/create-order", async (req, res) => {
