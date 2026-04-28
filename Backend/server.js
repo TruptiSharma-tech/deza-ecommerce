@@ -40,14 +40,14 @@ app.use(cors({ origin: true, credentials: true }));
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 
-// ─── Routes ───────────────────────────────────────────────────────────────────
-app.use("/api/auth", authRoutes);
-app.use("/api/products", productRoutes);
-app.use("/api/orders", orderRoutes);
-app.use("/api/queries", queryRoutes);
-app.use("/api/reviews", reviewRoutes);
-app.use("/api/admin", adminRoutes);
-app.use("/api/payments", paymentRoutes);
+// ─── Routes (with Safety Net for missing /api prefix) ─────────────────────────
+app.use(["/api/auth", "/auth"], authRoutes);
+app.use(["/api/products", "/products"], productRoutes);
+app.use(["/api/orders", "/orders"], orderRoutes);
+app.use(["/api/queries", "/queries"], queryRoutes);
+app.use(["/api/reviews", "/reviews"], reviewRoutes);
+app.use(["/api/admin", "/admin"], adminRoutes);
+app.use(["/api/payments", "/payments"], paymentRoutes);
 
 // ─── Health & Test Routes ──────────────────────────────────────────────────
 app.get("/", (req, res) => res.json({ message: "DEZA API is running 🚀" }));
