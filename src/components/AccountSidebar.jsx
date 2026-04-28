@@ -98,12 +98,6 @@ export default function AccountSidebar() {
                 active={activeSection === "password"}
                 onClick={() => setActiveSection("password")}
               />
-              <MenuBtn
-                icon={<FaCog />}
-                label="Settings"
-                active={activeSection === "settings"}
-                onClick={() => setActiveSection("settings")}
-              />
 
               <div className="menu-divider" />
 
@@ -182,19 +176,6 @@ export default function AccountSidebar() {
                 </div>
               )}
 
-              {activeSection === "settings" && (
-                <div className="premium-panel">
-                  <h3>Settings</h3>
-                  <div className="setting-toggle">
-                    <span>Email Notifications</span>
-                    <input type="checkbox" defaultChecked />
-                  </div>
-                  <div className="setting-toggle">
-                    <span>Two-Factor Auth</span>
-                    <input type="checkbox" />
-                  </div>
-                </div>
-              )}
             </div>
           </motion.div>
         </>
