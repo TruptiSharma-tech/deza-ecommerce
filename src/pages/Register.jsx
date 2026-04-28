@@ -97,6 +97,7 @@ export default function Register() {
     }, 1000);
   };
 
+  const handleVerifyOtp = () => {
     const enteredOtp = otpArray.join("");
     if (!generatedOtp) {
       toast.error("Please request an OTP first.");
