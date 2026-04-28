@@ -77,6 +77,42 @@ export default function ProductDetails() {
     loadProductData();
   }, [id]);
 
+  // 🚀 SEO & Title Optimization (Premium Social Sharing)
+  useEffect(() => {
+    if (product) {
+      document.title = `${product.title} | DEZA Luxury Perfumes`;
+      
+      // Update Meta Description
+      let metaDesc = document.querySelector('meta[name="description"]');
+      if (!metaDesc) {
+        metaDesc = document.createElement('meta');
+        metaDesc.name = "description";
+        document.head.appendChild(metaDesc);
+      }
+      metaDesc.content = `Buy ${product.title} Luxury Fragrance at DEZA. ${product.description?.slice(0, 100)}...`;
+      
+      // OpenGraph (Social Media sharing previews)
+      const updateMeta = (property, content) => {
+        let meta = document.querySelector(`meta[property="${property}"]`);
+        if (!meta) {
+          meta = document.createElement('meta');
+          meta.setAttribute('property', property);
+          document.head.appendChild(meta);
+        }
+        meta.content = content;
+      };
+
+      updateMeta('og:title', product.title);
+      updateMeta('og:description', product.description?.slice(0, 150));
+      updateMeta('og:image', product.images?.[0] || product.image);
+      updateMeta('og:url', window.location.href);
+    }
+    
+    return () => {
+      document.title = "DEZA | Luxury Perfumes";
+    };
+  }, [product]);
+
   const getPriceBySize = () => {
     if (!product) return 0;
     if (product.sizePrices && selectedSize) {

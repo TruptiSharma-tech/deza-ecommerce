@@ -22,12 +22,29 @@ export default function OrderSuccess() {
     };
     window.addEventListener("resize", handleResize);
 
-    // Read the order details stored during checkout
-    const lastOrder = JSON.parse(localStorage.getItem("lastOrder"));
-    if (lastOrder) {
-      setOrder(lastOrder);
-      // We don't clear it immediately to allow WhatsApp sharing to work
-    }
+    const fetchOrderData = async () => {
+        // 1. Try LocalStorage first (Fastest)
+        const lastOrder = JSON.parse(localStorage.getItem("lastOrder"));
+        
+        if (lastOrder) {
+          setOrder(lastOrder);
+        } else {
+          // 2. API Fallback (If cache was cleared)
+          try {
+            const { apiGetOrders } = await import("../utils/api");
+            const orders = await apiGetOrders();
+            if (orders && orders.length > 0) {
+                // Sort by date and get latest
+                const latest = orders.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
+                setOrder(latest);
+            }
+          } catch (err) {
+            console.error("Failed to fetch order fallback:", err);
+          }
+        }
+    };
+
+    fetchOrderData();
 
     // EXTRA SAFE: Clear cart and checkout info
     const performCleanup = async () => {
