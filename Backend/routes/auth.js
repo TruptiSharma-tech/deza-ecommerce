@@ -10,27 +10,29 @@ import { auth, adminOnly } from "../middleware/auth.js";
 const router = express.Router();
 import { sendWhatsApp } from "../utils/whatsappHelper.js";
 
-// ─── WhatsApp OTP (Live) ──────────────────────────────────────────────────
-router.post("/send-whatsapp-otp", async (req, res) => {
+// ─── Email OTP (Live & Reliable) ──────────────────────────────────────────
+router.post("/send-email-otp", async (req, res) => {
     try {
-        const { contact, otp } = req.body;
-        if (!contact || !otp) return res.status(400).json({ error: "Contact and OTP are required." });
+        const { email, otp } = req.body;
+        if (!email || !otp) return res.status(400).json({ error: "Email and OTP are required." });
 
-        // Meta Cloud API template: "registration_otp" (must be approved on Meta dashboard)
-        const success = await sendWhatsApp(contact, "registration_otp", [otp]);
+        const html = getBrandedTemplate("Verification Code", `
+            <p>Welcome to DEZA. Use the code below to verify your account:</p>
+            <div style="text-align: center; margin: 30px 0; font-size: 32px; font-weight: bold; color: #d4af37; letter-spacing: 5px; border: 1px dashed #d4af37; padding: 20px; border-radius: 8px;">
+                ${otp}
+            </div>
+            <p style="font-size: 14px; color: #666;">This code is valid for 10 minutes. If you did not request this, please ignore this email.</p>
+        `);
+
+        const success = await sendEmail(email, "🔐 Your DEZA Verification Code", html);
         
         if (success) {
-            res.json({ message: "OTP sent successfully on WhatsApp! ✨" });
+            res.json({ message: "Verification code sent to your email! ✨" });
         } else {
-            // Fallback for demo/dev if API is not set up
-            console.warn(`⚠️ WhatsApp API failed for ${contact}. Sending manual fallback info.`);
-            res.status(200).json({ 
-                message: "API Simulation: Please use code 123456 to verify (Meta API not connected).",
-                demo: true 
-            });
+            res.status(500).json({ error: "Failed to send email. Check SMTP settings." });
         }
     } catch (err) {
-        res.status(500).json({ error: "Failed to send WhatsApp OTP." });
+        res.status(500).json({ error: "Failed to send Email OTP." });
     }
 });
 

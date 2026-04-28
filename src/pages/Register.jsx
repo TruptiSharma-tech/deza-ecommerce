@@ -70,31 +70,33 @@ export default function Register() {
     const normalized = cleanNumber.slice(-10);
     setFormData(prev => ({ ...prev, contact: normalized }));
 
-    console.log("Attempting to send OTP to:", formData.contact);
+    console.log("Attempting to send Email OTP to:", formData.email);
     const newOtp = Math.floor(100000 + Math.random() * 900000).toString();
     setGeneratedOtp(newOtp);
-    setOtpSent(true);
-    setOtpVerified(false);
-    setOtp("");
-    setOtpArray(["", "", "", "", "", ""]);
-    setShowOtpModal(true);
 
-    // In a real app, this would be an API call. For now, we simulate success.
-    toast.success("Verification code sent to your mobile number! ✨");
-    console.log("DEMO OTP:", newOtp);
+    try {
+      await apiSendEmailOtp({ email: formData.email, otp: newOtp });
+      toast.success("Verification code sent to your email! ✨");
+      setOtpSent(true);
+      setOtpVerified(false);
+      setOtp("");
+      setOtpArray(["", "", "", "", "", ""]);
+      setShowOtpModal(true);
+      setTimer(60);
 
-    setTimer(60);
-
-    if (timerRef.current) clearInterval(timerRef.current);
-    timerRef.current = setInterval(() => {
-      setTimer(prev => {
-        if (prev <= 1) {
-          clearInterval(timerRef.current);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
+      if (timerRef.current) clearInterval(timerRef.current);
+      timerRef.current = setInterval(() => {
+        setTimer(prev => {
+          if (prev <= 1) {
+            clearInterval(timerRef.current);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    } catch (err) {
+      toast.error("Failed to send Email OTP. Please try again.");
+    }
   };
 
   const handleVerifyOtp = () => {
