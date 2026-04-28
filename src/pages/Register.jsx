@@ -41,7 +41,7 @@ export default function Register() {
     setUiType(type);
   };
 
-  const handleSendOtp = () => {
+  const handleSendOtp = async () => {
     if (!formData.name || formData.name.trim().length < 3) {
       showMsg("❌ Full name must be at least 3 characters.");
       return;
