@@ -254,9 +254,17 @@ router.post("/", async (req, res) => {
                 const template = getBrandedTemplate("Your Order is Confirmed ✨", body);
                 await sendEmail(customerEmail.toLowerCase().trim(), `DEZA Luxury - Order Confirmation #${orderNumber}`, template);
                 console.log(`✅ Order confirmation email sent to ${customerEmail}`);
+
+                // 📱 WHATSAPP NOTIFICATION (Live)
+                try {
+                    // Try to send official WhatsApp notification if credentials exist
+                    await sendWhatsApp(formData.contact || "", "order_confirmation", [customerName, orderNumber, `₹${totalPrice.toLocaleString("en-IN")}`]);
+                    console.log(`📱 WhatsApp notification triggered for ${customerName}`);
+                } catch (waErr) {
+                    console.warn("⚠️ WhatsApp notification failed (check API config):", waErr.message);
+                }
             } catch (emailErr) {
-                console.error("❌ Failed to send order confirmation email:", emailErr.message);
-                // We don't fail the order just because the email failed
+                console.error("❌ Notification error:", emailErr.message);
             }
         }
 

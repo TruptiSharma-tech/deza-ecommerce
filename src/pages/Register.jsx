@@ -70,31 +70,38 @@ export default function Register() {
     const normalized = cleanNumber.slice(-10);
     setFormData(prev => ({ ...prev, contact: normalized }));
 
-    console.log("Attempting to send OTP to:", formData.contact);
+    console.log("Attempting to send WhatsApp OTP to:", formData.contact);
     const newOtp = Math.floor(100000 + Math.random() * 900000).toString();
     setGeneratedOtp(newOtp);
-    setOtpSent(true);
-    setOtpVerified(false);
-    setOtp("");
-    setOtpArray(["", "", "", "", "", ""]);
-    setShowOtpModal(true);
-    
-    // In a real app, this would be an API call. For now, we simulate success.
-    toast.success("Verification code sent to your mobile number! ✨");
-    console.log("DEMO OTP:", newOtp);
-    
-    setTimer(60);
 
-    if (timerRef.current) clearInterval(timerRef.current);
-    timerRef.current = setInterval(() => {
-      setTimer(prev => {
-        if (prev <= 1) {
-          clearInterval(timerRef.current);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
+    try {
+      const res = await apiSendWhatsAppOtp({ contact: formData.contact, otp: newOtp });
+      if (res.demo) {
+        toast.info("Demo Mode: Code is 123456 (Check WhatsApp API)");
+        setGeneratedOtp("123456");
+      } else {
+        toast.success("Verification code sent to your WhatsApp! ✨");
+      }
+      setOtpSent(true);
+      setOtpVerified(false);
+      setOtp("");
+      setOtpArray(["", "", "", "", "", ""]);
+      setShowOtpModal(true);
+      setTimer(60);
+
+      if (timerRef.current) clearInterval(timerRef.current);
+      timerRef.current = setInterval(() => {
+        setTimer(prev => {
+          if (prev <= 1) {
+            clearInterval(timerRef.current);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    } catch (err) {
+      toast.error("Failed to send WhatsApp message. Please try again.");
+    }
   };
 
   const handleVerifyOtp = () => {

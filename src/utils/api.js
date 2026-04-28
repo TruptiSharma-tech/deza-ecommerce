@@ -140,6 +140,9 @@ export const apiForgotPassword = (payload) =>
 export const apiResetPassword = (payload) =>
     request("/auth/reset-password", { method: "POST", body: JSON.stringify(payload) });
 
+export const apiSendWhatsAppOtp = (payload) =>
+    request("/auth/send-whatsapp-otp", { method: "POST", body: JSON.stringify(payload) });
+
 export const apiCreateAdmin = (payload) =>
     request("/auth/create-admin", { method: "POST", body: JSON.stringify(payload) });
 

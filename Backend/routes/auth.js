@@ -8,6 +8,31 @@ import { sendEmail, getBrandedTemplate } from "../utils/emailHelper.js";
 import { auth, adminOnly } from "../middleware/auth.js";
 
 const router = express.Router();
+import { sendWhatsApp } from "../utils/whatsappHelper.js";
+
+// ─── WhatsApp OTP (Live) ──────────────────────────────────────────────────
+router.post("/send-whatsapp-otp", async (req, res) => {
+    try {
+        const { contact, otp } = req.body;
+        if (!contact || !otp) return res.status(400).json({ error: "Contact and OTP are required." });
+
+        // Meta Cloud API template: "registration_otp" (must be approved on Meta dashboard)
+        const success = await sendWhatsApp(contact, "registration_otp", [otp]);
+        
+        if (success) {
+            res.json({ message: "OTP sent successfully on WhatsApp! ✨" });
+        } else {
+            // Fallback for demo/dev if API is not set up
+            console.warn(`⚠️ WhatsApp API failed for ${contact}. Sending manual fallback info.`);
+            res.status(200).json({ 
+                message: "API Simulation: Please use code 123456 to verify (Meta API not connected).",
+                demo: true 
+            });
+        }
+    } catch (err) {
+        res.status(500).json({ error: "Failed to send WhatsApp OTP." });
+    }
+});
 
 // ─── Register ─────────────────────────────────────────────────────────────────
 router.post("/register", async (req, res) => {
