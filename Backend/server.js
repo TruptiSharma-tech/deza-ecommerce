@@ -120,6 +120,23 @@ mongoose
         autoUpdateOrders();
         setInterval(autoUpdateOrders, 6 * 60 * 60 * 1000);
 
+        // ─── Health & Test Routes ──────────────────────────────────────────────────
+        app.get("/api/test-email", async (req, res) => {
+            try {
+                const { sendEmail, getBrandedTemplate } = await import("./utils/emailHelper.js");
+                const template = getBrandedTemplate("System Connection Test", "<p>If you are reading this, your DEZA SMTP server is configured correctly and working!</p>");
+                const success = await sendEmail(process.env.SMTP_USER, "🛠️ DEZA SMTP Test", template);
+                
+                if (success) {
+                    res.json({ message: "Test email sent successfully to " + process.env.SMTP_USER });
+                } else {
+                    res.status(500).json({ error: "SMTP Failed. Check Render logs or Environment Variables." });
+                }
+            } catch (err) {
+                res.status(500).json({ error: err.message });
+            }
+        });
+
         app.listen(PORT, () => console.log(`🚀 Server running on http://localhost:${PORT}`));
     })
     .catch((err) => {
