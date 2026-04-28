@@ -10,7 +10,7 @@ import AuditLog from "../models/AuditLog.js";
 import SupportTicket from "../models/SupportTicket.js";
 import { sendEmail, getBrandedTemplate } from "../utils/emailHelper.js";
 import { sendWhatsApp } from "../utils/whatsappHelper.js";
-
+ 
 const router = express.Router();
 
 // Helper for logging
