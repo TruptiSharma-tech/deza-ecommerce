@@ -70,6 +70,7 @@ export default function Register() {
     const normalized = cleanNumber.slice(-10);
     setFormData(prev => ({ ...prev, contact: normalized }));
 
+    console.log("Attempting to send OTP to:", formData.contact);
     const newOtp = Math.floor(100000 + Math.random() * 900000).toString();
     setGeneratedOtp(newOtp);
     setOtpSent(true);

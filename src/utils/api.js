@@ -22,6 +22,8 @@ let BASE_URL = getBaseUrl();
 if (BASE_URL.endsWith("/")) BASE_URL = BASE_URL.slice(0, -1);
 if (!BASE_URL.endsWith("/api")) BASE_URL += "/api";
 
+console.log("🚀 DEZA API initialized at:", BASE_URL);
+
 
 // ── Helper ─────────────────────────────────────────────────────────────────────
 const getToken = () => localStorage.getItem("deza_token");
