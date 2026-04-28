@@ -1,7 +1,24 @@
 // Central API utility for DEZA e-commerce
 // All API calls go through this file to the Express + MongoDB backend
 
-let BASE_URL = import.meta.env.VITE_API_URL || "https://deza-ecommerce.onrender.com/api";
+const getBaseUrl = () => {
+    const isLocalhost = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+    const envUrl = import.meta.env.VITE_API_URL;
+    
+    // If we have an env URL and we're on localhost, use it
+    if (envUrl && isLocalhost) return envUrl;
+    
+    // If we're on production or a mobile device (non-localhost), 
+    // and the envUrl is NOT localhost, use it.
+    // Otherwise fallback to the hardcoded production URL.
+    if (envUrl && !envUrl.includes("localhost") && !envUrl.includes("127.0.0.1")) {
+        return envUrl;
+    }
+    
+    return "https://deza-ecommerce.onrender.com/api";
+};
+
+let BASE_URL = getBaseUrl();
 if (BASE_URL.endsWith("/")) BASE_URL = BASE_URL.slice(0, -1);
 if (!BASE_URL.endsWith("/api")) BASE_URL += "/api";
 
