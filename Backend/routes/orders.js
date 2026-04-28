@@ -211,21 +211,27 @@ router.post("/", async (req, res) => {
         }
 
         // Send Email Confirmation
-        if (customerEmail) {
-            const body = `
-                <h3>Order Confirmation</h3>
-                <p>Hello ${customerName},</p>
-                <p>Thank you for choosing DEZA Luxury. Your order <b>${orderNumber}</b> has been received and is being processed.</p>
-                <p><b>Order Details:</b></p>
-                <ul>
-                    ${items.map(i => `<li>${i.name} (x${i.qty}) - ₹${i.price * i.qty}</li>`).join('')}
-                </ul>
-                <p><b>Total Amount:</b> ₹${totalPrice}</p>
-                <p><b>Shipping to:</b> ${typeof address === 'string' ? address : (address.street + ', ' + address.city)}</p>
-                <p>We will notify you once your signature scent is shipped.</p>
-            `;
-            const template = getBrandedTemplate("Order Placed Successfully", body);
-            await sendEmail(customerEmail, `DEZA Luxury - Order Confirmation #${orderNumber}`, template);
+        if (customerEmail && customerEmail.includes("@")) {
+            try {
+                const body = `
+                    <h3>Order Confirmation</h3>
+                    <p>Hello ${customerName},</p>
+                    <p>Thank you for choosing DEZA Luxury. Your order <b>${orderNumber}</b> has been received and is being processed.</p>
+                    <p><b>Order Details:</b></p>
+                    <ul>
+                        ${mappedItems.map(i => `<li>${i.name} (x${i.qty}) - ₹${i.price * i.qty}</li>`).join('')}
+                    </ul>
+                    <p><b>Total Amount:</b> ₹${totalPrice}</p>
+                    <p><b>Shipping to:</b> ${formattedAddress.street || ""}, ${formattedAddress.city || ""}</p>
+                    <p>We will notify you once your signature scent is shipped.</p>
+                `;
+                const template = getBrandedTemplate("Order Placed Successfully", body);
+                await sendEmail(customerEmail.toLowerCase().trim(), `DEZA Luxury - Order Confirmation #${orderNumber}`, template);
+                console.log(`✅ Order confirmation email sent to ${customerEmail}`);
+            } catch (emailErr) {
+                console.error("❌ Failed to send order confirmation email:", emailErr.message);
+                // We don't fail the order just because the email failed
+            }
         }
 
         res.status(201).json(newOrder);

@@ -106,7 +106,7 @@ export default function PaymentGateway() {
             await saveOrder(selectedType, "Paid", response.razorpay_payment_id);
             setPaymentDone(true);
             toast.success("Payment Successful! 🎉");
-            setTimeout(() => navigate("/checkout/success"), 2000);
+            setTimeout(() => navigate("/checkout/success", { replace: true }), 1500);
           } catch (verifyErr) {
             toast.error("Payment Verification Failed! Safety breach. Contact Support.");
           }
@@ -157,8 +157,10 @@ export default function PaymentGateway() {
     setLoading(true);
     try {
       await saveOrder("Cash On Delivery", "Pending");
-      setPaymentDone(true);
-      setTimeout(() => navigate("/checkout/success"), 400);
+      setTimeout(() => {
+        setPaymentDone(true);
+        navigate("/checkout/success", { replace: true });
+      }, 500);
     } finally {
       setLoading(false);
     }
