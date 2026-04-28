@@ -1,94 +1,120 @@
 import React, { useEffect, useState } from "react";
-import "./OrderSucess.css";
+import "./OrderSuccess.css";
 import { useNavigate } from "react-router-dom";
 import Confetti from "react-confetti";
 import { getUserEmail, cartKey } from "../utils/userStorage";
+import { useAuth } from "../context/AuthContext";
 
 export default function OrderSuccess() {
   const navigate = useNavigate();
   const [order, setOrder] = useState(null);
   const [showConfetti, setShowConfetti] = useState(true);
+  const { clearCart } = useAuth();
+  
+  const [windowSize, setWindowSize] = useState({
+    width: window.innerWidth,
+    height: window.innerHeight,
+  });
 
   useEffect(() => {
+    const handleResize = () => {
+      setWindowSize({ width: window.innerWidth, height: window.innerHeight });
+    };
+    window.addEventListener("resize", handleResize);
+
     // Read the order details stored during checkout
     const lastOrder = JSON.parse(localStorage.getItem("lastOrder"));
     if (lastOrder) {
       setOrder(lastOrder);
-      // Clear it after reading so it doesn't show on next visit
-      localStorage.removeItem("lastOrder");
+      // We don't clear it immediately to allow WhatsApp sharing to work
     }
 
-    // EXTRA SAFE: Force clear cart and checkout info upon success screen load
-    const userEmail = getUserEmail();
-    localStorage.removeItem(cartKey(userEmail));
-    localStorage.removeItem("deza_cart"); // legacy fallback
-    localStorage.removeItem("checkoutInfo");
-    window.dispatchEvent(new Event("cartUpdate"));
+    // EXTRA SAFE: Clear cart and checkout info
+    const performCleanup = async () => {
+      if (clearCart) {
+        await clearCart();
+      } else {
+        const userEmail = getUserEmail();
+        localStorage.removeItem(cartKey(userEmail));
+        localStorage.removeItem("deza_cart");
+        window.dispatchEvent(new Event("cartUpdate"));
+      }
+      localStorage.removeItem("checkoutInfo");
+    };
+    
+    performCleanup();
 
-    // Stop confetti after 5 seconds
-    const timer = setTimeout(() => setShowConfetti(false), 5000);
-    return () => clearTimeout(timer);
-  }, []);
+    // Stop confetti after 7 seconds
+    const timer = setTimeout(() => setShowConfetti(false), 7000);
+    
+    return () => {
+      window.removeEventListener("resize", handleResize);
+      clearTimeout(timer);
+    };
+  }, [clearCart]);
+
+  const handleWhatsAppShare = () => {
+    if (!order) return;
+    
+    const orderId = order.orderNumber || order.orderId || "DZ-" + String(order._id || Date.now()).slice(-6).toUpperCase();
+    const firstItemImg = order.items?.[0]?.image || "";
+    const trackUrl = `${window.location.origin}/track-order/${orderId}`;
+    
+    const msg = `*NEW ORDER CONFIRMED* 🛍️\n\nOrder ID: ${orderId}\nTotal: ₹${order.totalAmount || order.totalPrice}\nPayment: ${order.paymentMethod}\n\nPlease process my luxury delivery! 💛\n\nTrack here: ${trackUrl}`;
+    
+    window.open(`https://wa.me/919082710359?text=${encodeURIComponent(msg)}`, "_blank");
+  };
 
   return (
     <div className="success-page">
-      {showConfetti && <Confetti numberOfPieces={200} recycle={false} colors={["#d4af37", "#fff", "#1a1a1a", "#ffd369"]} />}
+      {showConfetti && (
+        <Confetti 
+          width={windowSize.width} 
+          height={windowSize.height} 
+          numberOfPieces={window.innerWidth < 600 ? 100 : 250} 
+          recycle={false} 
+          colors={["#d4af37", "#fff", "#1a1a1a", "#ffd369"]} 
+        />
+      )}
 
       <div className="success-card">
-        <div style={{ fontSize: "64px", marginBottom: "16px" }}>🎉</div>
-        <h1>Order Placed Successfully!</h1>
-        <p className="order-success-sub">
-          Your luxury fragrance is on the way 💛
+        <div style={{ fontSize: "72px", marginBottom: "10px" }}>✨</div>
+        <h1>Success!</h1>
+        <p>
+          Thank you for choosing DEZA. Your order has been placed successfully and is now being processed.
         </p>
 
-        {order && (
-          <div style={{
-            background: "rgba(212,175,55,0.1)",
-            border: "1px solid rgba(212,175,55,0.3)",
-            borderRadius: "12px",
-            padding: "20px",
-            marginBottom: "24px",
-            textAlign: "left",
-          }}>
-            <p style={{ margin: "0 0 8px", fontSize: "13px", opacity: 0.7 }}>ORDER DETAILS</p>
-            <p style={{ margin: "4px 0", fontWeight: "bold", color: "#d4af37", fontSize: "18px" }}>
-              {order.orderId || "DZ-" + String(order._id).slice(-6).toUpperCase()}
-            </p>
-            <p style={{ margin: "4px 0", fontSize: "14px" }}>
-              <b>Total:</b> ₹{order.totalPrice?.toLocaleString("en-IN")}
-            </p>
-            <p style={{ margin: "4px 0", fontSize: "14px" }}>
-              <b>Payment:</b> {order.paymentMethod}
-            </p>
-            <p style={{ margin: "4px 0", fontSize: "14px" }}>
-              <b>Estimated Delivery:</b> 7–10 Business Days
-            </p>
+        {order ? (
+          <div className="order-info-box">
+            <span className="order-id">
+              Order #{order.orderNumber || order.orderId || String(order._id).slice(-6).toUpperCase()}
+            </span>
+            <p><b>Items:</b> {order.items?.length || 0} Luxury Fragrances</p>
+            <p><b>Total Amount:</b> ₹{(order.totalAmount || order.totalPrice)?.toLocaleString("en-IN")}</p>
+            <p><b>Payment Mode:</b> {order.paymentMethod}</p>
+            <p><b>Delivery:</b> 5-7 Business Days</p>
+          </div>
+        ) : (
+          <div className="order-info-box" style={{ textAlign: 'center' }}>
+            <p>Your luxury fragrance is on the way! 💛</p>
           </div>
         )}
 
-        <p className="order-success-footer">
-          A confirmation email has been sent to your registered email address.
+        <p style={{ fontSize: '14px', opacity: 0.8 }}>
+          A confirmation email has been sent to your inbox.
         </p>
 
         <div className="success-btns">
-          <button onClick={() => navigate("/orders")}>View My Orders</button>
-          <button 
-            style={{ background: "#25d366", color: "#fff", borderColor: "#25d366" }}
-            onClick={() => {
-              const firstItemImg = order?.items?.[0]?.image || "";
-              const trackUrl = `${window.location.origin}/track-order/${order.orderId || order._id}`;
-              const isUrl = firstItemImg.startsWith("http");
-              
-              const previewLink = isUrl ? firstItemImg : trackUrl;
-              
-              const msg = `${previewLink}\n\n*NEW ORDER CONFIRMED* 🛍️\n\nOrder ID: ${order.orderId || "DZ-" + String(order._id).slice(-6).toUpperCase()}\nTotal: ₹${order.totalPrice}\nPayment: ${order.paymentMethod}\n\nPlease process my luxury delivery! 💛`;
-              window.open(`https://wa.me/919082710359?text=${encodeURIComponent(msg)}`, "_blank");
-            }}
-          >
-            Share on WhatsApp
-          </button>
+          <button onClick={() => navigate("/orders")}>My Orders</button>
+          
+          {order && (
+            <button className="whatsapp-btn" onClick={handleWhatsAppShare}>
+               Confirm on WhatsApp
+            </button>
+          )}
+          
           <button className="home-btn" onClick={() => navigate("/")}>
-            Back to Home
+            Continue Shopping
           </button>
         </div>
       </div>

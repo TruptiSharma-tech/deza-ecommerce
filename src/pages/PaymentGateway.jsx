@@ -17,10 +17,10 @@ export default function PaymentGateway() {
   const checkoutInfo = JSON.parse(localStorage.getItem("checkoutInfo")) || {};
   const rawTotal = checkoutInfo.total || 0;
   const total = typeof rawTotal === "string" ? Number(rawTotal.replace(/[^0-9.]/g, "")) : Number(rawTotal);
-  const { name, phone, address, cart = [] } = checkoutInfo;
+  const { name, phone, email, address, cart = [] } = checkoutInfo;
   const cleanPhone = (phone || "").replace(/\D/g, "");
 
-  const { user: currentUser } = useAuth();
+  const { user: currentUser, clearCart } = useAuth();
 
   useEffect(() => {
     if (!cart || cart.length === 0) navigate("/checkout");
@@ -42,7 +42,7 @@ export default function PaymentGateway() {
         customerId: currentUser?._id || null,
         customerName: name || currentUser?.name || "Guest",
         customerPhone: "+91" + (cleanPhone || phone || ""),
-        customerEmail: currentUser?.email || "",
+        customerEmail: email || currentUser?.email || "",
         address: address || {},
         items: cart,
         totalPrice: total,
@@ -53,11 +53,19 @@ export default function PaymentGateway() {
       });
       // ✅ Save the created order details so OrderSuccess can display them
       localStorage.setItem("lastOrder", JSON.stringify(createdOrder));
-      // ✅ Clear the user-scoped cart key (not the generic one)
-      const userEmail = getUserEmail();
-      localStorage.removeItem(cartKey(userEmail));
+      
+      // ✅ Use central clearCart method (clears local + remote)
+      if (typeof clearCart === "function") {
+        await clearCart();
+      } else {
+        // Fallback if context not ready
+        const userEmail = getUserEmail();
+        localStorage.removeItem(cartKey(userEmail));
+        localStorage.removeItem("deza_cart");
+        window.dispatchEvent(new Event("cartUpdate"));
+      }
+      
       localStorage.removeItem("checkoutInfo");
-      window.dispatchEvent(new Event("cartUpdate"));
     } catch (err) {
       console.error("Failed to save order:", err);
       alert("⚠ Order placed but failed to save to database. Contact support.");

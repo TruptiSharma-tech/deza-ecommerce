@@ -1,0 +1,143 @@
+.success-page {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: radial-gradient(circle at top, #1a1a1a, #050505);
+  padding: 40px 15px;
+  animation: fadeIn 0.7s ease;
+  overflow-x: hidden;
+}
+
+.success-card {
+  max-width: 550px;
+  width: 100%;
+  text-align: center;
+  padding: 50px 30px;
+  border-radius: 24px;
+  background: rgba(15, 15, 15, 0.9);
+  border: 1px solid rgba(212, 175, 55, 0.2);
+  box-shadow: 0px 30px 60px rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(20px);
+  position: relative;
+  z-index: 2;
+}
+
+.success-card h1 {
+  color: #d4af37;
+  margin: 20px 0 10px;
+  font-family: 'Playfair Display', serif;
+  font-size: 2.5rem;
+  letter-spacing: 1px;
+}
+
+.success-card p {
+  color: #ffffff;
+  opacity: 0.9;
+  font-size: 1.1rem;
+  margin-bottom: 30px;
+  line-height: 1.6;
+}
+
+.order-info-box {
+  background: rgba(212, 175, 55, 0.08);
+  border: 1px solid rgba(212, 175, 55, 0.2);
+  border-radius: 16px;
+  padding: 25px;
+  margin-bottom: 35px;
+  text-align: left;
+}
+
+.order-info-box p {
+  margin: 8px 0;
+  font-size: 0.95rem;
+  color: #ddd;
+}
+
+.order-info-box .order-id {
+  color: #d4af37;
+  font-weight: 700;
+  font-size: 1.2rem;
+  margin-bottom: 12px;
+  display: block;
+}
+
+.success-btns {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  justify-content: center;
+}
+
+@media (min-width: 600px) {
+  .success-btns {
+    flex-direction: row;
+  }
+}
+
+.success-btns button {
+  padding: 16px 30px;
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+  background: #d4af37;
+  color: #000;
+  text-transform: uppercase;
+  font-size: 13px;
+  letter-spacing: 1.5px;
+  transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+  flex: 1;
+}
+
+.success-btns button:hover {
+  transform: translateY(-5px);
+  background: #fff;
+  box-shadow: 0px 15px 30px rgba(212, 175, 55, 0.3);
+}
+
+.success-btns .home-btn {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #fff;
+}
+
+.success-btns .home-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: #fff;
+}
+
+.success-btns .whatsapp-btn {
+  background: #25d366;
+  color: #fff;
+}
+
+.success-btns .whatsapp-btn:hover {
+  background: #128c7e;
+  box-shadow: 0px 15px 30px rgba(37, 211, 102, 0.3);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@media (max-width: 480px) {
+  .success-card {
+    padding: 30px 20px;
+    border-radius: 0;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    backdrop-filter: none;
+  }
+  .success-card h1 {
+    font-size: 1.8rem;
+  }
+}

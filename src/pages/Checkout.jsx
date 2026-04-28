@@ -17,6 +17,7 @@ export default function Checkout() {
   const [phone, setPhone] = useState(
     prevInfo.phone ? prevInfo.phone.replace("+91", "") : "",
   );
+  const [email, setEmail] = useState(prevInfo.email || "");
 
   // ✅ Professional Address Object
   const [address, setAddress] = useState(
@@ -45,6 +46,11 @@ export default function Checkout() {
 
     if (!phone || !/^\d{10}$/.test(phone)) {
       toast.error("Enter a valid 10-digit phone number!");
+      return false;
+    }
+
+    if (!email || !/\S+@\S+\.\S+/.test(email)) {
+      toast.error("Enter a valid email address!");
       return false;
     }
 
@@ -77,6 +83,7 @@ export default function Checkout() {
     const checkoutData = {
       name,
       phone: "+91" + phone,
+      email,
       address,
       cart,
       total: totalAmount,
@@ -114,6 +121,13 @@ export default function Checkout() {
               onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))}
             />
           </div>
+
+          <input
+            type="email"
+            placeholder="Email Address (for order confirmation)"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
 
           <h2>Shipping Address</h2>
 

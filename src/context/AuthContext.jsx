@@ -161,6 +161,23 @@ export function AuthProvider({ children }) {
     }
   };
 
+  const clearCart = async () => {
+    const email = user?.email || null;
+    const key = cartKey(email);
+    localStorage.removeItem(key);
+    localStorage.removeItem("deza_cart"); // legacy fallback
+    setCartCount(0);
+    
+    if (email && localStorage.getItem("deza_token")) {
+      try {
+        await apiSyncUserData({ cart: [] });
+      } catch (err) {
+        console.error("Failed to clear remote cart:", err);
+      }
+    }
+    window.dispatchEvent(new Event("cartUpdate"));
+  };
+
   const logout = () => {
     setUser(null);
     setCartCount(0);
@@ -186,6 +203,7 @@ export function AuthProvider({ children }) {
       logout, 
       updateCart,
       updateWishlist,
+      clearCart,
       syncState 
     }}>
       {children}

@@ -17,6 +17,7 @@ export const ShopProvider = ({ children }) => {
     logout: auth.logout,
     updateCart: auth.updateCart,
     updateWishlist: auth.updateWishlist,
+    clearCart: auth.clearCart,
     syncState: auth.syncState
   };
 
