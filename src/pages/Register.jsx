@@ -27,7 +27,10 @@ export default function Register() {
   const [loading, setLoading] = useState(false);
   const [timer, setTimer] = useState(0);
   const [showPassword, setShowPassword] = useState(false);
+  const [showOtpModal, setShowOtpModal] = useState(false);
+  const [otpArray, setOtpArray] = useState(["", "", "", "", "", ""]);
   const timerRef = React.useRef(null);
+  const otpInputsRef = React.useRef([]);
 
   const handleChange = (e) =>
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -71,7 +74,13 @@ export default function Register() {
     setOtpSent(true);
     setOtpVerified(false);
     setOtp("");
-    showMsg(`📩 OTP sent to your registered number! Check your device. (Demo OTP: ${newOtp})`, "info");
+    setOtpArray(["", "", "", "", "", ""]);
+    setShowOtpModal(true);
+    
+    // In a real app, this would be an API call. For now, we simulate success.
+    toast.success("Verification code sent to your mobile number! ✨");
+    console.log("DEMO OTP:", newOtp);
+    
     setTimer(60);
 
     if (timerRef.current) clearInterval(timerRef.current);
@@ -86,22 +95,40 @@ export default function Register() {
     }, 1000);
   };
 
-  const handleVerifyOtp = () => {
+    const enteredOtp = otpArray.join("");
     if (!generatedOtp) {
-      showMsg("⚠️ Please request an OTP first.");
+      toast.error("Please request an OTP first.");
       return;
     }
     if (timer === 0) {
-      showMsg("❌ OTP has expired. Please resend.");
+      toast.error("OTP has expired. Please resend.");
       return;
     }
-    if (otp.trim() === generatedOtp) {
+    if (enteredOtp === generatedOtp) {
       setOtpVerified(true);
-      showMsg("✅ Phone verified successfully! Please complete your profile below.", "success");
+      setShowOtpModal(false);
+      toast.success("✅ Phone Verified Successfully!");
       if (timerRef.current) clearInterval(timerRef.current);
       setTimer(0);
     } else {
-      showMsg("❌ Incorrect OTP. Please try again.");
+      toast.error("Invalid OTP. Please check and try again.");
+    }
+  };
+
+  const handleOtpChange = (index, value) => {
+    if (isNaN(value)) return;
+    const newOtpArray = [...otpArray];
+    newOtpArray[index] = value.slice(-1);
+    setOtpArray(newOtpArray);
+
+    if (value && index < 5) {
+      otpInputsRef.current[index + 1].focus();
+    }
+  };
+
+  const handleKeyDown = (index, e) => {
+    if (e.key === "Backspace" && !otpArray[index] && index > 0) {
+      otpInputsRef.current[index - 1].focus();
     }
   };
 
@@ -350,52 +377,25 @@ export default function Register() {
                 value={formData.contact}
                 onChange={handleChange}
                 required
-                maxLength={13}
-                disabled={otpSent}
+                maxLength={10}
+                disabled={otpVerified}
                 autoComplete="tel"
               />
-              {otpSent && !otpVerified && (
-                <span className="change-num-link" onClick={handleResetOtp}>
-                  Change
-                </span>
+              {otpVerified && (
+                 <span style={{ position: 'absolute', right: '15px', top: '50%', transform: 'translateY(-50%)', color: '#4caf50', fontSize: '12px', fontWeight: 'bold' }}>
+                   VERIFIED ✓
+                 </span>
               )}
             </div>
 
-            {!otpSent ? (
-              <button type="button" className="auth-btn" onClick={handleSendOtp}>
-                Send Verification OTP
+            {!otpVerified && (
+              <button 
+                type="button" 
+                className={`auth-btn ${otpSent ? 'resend-btn' : ''}`} 
+                onClick={handleSendOtp}
+              >
+                {otpSent ? "Resend Verification OTP 🔄" : "Send Verification OTP 📩"}
               </button>
-            ) : !otpVerified ? (
-              <>
-                {timer > 0 ? (
-                  <>
-                    <input
-                      type="text"
-                      placeholder="Enter 6-Digit OTP"
-                      value={otp}
-                      onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
-                      maxLength={6}
-                      autoFocus
-                      inputMode="numeric"
-                      style={{ letterSpacing: '6px', textAlign: 'center', fontSize: '20px' }}
-                    />
-                    <div className="otp-timer-info">
-                      Expires in: <span style={{ color: timer <= 10 ? '#f44336' : '#d4af37', fontWeight: 'bold' }}>{timer}s</span>
-                    </div>
-                    <button type="button" className="auth-btn" onClick={handleVerifyOtp}>
-                      Verify OTP
-                    </button>
-                  </>
-                ) : (
-                  <button type="button" className="auth-btn resend-btn" onClick={handleSendOtp}>
-                    Resend OTP 🔄
-                  </button>
-                )}
-              </>
-            ) : (
-              <div className="verified-badge">
-                ✓ Phone Verified Successfully
-              </div>
             )}
           </div>
 
@@ -445,6 +445,55 @@ export default function Register() {
           Already a member? <Link to="/login">Login here</Link>
         </p>
       </div>
+
+      {/* PREMIUM OTP MODAL */}
+      <AnimatePresence>
+        {showOtpModal && (
+          <div className="otp-modal-overlay">
+            <motion.div 
+              className="otp-modal"
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+            >
+              <button className="otp-close" onClick={() => setShowOtpModal(false)}>✕</button>
+              <div className="otp-modal-icon">📱</div>
+              <h2>Verify Phone Number</h2>
+              <p>We've sent a 6-digit verification code to <br /> <strong>+91 {formData.contact}</strong></p>
+              
+              <div className="otp-inputs">
+                {otpArray.map((digit, i) => (
+                  <input
+                    key={i}
+                    type="text"
+                    maxLength={1}
+                    value={digit}
+                    ref={el => otpInputsRef.current[i] = el}
+                    onChange={(e) => handleOtpChange(i, e.target.value)}
+                    onKeyDown={(e) => handleKeyDown(i, e)}
+                    className="otp-digit-input"
+                    inputMode="numeric"
+                  />
+                ))}
+              </div>
+
+              <div className="otp-footer">
+                {timer > 0 ? (
+                  <p>Resend code in <span>{timer}s</span></p>
+                ) : (
+                  <button onClick={handleSendOtp} className="otp-resend-link">Resend Code 🔄</button>
+                )}
+              </div>
+
+              <button className="auth-btn otp-submit-btn" onClick={handleVerifyOtp}>
+                Verify & Continue
+              </button>
+              
+              <p className="otp-support">Problems receiving the code? <br /> <span onClick={() => setShowOtpModal(false)}>Change Phone Number</span></p>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
