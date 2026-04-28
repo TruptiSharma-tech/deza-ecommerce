@@ -117,6 +117,38 @@ mongoose
     })
     .then(() => {
         console.log("✅ MongoDB Atlas Connected Successfully!");
+        
+        // ─── Automated Order Status Updates (Simulation) ─────────────────────────
+        // This function automatically moves orders forward if the admin forgets.
+        const autoUpdateOrders = async () => {
+            try {
+                const Order = mongoose.model("Order");
+                const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000);
+                const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
+                // 1. Auto-Deliver orders shipped > 3 days ago
+                const toDeliver = await Order.updateMany(
+                    { status: "Shipped", createdAt: { $lt: threeDaysAgo } },
+                    { $set: { status: "Delivered" } }
+                );
+                if (toDeliver.modifiedCount > 0) console.log(`🤖 Auto-delivered ${toDeliver.modifiedCount} old orders.`);
+
+                // 2. Auto-Ship orders processing > 1 day ago
+                const toShip = await Order.updateMany(
+                    { status: "Processing", createdAt: { $lt: oneDayAgo } },
+                    { $set: { status: "Shipped", trackingNumber: "AUTO-GEN-SHIPPING" } }
+                );
+                if (toShip.modifiedCount > 0) console.log(`🤖 Auto-shipped ${toShip.modifiedCount} orders.`);
+
+            } catch (err) {
+                console.error("❌ Auto-update failed:", err.message);
+            }
+        };
+
+        // Run once on startup and then every 6 hours
+        autoUpdateOrders();
+        setInterval(autoUpdateOrders, 6 * 60 * 60 * 1000);
+
         app.listen(PORT, () => console.log(`🚀 Server running on http://localhost:${PORT}`));
     })
     .catch((err) => {

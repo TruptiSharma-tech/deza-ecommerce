@@ -993,6 +993,80 @@ export default function Admin() {
     doc.save(`DEZA-Analytics-${reportPeriod}.pdf`);
   };
 
+  const printInvoice = (order) => {
+    const doc = new jsPDF();
+    const orderId = order.orderId || `DZ-${String(order._id).slice(-6).toUpperCase()}`;
+    
+    // Header
+    doc.setFillColor(26, 26, 26); // Dark background
+    doc.rect(0, 0, 210, 40, "F");
+    
+    doc.setFontSize(28);
+    doc.setTextColor(212, 175, 55); // Gold
+    doc.text("DEZA LUXURY", 105, 20, { align: "center" });
+    
+    doc.setFontSize(10);
+    doc.setTextColor(255, 255, 255);
+    doc.text("Premium Fragrances & Boutique Experience", 105, 28, { align: "center" });
+
+    // Invoice Info
+    doc.setTextColor(0, 0, 0);
+    doc.setFontSize(18);
+    doc.text("TAX INVOICE", 10, 55);
+    
+    doc.setFontSize(10);
+    doc.text(`Invoice No: INV-${orderId}`, 10, 65);
+    doc.text(`Order Date: ${new Date(order.createdAt || order.date).toLocaleDateString()}`, 10, 70);
+    doc.text(`Payment: ${order.paymentMethod || "COD"}`, 10, 75);
+
+    // Billed To
+    doc.setFontSize(12);
+    doc.text("Billed To:", 130, 55);
+    doc.setFontSize(10);
+    doc.text(order.customerName || "Customer", 130, 62);
+    doc.text(order.customerEmail || "N/A", 130, 67);
+    doc.text(order.customerContact || "N/A", 130, 72);
+    
+    // Items Table Header
+    doc.setFillColor(245, 245, 245);
+    doc.rect(10, 85, 190, 8, "F");
+    doc.setFont("helvetica", "bold");
+    doc.text("Item", 15, 91);
+    doc.text("Size", 100, 91);
+    doc.text("Qty", 130, 91);
+    doc.text("Price", 150, 91);
+    doc.text("Total", 180, 91);
+    
+    // Items Table Body
+    doc.setFont("helvetica", "normal");
+    let y = 100;
+    (order.items || []).forEach((item) => {
+      doc.text(item.name || "Fragrance", 15, y);
+      doc.text(item.selectedSize || "N/A", 100, y);
+      doc.text(String(item.qty), 130, y);
+      doc.text(`INR ${item.price}`, 150, y);
+      doc.text(`INR ${item.price * item.qty}`, 180, y);
+      y += 8;
+    });
+
+    // Summary
+    doc.setDrawColor(212, 175, 55);
+    doc.setLineWidth(0.5);
+    doc.line(10, y + 5, 200, y + 5);
+    
+    doc.setFontSize(14);
+    doc.setFont("helvetica", "bold");
+    doc.text(`Grand Total: INR ${order.totalPrice}`, 130, y + 15);
+
+    // Footer
+    doc.setFontSize(8);
+    doc.setTextColor(150, 150, 150);
+    doc.text("This is a computer generated invoice. No signature required.", 105, 280, { align: "center" });
+    doc.text("Thank you for choosing DEZA. Your signature scent awaits.", 105, 285, { align: "center" });
+    
+    doc.save(`DEZA_Invoice_${orderId}.pdf`);
+  };
+
   const handleLogout = () => {
     localStorage.removeItem("currentUser");
     localStorage.removeItem("deza_token");
@@ -2023,6 +2097,24 @@ export default function Admin() {
                             />
                           </div>
                         )}
+
+                        <button
+                          onClick={() => printInvoice(o)}
+                          style={{
+                            marginTop: "10px",
+                            padding: "6px 12px",
+                            fontSize: "11px",
+                            borderRadius: "6px",
+                            background: "rgba(212, 175, 55, 0.1)",
+                            color: "#d4af37",
+                            border: "1px solid #d4af37",
+                            cursor: "pointer",
+                            width: "100%",
+                            fontWeight: "bold"
+                          }}
+                        >
+                          Print Invoice 📄
+                        </button>
                       </td>
                     </tr>
                   ))}
