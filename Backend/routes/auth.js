@@ -262,8 +262,8 @@ router.post("/forgot-password", async (req, res) => {
         user.resetPasswordExpires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour expiry
         await user.save();
 
-        // Build the reset link with the actual random token
-        const clientUrl = process.env.CLIENT_URL || "http://localhost:5173";
+        // Build the reset link — prioritize Vercel production URL over localhost fallback
+        const clientUrl = process.env.CLIENT_URL || "https://deza-ecommerce.vercel.app";
         const resetLink = `${clientUrl}/reset-password?token=${resetToken}&email=${encodeURIComponent(email)}`;
 
         const html = getBrandedTemplate("Password Recovery", `
