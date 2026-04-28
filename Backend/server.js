@@ -40,38 +40,8 @@ const authLimiter = rateLimit({
 app.use(compression());
 app.use(globalLimiter);
 
-// CORS — locked down to configured origin in production
-const allowedOrigins = [
-    "http://localhost:5173", 
-    "http://localhost:4173", 
-    "http://127.0.0.1:5173", 
-    "http://127.0.0.1:4173",
-    "https://deza-ecommerce.vercel.app" // Add the default Vercel URL
-];
-
-if (process.env.ALLOWED_ORIGIN) {
-    process.env.ALLOWED_ORIGIN.split(",").forEach(o => allowedOrigins.push(o.trim()));
-}
-
-app.use(
-    cors({
-        origin: (origin, callback) => {
-            // Allow requests with no origin (eg. mobile apps, Postman)
-            if (!origin) return callback(null, true);
-            
-            // Allow all localhost and local network IP variations (192.168.*.*)
-            const isAllowed = allowedOrigins.includes(origin) || origin.endsWith(".vercel.app") || origin.startsWith("http://192.168.") || origin.startsWith("http://10.");
-            
-            if (isAllowed) {
-                return callback(null, true);
-            } else {
-                console.warn(`⚠️ Blocked by CORS: ${origin}`);
-                return callback(new Error(`CORS policy: origin ${origin} not allowed`));
-            }
-        },
-        credentials: true,
-    })
-);
+// CORS — More permissive for stability across multiple devices/URLs
+app.use(cors({ origin: true, credentials: true }));
 
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));
