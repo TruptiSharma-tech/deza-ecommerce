@@ -214,18 +214,44 @@ router.post("/", async (req, res) => {
         if (customerEmail && customerEmail.includes("@")) {
             try {
                 const body = `
-                    <h3>Order Confirmation</h3>
-                    <p>Hello ${customerName},</p>
-                    <p>Thank you for choosing DEZA Luxury. Your order <b>${orderNumber}</b> has been received and is being processed.</p>
-                    <p><b>Order Details:</b></p>
-                    <ul>
-                        ${mappedItems.map(i => `<li>${i.name} (x${i.qty}) - ₹${i.price * i.qty}</li>`).join('')}
-                    </ul>
-                    <p><b>Total Amount:</b> ₹${totalPrice}</p>
-                    <p><b>Shipping to:</b> ${formattedAddress.street || ""}, ${formattedAddress.city || ""}</p>
-                    <p>We will notify you once your signature scent is shipped.</p>
+                    <p>Dear ${customerName},</p>
+                    <p>Your order for luxury fragrances has been confirmed! We are currently preparing your signature scents for delivery.</p>
+                    
+                    <div style="background: #f9f9f9; padding: 20px; border-radius: 8px; border-left: 4px solid #d4af37;">
+                        <h4 style="margin-top:0; color:#d4af37;">Order Summary: #${orderNumber}</h4>
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <thead>
+                                <tr style="border-bottom: 1px solid #ddd; text-align: left;">
+                                    <th style="padding: 10px 0;">Item</th>
+                                    <th style="padding: 10px 0; text-align: center;">Qty</th>
+                                    <th style="padding: 10px 0; text-align: right;">Price</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${mappedItems.map(i => `
+                                    <tr style="border-bottom: 1px solid #eee;">
+                                        <td style="padding: 10px 0;">${i.name} (${i.selectedSize})</td>
+                                        <td style="padding: 10px 0; text-align: center;">${i.qty}</td>
+                                        <td style="padding: 10px 0; text-align: right;">₹${(i.price * i.qty).toLocaleString("en-IN")}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                        <div style="text-align: right; margin-top: 15px; font-weight: bold; font-size: 18px; color: #1a1a1a;">
+                            Total: ₹${totalPrice.toLocaleString("en-IN")}
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 25px;">
+                        <p><b>Shipping Address:</b><br />
+                        ${customerName}<br />
+                        ${formattedAddress.street || ""}, ${formattedAddress.area || ""}<br />
+                        ${formattedAddress.city || ""}, ${formattedAddress.state || ""} - ${formattedAddress.pincode || ""}</p>
+                    </div>
+
+                    <p style="margin-top: 30px;">We will send you a tracking link as soon as your package is dispatched. Thank you for choosing the essence of luxury.</p>
                 `;
-                const template = getBrandedTemplate("Order Placed Successfully", body);
+                const template = getBrandedTemplate("Your Order is Confirmed ✨", body);
                 await sendEmail(customerEmail.toLowerCase().trim(), `DEZA Luxury - Order Confirmation #${orderNumber}`, template);
                 console.log(`✅ Order confirmation email sent to ${customerEmail}`);
             } catch (emailErr) {

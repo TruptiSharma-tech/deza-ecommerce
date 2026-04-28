@@ -25,20 +25,23 @@ transporter.verify((error, success) => {
 export const sendEmail = async (to, subject, html) => {
     try {
         const mailOptions = {
-            from: process.env.SMTP_FROM || `"DEZA Support" <${process.env.SMTP_USER}>`,
+            from: `"DEZA Luxury" <${process.env.SMTP_USER}>`,
             to,
-            subject,
+            subject: subject || "Notification from DEZA",
             html,
-            replyTo: "support@deza.com", // Your professional alias
         };
-        await transporter.sendMail(mailOptions);
-        console.log(`📩 Email sent successfully to ${to}`);
+
+        if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+            console.error("❌ SMTP Credentials missing in .env");
+            return false;
+        }
+
+        const info = await transporter.sendMail(mailOptions);
+        console.log(`📩 Email sent: ${info.messageId} to ${to}`);
         return true;
     } catch (err) {
         console.error("❌ Email failed for:", to);
-        console.error("❌ Error Message:", err.message);
-        if (err.code) console.error("❌ Error Code:", err.code);
-        if (err.command) console.error("❌ Failed Command:", err.command);
+        console.error("❌ Reason:", err.message);
         return false;
     }
 };
