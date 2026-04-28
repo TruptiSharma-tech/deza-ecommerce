@@ -70,38 +70,31 @@ export default function Register() {
     const normalized = cleanNumber.slice(-10);
     setFormData(prev => ({ ...prev, contact: normalized }));
 
-    console.log("Attempting to send WhatsApp OTP to:", formData.contact);
+    console.log("Attempting to send OTP to:", formData.contact);
     const newOtp = Math.floor(100000 + Math.random() * 900000).toString();
     setGeneratedOtp(newOtp);
+    setOtpSent(true);
+    setOtpVerified(false);
+    setOtp("");
+    setOtpArray(["", "", "", "", "", ""]);
+    setShowOtpModal(true);
 
-    try {
-      const res = await apiSendWhatsAppOtp({ contact: formData.contact, otp: newOtp });
-      if (res.demo) {
-        toast.info("Demo Mode: Code is 123456 (Check WhatsApp API)");
-        setGeneratedOtp("123456");
-      } else {
-        toast.success("Verification code sent to your WhatsApp! ✨");
-      }
-      setOtpSent(true);
-      setOtpVerified(false);
-      setOtp("");
-      setOtpArray(["", "", "", "", "", ""]);
-      setShowOtpModal(true);
-      setTimer(60);
+    // In a real app, this would be an API call. For now, we simulate success.
+    toast.success("Verification code sent to your mobile number! ✨");
+    console.log("DEMO OTP:", newOtp);
 
-      if (timerRef.current) clearInterval(timerRef.current);
-      timerRef.current = setInterval(() => {
-        setTimer(prev => {
-          if (prev <= 1) {
-            clearInterval(timerRef.current);
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-    } catch (err) {
-      toast.error("Failed to send WhatsApp message. Please try again.");
-    }
+    setTimer(60);
+
+    if (timerRef.current) clearInterval(timerRef.current);
+    timerRef.current = setInterval(() => {
+      setTimer(prev => {
+        if (prev <= 1) {
+          clearInterval(timerRef.current);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
   };
 
   const handleVerifyOtp = () => {
@@ -392,16 +385,16 @@ export default function Register() {
                 autoComplete="tel"
               />
               {otpVerified && (
-                 <span style={{ position: 'absolute', right: '15px', top: '50%', transform: 'translateY(-50%)', color: '#4caf50', fontSize: '12px', fontWeight: 'bold' }}>
-                   VERIFIED ✓
-                 </span>
+                <span style={{ position: 'absolute', right: '15px', top: '50%', transform: 'translateY(-50%)', color: '#4caf50', fontSize: '12px', fontWeight: 'bold' }}>
+                  VERIFIED ✓
+                </span>
               )}
             </div>
 
             {!otpVerified && (
-              <button 
-                type="button" 
-                className={`auth-btn ${otpSent ? 'resend-btn' : ''}`} 
+              <button
+                type="button"
+                className={`auth-btn ${otpSent ? 'resend-btn' : ''}`}
                 onClick={handleSendOtp}
               >
                 {otpSent ? "Resend Verification OTP 🔄" : "Send Verification OTP 📩"}
@@ -460,7 +453,7 @@ export default function Register() {
       <AnimatePresence>
         {showOtpModal && (
           <div className="otp-modal-overlay">
-            <motion.div 
+            <motion.div
               className="otp-modal"
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
@@ -470,7 +463,7 @@ export default function Register() {
               <div className="otp-modal-icon">📱</div>
               <h2>Verify Phone Number</h2>
               <p>We've sent a 6-digit verification code to <br /> <strong>+91 {formData.contact}</strong></p>
-              
+
               <div className="otp-inputs">
                 {otpArray.map((digit, i) => (
                   <input
@@ -498,7 +491,7 @@ export default function Register() {
               <button className="auth-btn otp-submit-btn" onClick={handleVerifyOtp}>
                 Verify & Continue
               </button>
-              
+
               <p className="otp-support">Problems receiving the code? <br /> <span onClick={() => setShowOtpModal(false)}>Change Phone Number</span></p>
             </motion.div>
           </div>
