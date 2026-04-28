@@ -3,6 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import toast from "react-hot-toast";
 import { useAuth } from "../context/AuthContext";
 import { apiRegister } from "../utils/api";
+import { motion, AnimatePresence } from "framer-motion";
 import "./Auth.css";
 
 export default function Register() {
