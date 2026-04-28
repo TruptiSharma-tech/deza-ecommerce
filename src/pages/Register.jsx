@@ -462,9 +462,9 @@ export default function Register() {
               exit={{ scale: 0.9, opacity: 0 }}
             >
               <button className="otp-close" onClick={() => setShowOtpModal(false)}>✕</button>
-              <div className="otp-modal-icon">📱</div>
-              <h2>Verify Phone Number</h2>
-              <p>We've sent a 6-digit verification code to <br /> <strong>+91 {formData.contact}</strong></p>
+              <div className="otp-modal-icon">📧</div>
+              <h2>Verify Your Email</h2>
+              <p>We've sent a 6-digit verification code to <br /> <strong>{formData.email}</strong></p>
 
               <div className="otp-inputs">
                 {otpArray.map((digit, i) => (
