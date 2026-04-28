@@ -50,7 +50,11 @@ app.use(["/api/admin", "/admin"], adminRoutes);
 app.use(["/api/payments", "/payments"], paymentRoutes);
 
 // ─── Health & Test Routes ──────────────────────────────────────────────────
-app.get("/", (req, res) => res.json({ message: "DEZA API is running 🚀" }));
+app.get("/", (req, res) => res.json({ 
+    message: "DEZA API is running 🚀", 
+    version: "2.0.0", 
+    last_update: "2026-04-28 15:45 (Safety Net Active)" 
+}));
 
 app.get("/api/test-email", async (req, res) => {
     try {
