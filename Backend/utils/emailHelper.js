@@ -7,20 +7,21 @@ const createTransporter = () => {
     const user = (process.env.SMTP_USER || "").trim();
     const pass = (process.env.SMTP_PASS || "").replace(/\s+/g, "");
 
-    console.log(`📡 [SMTP DEBUG] Connecting via IPv4 to smtp.gmail.com:587`);
+    console.log(`📡 [SMTP DEBUG] FORCING IPv4 connection for: ${user}`);
 
     return nodemailer.createTransport({
         host: "smtp.gmail.com",
         port: 587,
-        secure: false, // Port 587 uses STARTTLS
+        secure: false, // STARTTLS
+        family: 4,     // Force IPv4 at top level
+        connectionTimeout: 10000, // 10 seconds
+        greetingTimeout: 10000,
         auth: {
             user: user,
             pass: pass,
         },
         tls: {
-            rejectUnauthorized: false,
-            // Force IPv4 to avoid ENETUNREACH on IPv6
-            family: 4 
+            rejectUnauthorized: false
         }
     });
 };
