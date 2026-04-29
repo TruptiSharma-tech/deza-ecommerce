@@ -29,7 +29,10 @@ router.post("/send-email-otp", async (req, res) => {
         if (success) {
             res.json({ message: "Verification code sent to your email! ✨" });
         } else {
-            res.status(500).json({ error: "Failed to send email. Check SMTP settings." });
+            res.status(500).json({ 
+                error: "Failed to send email. Check SMTP settings.", 
+                details: "Email delivery was rejected by the server. Verify SMTP_USER/SMTP_PASS in Render dashboard."
+            });
         }
     } catch (err) {
         res.status(500).json({ error: "Failed to send Email OTP." });
