@@ -16,20 +16,22 @@ export default function PaymentGateway() {
   const [selectedMethod, setSelectedMethod] = useState(null); // 'Prepaid' or 'COD'
 
   const checkoutInfo = JSON.parse(localStorage.getItem("checkoutInfo")) || {};
-  const subtotal = checkoutInfo.subtotal || 0;
-  const shipping = checkoutInfo.shipping || 0;
   const { name, phone, email, address, cart = [] } = checkoutInfo;
   const cleanPhone = (phone || "").replace(/\D/g, "");
 
-  const { user: currentUser, clearCart } = useAuth();
+  const subtotal = cart.reduce((acc, item) => acc + item.price * item.qty, 0);
+  const shipping = subtotal > 999 ? 0 : 80;
 
-  // Dynamic Calculations
-  const baseHandlingFee = selectedMethod === "Prepaid" ? (subtotal + shipping) * 0.02 : 0;
-  const handlingGst = selectedMethod === "Prepaid" ? baseHandlingFee * 0.18 : 0;
-  const handlingFee = Math.round(baseHandlingFee + handlingGst);
+  // Final Professional Logic
+  // Prepaid: 2.36% Handling (2% + 18% GST)
+  const handlingFee = selectedMethod === "Prepaid" ? Math.round((subtotal + shipping) * 0.0236) : 0;
   
-  const codFee = selectedMethod === "COD" ? 50 : 0; // Flat ₹50 COD Fee
+  // COD: Flat ₹40
+  const codFee = selectedMethod === "COD" ? 40 : 0; 
+
   const finalTotal = subtotal + shipping + handlingFee + codFee;
+
+  const { user: currentUser, clearCart } = useAuth();
 
   useEffect(() => {
     if (!cart || cart.length === 0) navigate("/checkout");
@@ -93,9 +95,7 @@ export default function PaymentGateway() {
       }
 
       // Manually calculate to ensure state sync issues don't affect Razorpay
-      const baseHandling = (subtotal + shipping) * 0.02;
-      const gstOnHandling = baseHandling * 0.18;
-      const prepaidHandling = Math.round(baseHandling + gstOnHandling);
+      const prepaidHandling = Math.round((subtotal + shipping) * 0.0236);
       const prepaidTotal = subtotal + shipping + prepaidHandling;
 
       const order = await apiCreateRazorpayOrder({ amount: prepaidTotal });
@@ -248,20 +248,23 @@ export default function PaymentGateway() {
               <span>Shipping Fee:</span>
               <span>₹{shipping.toLocaleString()}</span>
             </div>
-            {handlingFee > 0 && (
+            {selectedMethod === "Prepaid" && (
               <div className="fee-row">
-                <span>Platform Handling Fee:</span>
+                <span>Handling fee (2.36%):</span>
                 <span>₹{handlingFee.toLocaleString()}</span>
               </div>
             )}
-            {codFee > 0 && (
+            {selectedMethod === "COD" && (
               <div className="fee-row">
-                <span>COD Fee:</span>
+                <span>COD fee:</span>
                 <span>₹{codFee.toLocaleString()}</span>
               </div>
             )}
             <div className="total-row">
               <p className="total-label">Total Amount</p>
+              <p className="total-value">₹{finalTotal.toLocaleString()}</p>
+            </div>
+          </div>
               <p className="total-amount">₹{finalTotal.toLocaleString()}</p>
             </div>
           </div>
