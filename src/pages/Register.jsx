@@ -42,24 +42,26 @@ export default function Register() {
   };
 
   const handleSendOtp = async () => {
-    if (!formData.name || formData.name.trim().length < 2) {
-      alert("Please enter a valid name.");
+    if (!formData.name || formData.name.trim().length < 3) {
+      toast.error("Full name must be at least 3 characters.");
       return;
     }
 
-    if (!formData.email || !formData.email.includes("@")) {
-      alert("Please enter a valid email address.");
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!formData.email || !emailRegex.test(formData.email)) {
+      toast.error("Please enter a valid email address.");
       return;
     }
 
-    if (!formData.password || formData.password.length < 6) {
-      alert("Password must be at least 6 characters.");
+    const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+    if (!formData.password || !strongPasswordRegex.test(formData.password)) {
+      toast.error("Password must be 8+ chars with uppercase, lowercase, number & special char.");
       return;
     }
 
     const cleanNumber = formData.contact.replace(/\D/g, "");
-    if (cleanNumber.length < 8) {
-      alert("Please enter a valid phone number.");
+    if (cleanNumber.length < 10 || cleanNumber.length > 12) {
+      toast.error("Please enter a valid 10-digit mobile number.");
       return;
     }
 
@@ -480,7 +482,7 @@ export default function Register() {
               <button className="otp-close" onClick={() => setShowOtpModal(false)}>✕</button>
               <div className="otp-modal-icon">📱</div>
               <h2>Verify Phone Number</h2>
-              <p>We've sent a 6-digit verification code to <br /> <strong>+91 {formData.contact}</strong></p>
+              <p>Verification OTP is sent to your email <br /> <strong>{formData.email}</strong></p>
 
               <div className="otp-inputs">
                 {otpArray.map((digit, i) => (
