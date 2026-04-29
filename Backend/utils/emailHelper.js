@@ -1,61 +1,55 @@
-import nodemailer from "nodemailer";
+import axios from "axios";
 import dotenv from "dotenv";
-import dns from "dns";
 
 dotenv.config();
 
-const createTransporter = () => {
-    const user = (process.env.SMTP_USER || "").trim();
-    const pass = (process.env.SMTP_PASS || "").trim();
+/**
+ * 🔒 ATOMIC PRO-GRADE FIX: Using Brevo REST API via Port 443 (HTTPS)
+ * This bypasses all SMTP port blocks (25, 465, 587, 2525) on Render.
+ */
+export const sendEmail = async (to, subject, htmlContent) => {
+    const apiKey = (process.env.SMTP_PASS || "").trim();
+    const senderEmail = (process.env.SMTP_USER || "").trim();
 
-    console.log(`📡 [SMTP] BREVO MODE: Using Alternate Port 2525 for ${user}`);
+    console.log(`📩 [API ACTION] Attempting to send email via Brevo API to: ${to}`);
 
-    return nodemailer.createTransport({
-        host: "smtp-relay.brevo.com",
-        port: 2525,
-        secure: false, // Port 2525 also uses STARTTLS
-        lookup: (hostname, options, callback) => {
-            dns.lookup(hostname, { family: 4 }, callback);
-        },
-        auth: {
-            user: user,
-            pass: pass,
-        },
-        tls: {
-            rejectUnauthorized: false
-        },
-        connectionTimeout: 10000
-    });
-};
+    if (!apiKey || !senderEmail) {
+        console.error("❌ [API ERROR] Brevo API Key or Sender Email missing in .env");
+        return false;
+    }
 
-let transporter = createTransporter();
-
-export const sendEmail = async (to, subject, html) => {
-    console.log(`📩 [ACTION] Attempting to send email to: ${to}`);
     try {
-        const mailOptions = {
-            from: `"DEZA Luxury" <${process.env.SMTP_USER}>`,
-            to,
-            subject: subject || "Notification from DEZA",
-            html,
-        };
+        const response = await axios.post(
+            "https://api.brevo.com/v3/smtp/email",
+            {
+                sender: { name: "DEZA Luxury", email: senderEmail },
+                to: [{ email: to }],
+                subject: subject || "Notification from DEZA",
+                htmlContent: htmlContent,
+            },
+            {
+                headers: {
+                    "api-key": apiKey,
+                    "Content-Type": "application/json",
+                    "Accept": "application/json",
+                },
+            }
+        );
 
-        if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
-            console.error("❌ SMTP Credentials missing in .env");
-            return false;
-        }
-
-        const info = await transporter.sendMail(mailOptions);
-        console.log(`✅ [SUCCESS] Email sent: ${info.messageId}`);
+        console.log(`✅ [API SUCCESS] Email sent successfully! Message ID: ${response.data.messageId}`);
         return true;
     } catch (err) {
-        console.error("❌ [FAILED] Email failed for:", to);
-        console.error("❌ [ERROR REASON]:", err.message);
+        console.error("❌ [API FAILED] Brevo API Error:");
+        if (err.response) {
+            console.error("❌ [REASON]:", err.response.data.message || JSON.stringify(err.response.data));
+        } else {
+            console.error("❌ [REASON]:", err.message);
+        }
         return false;
     }
 };
 
-// Branded Templates (Luxury Gold Theme)
+// Placeholder for templates compatibility
 export const getBrandedTemplate = (title, body) => `
 <div style="background-color: #0a0a0a; padding: 50px 20px; font-family: 'Garamond', 'Times New Roman', serif; color: #fff;">
     <div style="max-width: 600px; margin: auto; background: #fff; border: 1px solid #d4af37; border-radius: 0; padding: 40px; box-shadow: 0 20px 50px rgba(0,0,0,0.5);">
