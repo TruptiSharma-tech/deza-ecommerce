@@ -1068,16 +1068,16 @@ export default function Admin() {
     
     y += 10;
     doc.setFontSize(10);
-    doc.text("Subtotal:", 130, y);
+    doc.text("Product Price:", 130, y);
     doc.text(`INR ${subtotal.toLocaleString()}`, 180, y);
     
     y += 7;
-    doc.text("Shipping:", 130, y);
+    doc.text("Shipping Fee:", 130, y);
     doc.text(`INR ${(order.shippingFee || 0).toLocaleString()}`, 180, y);
 
     if (order.handlingFee > 0) {
       y += 7;
-      doc.text("Handling Fee (2%):", 130, y);
+      doc.text("Platform Handling Fee:", 130, y);
       doc.text(`INR ${order.handlingFee.toLocaleString()}`, 180, y);
     }
 
@@ -2031,7 +2031,33 @@ export default function Admin() {
                         ))}
                       </td>
 
-                      <td>₹{o.totalPrice}</td>
+                      <td>
+                        <div style={{ fontSize: '12px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', gap: '10px' }}>
+                            <span style={{ opacity: 0.6 }}>Product:</span>
+                            <span>₹{(o.totalPrice - (o.shippingFee || 0) - (o.handlingFee || 0) - (o.codFee || 0)).toLocaleString()}</span>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', gap: '10px' }}>
+                            <span style={{ opacity: 0.6 }}>Shipping:</span>
+                            <span>₹{(o.shippingFee || 0).toLocaleString()}</span>
+                          </div>
+                          {o.handlingFee > 0 && (
+                            <div style={{ display: 'flex', justifyContent: 'space-between', gap: '10px' }}>
+                              <span style={{ opacity: 0.6 }}>Handling:</span>
+                              <span>₹{o.handlingFee.toLocaleString()}</span>
+                            </div>
+                          )}
+                          {o.codFee > 0 && (
+                            <div style={{ display: 'flex', justifyContent: 'space-between', gap: '10px' }}>
+                              <span style={{ opacity: 0.6 }}>COD Fee:</span>
+                              <span>₹{o.codFee.toLocaleString()}</span>
+                            </div>
+                          )}
+                          <div style={{ borderTop: '1px solid #444', marginTop: '5px', paddingTop: '5px', fontWeight: 'bold', fontSize: '14px', color: '#D4AF37' }}>
+                            ₹{o.totalPrice.toLocaleString()}
+                          </div>
+                        </div>
+                      </td>
                       <td>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                           <span style={{ 
