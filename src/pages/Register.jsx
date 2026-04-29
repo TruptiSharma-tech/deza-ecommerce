@@ -415,12 +415,12 @@ export default function Register() {
                 className={`auth-btn ${otpSent ? 'resend-btn' : ''}`}
                 onClick={handleSendOtp}
               >
-                {otpSent ? "Resend Verification OTP 🔄" : "Send Verification OTP 📩"}
+                {otpSent ? "Resend Email OTP 🔄" : "Send Email OTP 📩"}
               </button>
             )}
           </div>
 
-          {/* Gender — only show after OTP verified */}
+          {/* Gender — only show after Email verified */}
           {otpVerified && (
             <>
               <select
