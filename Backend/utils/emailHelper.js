@@ -8,14 +8,12 @@ const createTransporter = () => {
     const user = (process.env.SMTP_USER || "").trim();
     const pass = (process.env.SMTP_PASS || "").replace(/\s+/g, "");
 
-    console.log(`📡 [SMTP DEBUG] ULTIMATE COMBO: Using Service Gmail for ${user}`);
+    console.log(`📡 [SMTP DEBUG] ALTERNATE HOST: Trying smtp.googlemail.com:587 for ${user}`);
 
     return nodemailer.createTransport({
-        service: "gmail",
-        host: "smtp.gmail.com", // Fallback
+        host: "smtp.googlemail.com",
         port: 587,
-        secure: false,
-        // 🔒 ATOMIC FIX: Force DNS to only return IPv4 addresses
+        secure: false, // STARTTLS
         lookup: (hostname, options, callback) => {
             dns.lookup(hostname, { family: 4 }, callback);
         },
@@ -24,9 +22,11 @@ const createTransporter = () => {
             pass: pass,
         },
         tls: {
-            rejectUnauthorized: false
+            rejectUnauthorized: false,
+            minVersion: "TLSv1.2",
+            servername: "smtp.googlemail.com"
         },
-        logger: true, 
+        logger: true,
         debug: true,
         connectionTimeout: 10000
     });
