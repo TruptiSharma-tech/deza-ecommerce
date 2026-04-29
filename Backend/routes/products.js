@@ -31,7 +31,7 @@ router.get("/", async (req, res) => {
 
         // 🚀 OPTIMIZED: Select only needed fields for listing to reduce payload size
         const products = await Product.find(query)
-            .select("title slug price discountPrice mainImage category brand stock isNewArrival isBestSeller rating numReviews sizePrices")
+            .select("title slug price discountPrice mainImage category brand categories types stock isNewArrival isBestSeller rating numReviews sizePrices")
             .populate("category brand", "name")
             .sort({ createdAt: -1 })
             .skip(skip)

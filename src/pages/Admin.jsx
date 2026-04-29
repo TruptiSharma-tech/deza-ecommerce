@@ -879,37 +879,42 @@ export default function Admin() {
     ],
   };
 
-  const categoryChart = {
+  const categoryChart = useMemo(() => ({
     labels: categories,
     datasets: [
       {
         label: "Products by Category",
-        data: categories.map(
-          (c) =>
-            products.filter((p) => (p.categories || []).includes(c)).length,
+        data: categories.map((c) => 
+          products.filter((p) => 
+            (p.categories || []).some(cat => cat.toLowerCase() === c.toLowerCase()) ||
+            (p.category?.name?.toLowerCase() === c.toLowerCase())
+          ).length
         ),
-        backgroundColor: ["#D4AF37", "#F9F7F2", "#9B8477"],
-        borderColor: "rgba(255,255,255,0.3)",
+        backgroundColor: ["#D4AF37", "#9B8477", "#F9F7F2", "#4F4F4F", "#000"],
+        borderColor: "rgba(255,255,255,0.1)",
         borderWidth: 2,
       },
     ],
-  };
+  }), [categories, products]);
 
-  const typeChart = {
+  const typeChart = useMemo(() => ({
     labels: types,
     datasets: [
       {
-        label: "Products by Type",
-        data: types.map(
-          (t) => products.filter((p) => (p.types || []).includes(t)).length,
+        label: "Products by Brand",
+        data: types.map((t) => 
+          products.filter((p) => 
+            (p.types || []).some(type => type.toLowerCase() === t.toLowerCase()) ||
+            (p.brand?.name?.toLowerCase() === t.toLowerCase())
+          ).length
         ),
-        backgroundColor: ["#d4af37", "#f9f7f2"],
+        backgroundColor: ["#D4AF37", "#F9F7F2", "#9B8477", "#333"],
         borderColor: "rgba(255,255,255,0.05)",
         borderWidth: 1,
         borderRadius: 8,
       },
     ],
-  };
+  }), [types, products]);
 
   const ratingsChart = {
     labels: productsWithAvgRating.map((p) => p.title),
@@ -1596,7 +1601,7 @@ export default function Admin() {
               </div>
 
               <div className="chart-box" style={{ width: '100%', padding: '0', background: '#0b0b0d', overflow: 'hidden', height: '480px', display: 'flex', flexDirection: 'column' }}>
-                <h3 style={{ padding: '20px 20px 0 20px', borderBottom: 'none', margin: '0' }}>Products by Type</h3>
+                <h3 style={{ padding: '20px 20px 0 20px', borderBottom: 'none', margin: '0' }}>Products by Brand</h3>
                 <div style={{ flex: 1, width: '100%', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '10px' }}>
                   <Bar 
                     data={typeChart} 
