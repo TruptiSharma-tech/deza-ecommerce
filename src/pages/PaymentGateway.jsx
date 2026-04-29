@@ -269,9 +269,6 @@ export default function PaymentGateway() {
               <p className="total-value">₹{finalTotal.toLocaleString()}</p>
             </div>
           </div>
-              <p className="total-amount">₹{finalTotal.toLocaleString()}</p>
-            </div>
-          </div>
         </div>
 
         <div className="summary-items">
