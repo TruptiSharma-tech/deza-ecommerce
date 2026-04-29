@@ -12,8 +12,8 @@ export const sendEmail = async (to, subject, htmlContent) => {
     const senderEmail = (process.env.SMTP_USER || "").trim();
 
     console.log(`📩 [EMAIL ACTION] Sending to: ${to}`);
-    // Log key length for debugging (Safe, doesn't show the key)
-    console.log(`📩 [DEBUG] API Key Length: ${apiKey.length} chars`);
+    // Log key prefix for debugging (Safe, only first 10 chars)
+    console.log(`📩 [DEBUG] API Key Prefix: ${apiKey.substring(0, 10)}... (Length: ${apiKey.length})`);
 
     if (!apiKey || !senderEmail) {
         console.error("❌ [ERROR] SMTP_USER or SMTP_PASS (API Key) missing in Environment Variables");
