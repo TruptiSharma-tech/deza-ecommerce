@@ -27,6 +27,7 @@ export default function Register() {
   const [uiType, setUiType] = useState(""); // "success" | "error" | "info"
   const [loading, setLoading] = useState(false);
   const [timer, setTimer] = useState(0);
+  const [otpError, setOtpError] = useState(""); // Track internal modal errors
   const [showPassword, setShowPassword] = useState(false);
   const [showOtpModal, setShowOtpModal] = useState(false);
   const [otpArray, setOtpArray] = useState(["", "", "", "", "", ""]);
@@ -111,10 +112,11 @@ export default function Register() {
     }
 
     if (timer === 0) {
-      toast.error("⏱️ Code has expired. Please resend a new one.");
+      setOtpError("⏱️ Code has expired. Please resend.");
       return;
     }
     
+    setOtpError(""); // Clear previous errors
     console.log("Verifying OTP:", { entered: enteredOtp, expected: generatedOtp });
 
     if (enteredOtp.trim() === generatedOtp.trim()) {
@@ -124,12 +126,13 @@ export default function Register() {
       if (timerRef.current) clearInterval(timerRef.current);
       setTimer(0);
     } else {
-      toast.error("Invalid code. Please check and try again.");
+      setOtpError("❌ Invalid code. Please check and try again.");
     }
   };
 
   const handleOtpChange = (index, value) => {
     if (isNaN(value)) return;
+    setOtpError(""); // Clear error when typing
     const newOtpArray = [...otpArray];
     newOtpArray[index] = value.slice(-1);
     setOtpArray(newOtpArray);
@@ -512,10 +515,19 @@ export default function Register() {
                 )}
               </div>
 
-              {timer === 0 && (
-                <p style={{ color: '#ff4b4b', fontSize: '12px', marginTop: '-15px', marginBottom: '15px', fontWeight: '500' }}>
-                  ⚠️ Code has expired. Please resend.
-                </p>
+              {otpError && (
+                <div style={{ 
+                  color: '#ff4b4b', 
+                  fontSize: '13px', 
+                  marginBottom: '15px', 
+                  fontWeight: '500',
+                  background: 'rgba(255, 75, 75, 0.1)',
+                  padding: '8px',
+                  borderRadius: '8px',
+                  border: '1px solid rgba(255, 75, 75, 0.2)'
+                }}>
+                  {otpError}
+                </div>
               )}
 
               <button className="auth-btn otp-submit-btn" onClick={() => handleVerifyOtp()}>
