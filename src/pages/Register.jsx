@@ -512,6 +512,12 @@ export default function Register() {
                 )}
               </div>
 
+              {timer === 0 && (
+                <p style={{ color: '#ff4b4b', fontSize: '12px', marginTop: '-15px', marginBottom: '15px', fontWeight: '500' }}>
+                  ⚠️ Code has expired. Please resend.
+                </p>
+              )}
+
               <button className="auth-btn otp-submit-btn" onClick={() => handleVerifyOtp()}>
                 Verify & Continue
               </button>

@@ -57,6 +57,7 @@ export default function App() {
       <ScrollProgress />
       <Toaster
         position="top-center"
+        containerStyle={{ zIndex: 100000 }} // Ensure it's above the OTP Modal
         toastOptions={{
           style: {
             background: '#1a1a1a',
