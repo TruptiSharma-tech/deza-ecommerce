@@ -77,27 +77,29 @@ export default function Register() {
 
     try {
       await apiSendEmailOtp({ email: formData.email, otp: newOtp });
-      toast.success("Verification code sent to your email! ✨");
-      setOtpSent(true);
-      setOtpVerified(false);
-      setOtp("");
-      setOtpArray(["", "", "", "", "", ""]);
-      setShowOtpModal(true);
-      setTimer(60);
-
-      if (timerRef.current) clearInterval(timerRef.current);
-      timerRef.current = setInterval(() => {
-        setTimer(prev => {
-          if (prev <= 1) {
-            clearInterval(timerRef.current);
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
+      toast.success("Verification code sent! ✨");
     } catch (err) {
-      toast.error("Failed to send Email OTP. Please try again.");
+      toast.error("SMTP Error: Backend couldn't send email. Check Server Logs.");
+      console.warn("⚠️ Proceeding anyway so you can use the DEBUG OTP from console.");
     }
+
+    // Always show modal so development isn't completely blocked
+    setOtpSent(true);
+    setOtpVerified(false);
+    setOtpArray(["", "", "", "", "", ""]);
+    setShowOtpModal(true);
+    setTimer(60);
+
+    if (timerRef.current) clearInterval(timerRef.current);
+    timerRef.current = setInterval(() => {
+      setTimer(prev => {
+        if (prev <= 1) {
+          clearInterval(timerRef.current);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
   };
 
   const handleVerifyOtp = (forcedOtp) => {
