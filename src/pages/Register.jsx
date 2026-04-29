@@ -99,24 +99,27 @@ export default function Register() {
     }
   };
 
-  const handleVerifyOtp = () => {
-    const enteredOtp = otpArray.join("");
+  const handleVerifyOtp = (forcedOtp) => {
+    const enteredOtp = forcedOtp || otpArray.join("");
     if (!generatedOtp) {
-      toast.error("Please request an OTP first.");
+      toast.error("Please request a code first.");
       return;
     }
     if (timer === 0) {
-      toast.error("OTP has expired. Please resend.");
+      toast.error("Code has expired. Please resend.");
       return;
     }
-    if (enteredOtp === generatedOtp) {
+    
+    console.log("Verifying OTP:", { entered: enteredOtp, expected: generatedOtp });
+
+    if (enteredOtp.trim() === generatedOtp.trim()) {
       setOtpVerified(true);
       setShowOtpModal(false);
-      toast.success("✅ Phone Verified Successfully!");
+      toast.success("✅ Email Verified Successfully!");
       if (timerRef.current) clearInterval(timerRef.current);
       setTimer(0);
     } else {
-      toast.error("Invalid OTP. Please check and try again.");
+      toast.error("Invalid code. Please check and try again.");
     }
   };
 
@@ -126,8 +129,21 @@ export default function Register() {
     newOtpArray[index] = value.slice(-1);
     setOtpArray(newOtpArray);
 
-    if (value && index < 5) {
+    // Auto-verify if all 6 digits are present
+    if (value && index === 5) {
+      const fullOtp = newOtpArray.join("");
+      if (fullOtp.length === 6) handleVerifyOtp(fullOtp);
+    } else if (value && index < 5) {
       otpInputsRef.current[index + 1].focus();
+    }
+  };
+
+  const handlePaste = (e) => {
+    const data = e.clipboardData.getData("text").trim();
+    if (data.length === 6 && !isNaN(data)) {
+      const split = data.split("");
+      setOtpArray(split);
+      handleVerifyOtp(data);
     }
   };
 
@@ -184,7 +200,7 @@ export default function Register() {
     e.preventDefault();
 
     if (!otpVerified) {
-      showMsg("⚠️ Please verify your phone number first.");
+      showMsg("⚠️ Please verify your email address first.");
       return;
     }
 
@@ -476,6 +492,7 @@ export default function Register() {
                     ref={el => otpInputsRef.current[i] = el}
                     onChange={(e) => handleOtpChange(i, e.target.value)}
                     onKeyDown={(e) => handleKeyDown(i, e)}
+                    onPaste={handlePaste}
                     className="otp-digit-input"
                     inputMode="numeric"
                   />
@@ -494,7 +511,7 @@ export default function Register() {
                 Verify & Continue
               </button>
 
-              <p className="otp-support">Problems receiving the code? <br /> <span onClick={() => setShowOtpModal(false)}>Change Phone Number</span></p>
+              <p className="otp-support">Problems receiving the code? <br /> <span onClick={() => setShowOtpModal(false)}>Change Email Address</span></p>
             </motion.div>
           </div>
         )}
