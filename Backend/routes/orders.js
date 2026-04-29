@@ -249,9 +249,9 @@ router.post("/", async (req, res) => {
                             </tbody>
                         </table>
                         <div style="text-align: right; margin-top: 15px; font-size: 14px;">
-                            Subtotal: ₹${subtotal.toLocaleString("en-IN")}<br />
-                            Shipping: ₹${finalShippingFee.toLocaleString("en-IN")}<br />
-                            ${finalHandlingFee > 0 ? `Handling Fee (2%): ₹${finalHandlingFee.toLocaleString("en-IN")}<br />` : ""}
+                            Product Price: ₹${subtotal.toLocaleString("en-IN")}<br />
+                            Shipping Fee: ₹${finalShippingFee.toLocaleString("en-IN")}<br />
+                            ${finalHandlingFee > 0 ? `Platform Handling Fee: ₹${finalHandlingFee.toLocaleString("en-IN")}<br />` : ""}
                             ${finalCodFee > 0 ? `COD Fee: ₹${finalCodFee.toLocaleString("en-IN")}<br />` : ""}
                         </div>
                         <div style="text-align: right; margin-top: 10px; font-weight: bold; font-size: 18px; color: #1a1a1a;">
@@ -269,8 +269,11 @@ router.post("/", async (req, res) => {
                     <p style="margin-top: 30px;">We will send you a tracking link as soon as your package is dispatched. Thank you for choosing the essence of luxury.</p>
                 `;
                 const template = getBrandedTemplate("Your Order is Confirmed ✨", body);
-                await sendEmail(customerEmail.toLowerCase().trim(), `DEZA Luxury - Order Confirmation #${orderNumber}`, template);
-                console.log(`✅ Order confirmation email sent to ${customerEmail}`);
+                
+                // 🔥 ASYNC: Send in background so customer doesn't wait
+                sendEmail(customerEmail.toLowerCase().trim(), `DEZA Luxury - Order Confirmation #${orderNumber}`, template)
+                    .then(() => console.log(`✅ Order confirmation email sent to ${customerEmail}`))
+                    .catch(err => console.error("❌ Notification error:", err.message));
 
 
 
