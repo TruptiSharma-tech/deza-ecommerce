@@ -8,12 +8,13 @@ const createTransporter = () => {
     const user = (process.env.SMTP_USER || "").trim();
     const pass = (process.env.SMTP_PASS || "").replace(/\s+/g, "");
 
-    console.log(`📡 [SMTP DEBUG] PORT 587 + IPv4 MODE for ${user}`);
+    console.log(`📡 [SMTP DEBUG] ULTIMATE COMBO: Using Service Gmail for ${user}`);
 
     return nodemailer.createTransport({
-        host: "smtp.gmail.com",
+        service: "gmail",
+        host: "smtp.gmail.com", // Fallback
         port: 587,
-        secure: false, // Port 587 must use STARTTLS (secure: false)
+        secure: false,
         // 🔒 ATOMIC FIX: Force DNS to only return IPv4 addresses
         lookup: (hostname, options, callback) => {
             dns.lookup(hostname, { family: 4 }, callback);
@@ -33,20 +34,8 @@ const createTransporter = () => {
 
 let transporter = createTransporter();
 
-// Verify connection on startup
-const verifyTransporter = async () => {
-    try {
-        await transporter.verify();
-        console.log("✅ SMTP Server is ready (verified)");
-    } catch (error) {
-        console.error("❌ SMTP Verification Failed:", error.message);
-        console.log("💡 Tip: Check if App Password is correct and 2-Step Verification is ON.");
-    }
-};
-
-verifyTransporter();
-
 export const sendEmail = async (to, subject, html) => {
+    console.log(`📩 [ACTION] Attempting to send email to: ${to}`);
     try {
         const mailOptions = {
             from: `"DEZA Luxury" <${process.env.SMTP_USER}>`,
@@ -61,11 +50,11 @@ export const sendEmail = async (to, subject, html) => {
         }
 
         const info = await transporter.sendMail(mailOptions);
-        console.log(`📩 Email sent: ${info.messageId} to ${to}`);
+        console.log(`✅ [SUCCESS] Email sent: ${info.messageId}`);
         return true;
     } catch (err) {
-        console.error("❌ Email failed for:", to);
-        console.error("❌ Reason:", err.message);
+        console.error("❌ [FAILED] Email failed for:", to);
+        console.error("❌ [ERROR REASON]:", err.message);
         return false;
     }
 };
