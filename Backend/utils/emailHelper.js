@@ -7,8 +7,7 @@ const createTransporter = () => {
     const user = (process.env.SMTP_USER || "").trim();
     const pass = (process.env.SMTP_PASS || "").replace(/\s+/g, "");
 
-    console.log(`📡 [SMTP DEBUG] Initializing with: ${user}`);
-    console.log(`📡 [SMTP DEBUG] Password Length: ${pass.length} chars`);
+    console.log(`📡 [SMTP DEBUG] Connecting via IPv4 to smtp.gmail.com:587`);
 
     return nodemailer.createTransport({
         host: "smtp.gmail.com",
@@ -20,7 +19,8 @@ const createTransporter = () => {
         },
         tls: {
             rejectUnauthorized: false,
-            ciphers: 'SSLv3'
+            // Force IPv4 to avoid ENETUNREACH on IPv6
+            family: 4 
         }
     });
 };
