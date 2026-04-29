@@ -8,10 +8,12 @@ dotenv.config();
  * Works everywhere (Render, Hostinger, Vercel) because it uses Port 443 (HTTPS).
  */
 export const sendEmail = async (to, subject, htmlContent) => {
-    const apiKey = (process.env.SMTP_PASS || "").trim();
+    const apiKey = (process.env.SMTP_PASS || "").replace(/\s+/g, "");
     const senderEmail = (process.env.SMTP_USER || "").trim();
 
     console.log(`📩 [EMAIL ACTION] Sending to: ${to}`);
+    // Log key length for debugging (Safe, doesn't show the key)
+    console.log(`📩 [DEBUG] API Key Length: ${apiKey.length} chars`);
 
     if (!apiKey || !senderEmail) {
         console.error("❌ [ERROR] SMTP_USER or SMTP_PASS (API Key) missing in Environment Variables");
