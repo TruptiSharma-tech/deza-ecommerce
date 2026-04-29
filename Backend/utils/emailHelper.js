@@ -7,16 +7,20 @@ const createTransporter = () => {
     const user = (process.env.SMTP_USER || "").trim();
     const pass = (process.env.SMTP_PASS || "").replace(/\s+/g, "");
 
-    console.log(`📡 Attempting SMTP connection for: ${user}`);
+    console.log(`📡 [SMTP DEBUG] Initializing with: ${user}`);
+    console.log(`📡 [SMTP DEBUG] Password Length: ${pass.length} chars`);
 
     return nodemailer.createTransport({
-        service: "gmail",
+        host: "smtp.gmail.com",
+        port: 587,
+        secure: false, // Port 587 uses STARTTLS
         auth: {
             user: user,
             pass: pass,
         },
         tls: {
-            rejectUnauthorized: false
+            rejectUnauthorized: false,
+            ciphers: 'SSLv3'
         }
     });
 };
