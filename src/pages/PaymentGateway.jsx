@@ -23,8 +23,10 @@ export default function PaymentGateway() {
   const shipping = subtotal > 999 ? 0 : 80;
 
   // Final Professional Logic
-  // Prepaid: 2.36% Handling (2% + 18% GST)
-  const handlingFee = selectedMethod === "Prepaid" ? Math.round((subtotal + shipping) * 0.0236) : 0;
+  // Prepaid: 2.36% Fee + 18% GST on that Fee
+  const baseFee = (subtotal + shipping) * 0.0236;
+  const gstOnFee = baseFee * 0.18;
+  const handlingFee = selectedMethod === "Prepaid" ? Math.round(baseFee + gstOnFee) : 0;
   
   // COD: Flat ₹40
   const codFee = selectedMethod === "COD" ? 40 : 0; 
@@ -95,7 +97,9 @@ export default function PaymentGateway() {
       }
 
       // Manually calculate to ensure state sync issues don't affect Razorpay
-      const prepaidHandling = Math.round((subtotal + shipping) * 0.0236);
+      const prepaidBaseFee = (subtotal + shipping) * 0.0236;
+      const prepaidGstOnFee = prepaidBaseFee * 0.18;
+      const prepaidHandling = Math.round(prepaidBaseFee + prepaidGstOnFee);
       const prepaidTotal = subtotal + shipping + prepaidHandling;
 
       const order = await apiCreateRazorpayOrder({ amount: prepaidTotal });
