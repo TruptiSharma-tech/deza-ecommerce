@@ -6,21 +6,25 @@ dotenv.config();
 
 const createTransporter = () => {
     const user = (process.env.SMTP_USER || "").trim();
-    const pass = (process.env.SMTP_PASS || "").replace(/\s+/g, "");
+    const pass = (process.env.SMTP_PASS || "").trim();
 
-    console.log(`📡 [SMTP DEBUG] REVERTING TO ORIGINAL: Service Gmail for ${user}`);
+    console.log(`📡 [SMTP] PERMANENT MODE: Using Brevo Relay for ${user}`);
 
     return nodemailer.createTransport({
-        service: "gmail",
+        host: "smtp-relay.brevo.com",
+        port: 587,
+        secure: false, // Brevo uses STARTTLS on 587
+        // 🔒 Keep IPv4 force just in case Render has DNS issues
+        lookup: (hostname, options, callback) => {
+            dns.lookup(hostname, { family: 4 }, callback);
+        },
         auth: {
             user: user,
             pass: pass,
         },
         tls: {
             rejectUnauthorized: false
-        },
-        logger: true,
-        debug: true
+        }
     });
 };
 
