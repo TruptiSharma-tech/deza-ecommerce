@@ -116,7 +116,7 @@ export default function Register() {
     if (enteredOtp.trim() === generatedOtp.trim()) {
       setOtpVerified(true);
       setShowOtpModal(false);
-      toast.success("✅ Email Verified Successfully!");
+      toast.success("✅ Phone Verified Successfully!");
       if (timerRef.current) clearInterval(timerRef.current);
       setTimer(0);
     } else {
@@ -201,7 +201,7 @@ export default function Register() {
     e.preventDefault();
 
     if (!otpVerified) {
-      showMsg("⚠️ Please verify your email address first.");
+      showMsg("⚠️ Please verify your phone number first.");
       return;
     }
 
@@ -416,12 +416,12 @@ export default function Register() {
                 className={`auth-btn ${otpSent ? 'resend-btn' : ''}`}
                 onClick={handleSendOtp}
               >
-                {otpSent ? "Resend Email OTP 🔄" : "Send Email OTP 📩"}
+                {otpSent ? "Resend Verification OTP 🔄" : "Send Verification OTP 📩"}
               </button>
             )}
           </div>
 
-          {/* Gender — only show after Email verified */}
+          {/* Gender — only show after OTP verified */}
           {otpVerified && (
             <>
               <select
@@ -479,9 +479,9 @@ export default function Register() {
               exit={{ scale: 0.9, opacity: 0 }}
             >
               <button className="otp-close" onClick={() => setShowOtpModal(false)}>✕</button>
-              <div className="otp-modal-icon">📧</div>
-              <h2>Verify Your Email</h2>
-              <p>We've sent a 6-digit verification code to <br /> <strong>{formData.email}</strong></p>
+              <div className="otp-modal-icon">📱</div>
+              <h2>Verify Phone Number</h2>
+              <p>We've sent a 6-digit verification code to <br /> <strong>+91 {formData.contact}</strong></p>
 
               <div className="otp-inputs">
                 {otpArray.map((digit, i) => (
@@ -512,7 +512,7 @@ export default function Register() {
                 Verify & Continue
               </button>
 
-              <p className="otp-support">Problems receiving the code? <br /> <span onClick={() => setShowOtpModal(false)}>Change Email Address</span></p>
+              <p className="otp-support">Problems receiving the code? <br /> <span onClick={() => setShowOtpModal(false)}>Change Phone Number</span></p>
             </motion.div>
           </div>
         )}
