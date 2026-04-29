@@ -29,24 +29,24 @@ router.get("/", async (req, res) => {
 
         const skip = (parseInt(page) - 1) * parseInt(limit);
 
+        // 🚀 OPTIMIZED: Select only needed fields for listing to reduce payload size
         const products = await Product.find(query)
-            .populate("category brand")
+            .select("title slug price discountPrice mainImage category brand stock isNewArrival isBestSeller rating numReviews sizePrices")
+            .populate("category brand", "name")
             .sort({ createdAt: -1 })
             .skip(skip)
             .limit(parseInt(limit));
 
         const total = await Product.countDocuments(query);
 
-        // 🚀 OPTIMIZED: Remove N+1 query. Use existing rating in model.
-        // Ratings are updated when reviews are submitted in reviewRoutes.
         const updatedProducts = products.map((p) => {
             const obj = p.toObject();
             obj.image = obj.mainImage;
-            // Fallback for rating if it doesn't exist
-            if (obj.rating === undefined) obj.rating = 0;
-            if (obj.numReviews === undefined) obj.numReviews = 0;
             return obj;
         });
+
+        // Add caching header for 5 minutes
+        res.set("Cache-Control", "public, max-age=300");
 
         res.json({
             products: updatedProducts,
@@ -55,9 +55,11 @@ router.get("/", async (req, res) => {
             pages: Math.ceil(total / limit)
         });
     } catch (err) {
+        console.error("Fetch products error:", err);
         res.status(500).json({ error: "Failed to fetch products." });
     }
 });
+
 
 // ─── GET Single Product ────────────────────────────────────────────────────────
 router.get("/:id", async (req, res) => {

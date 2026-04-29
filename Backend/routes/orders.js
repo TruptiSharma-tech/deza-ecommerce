@@ -1,6 +1,7 @@
 import express from "express";
 import mongoose from "mongoose";
 import { nanoid } from "nanoid";
+import { processAutomatedRefund } from "../utils/refundService.js";
 import Order from "../models/Order.js";
 import Product from "../models/Product.js";
 import Shop from "../models/Shop.js";
@@ -158,7 +159,7 @@ router.post("/", async (req, res) => {
     try {
         const {
             customerId, customerName, customerPhone, customerEmail,
-            items, address, totalPrice, paymentMethod, paymentId, paymentStatus, orderSource
+            items, address, shippingAddress, totalPrice, totalAmount, shippingFee, handlingFee, codFee, paymentMethod, paymentId, paymentStatus, orderSource
         } = req.body;
 
         const orderNumber = `DZ-${nanoid(10).toUpperCase()}`;
@@ -172,9 +173,15 @@ router.post("/", async (req, res) => {
             qty: item.qty || 1,
         }));
 
-        const formattedAddress = typeof address === 'string' 
-            ? { street: address } 
-            : (address || {});
+        const finalAddress = shippingAddress || address;
+        const formattedAddress = typeof finalAddress === 'string' 
+            ? { street: finalAddress } 
+            : (finalAddress || {});
+
+        const finalTotal = Number(totalAmount || totalPrice) || 0;
+        const finalShippingFee = Number(shippingFee) || 0;
+        const finalHandlingFee = Number(handlingFee) || 0;
+        const finalCodFee = Number(codFee) || 0;
 
         // Fetch primary shop to assign to this order
         const primaryShop = await mongoose.model("Shop").findOne({ isPrimary: true });
@@ -188,7 +195,10 @@ router.post("/", async (req, res) => {
             customerEmail: customerEmail || "",
             items: mappedItems,
             shippingAddress: formattedAddress,
-            totalAmount: Number(totalPrice) || 0,
+            totalAmount: finalTotal,
+            shippingFee: finalShippingFee,
+            handlingFee: finalHandlingFee,
+            codFee: finalCodFee,
             paymentMethod: paymentMethod || "Cash On Delivery",
             paymentStatus: paymentStatus || "Pending",
             paymentDetails: { paymentId },
@@ -213,6 +223,7 @@ router.post("/", async (req, res) => {
         // Send Email Confirmation
         if (customerEmail && customerEmail.includes("@")) {
             try {
+                const subtotal = mappedItems.reduce((sum, i) => sum + (i.price * i.qty), 0);
                 const body = `
                     <p>Dear ${customerName},</p>
                     <p>Your order for luxury fragrances has been confirmed! We are currently preparing your signature scents for delivery.</p>
@@ -237,8 +248,14 @@ router.post("/", async (req, res) => {
                                 `).join('')}
                             </tbody>
                         </table>
-                        <div style="text-align: right; margin-top: 15px; font-weight: bold; font-size: 18px; color: #1a1a1a;">
-                            Total: ₹${totalPrice.toLocaleString("en-IN")}
+                        <div style="text-align: right; margin-top: 15px; font-size: 14px;">
+                            Subtotal: ₹${subtotal.toLocaleString("en-IN")}<br />
+                            Shipping: ₹${finalShippingFee.toLocaleString("en-IN")}<br />
+                            ${finalHandlingFee > 0 ? `Handling Fee (2%): ₹${finalHandlingFee.toLocaleString("en-IN")}<br />` : ""}
+                            ${finalCodFee > 0 ? `COD Fee: ₹${finalCodFee.toLocaleString("en-IN")}<br />` : ""}
+                        </div>
+                        <div style="text-align: right; margin-top: 10px; font-weight: bold; font-size: 18px; color: #1a1a1a;">
+                            Total Amount: ₹${finalTotal.toLocaleString("en-IN")}
                         </div>
                     </div>
 
@@ -254,6 +271,8 @@ router.post("/", async (req, res) => {
                 const template = getBrandedTemplate("Your Order is Confirmed ✨", body);
                 await sendEmail(customerEmail.toLowerCase().trim(), `DEZA Luxury - Order Confirmation #${orderNumber}`, template);
                 console.log(`✅ Order confirmation email sent to ${customerEmail}`);
+
+
 
                 // 📱 WHATSAPP NOTIFICATION (Live)
                 try {
@@ -293,6 +312,13 @@ router.patch("/:id/status", auth, adminOnly, async (req, res) => {
         order.statusHistory.push({ status, comment: comment || `Status updated to ${status}` });
 
         await order.save();
+        
+        // ✅ NEW: AUTOMATED REFUND ON PICKUP
+        if (status === "Picked Up") {
+            console.log(`🚛 Order ${order.orderNumber} Picked Up. Triggering Automated Refund...`);
+            processAutomatedRefund(order._id).catch(e => console.error("Pickup refund failed:", e.message));
+        }
+
         await logAdminAction(req.user.id, "Update Order", "Orders", `Updated ${order.orderNumber} to ${status}`, req.ip);
 
 

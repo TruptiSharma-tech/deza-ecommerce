@@ -1023,40 +1023,72 @@ export default function Admin() {
     doc.setFontSize(12);
     doc.text("Billed To:", 130, 55);
     doc.setFontSize(10);
+    const addr = order.shippingAddress || order.address || {};
     doc.text(order.customerName || "Customer", 130, 62);
     doc.text(order.customerEmail || "N/A", 130, 67);
-    doc.text(order.customerContact || "N/A", 130, 72);
+    doc.text(order.customerPhone || "N/A", 130, 72);
+    doc.text(`${addr.street || ""}, ${addr.city || ""}`, 130, 77);
+    doc.text(`${addr.state || ""} - ${addr.pincode || ""}`, 130, 82);
     
     // Items Table Header
     doc.setFillColor(245, 245, 245);
-    doc.rect(10, 85, 190, 8, "F");
+    doc.rect(10, 95, 190, 8, "F");
     doc.setFont("helvetica", "bold");
-    doc.text("Item", 15, 91);
-    doc.text("Size", 100, 91);
-    doc.text("Qty", 130, 91);
-    doc.text("Price", 150, 91);
-    doc.text("Total", 180, 91);
+    doc.text("Item", 15, 101);
+    doc.text("Size", 100, 101);
+    doc.text("Qty", 130, 101);
+    doc.text("Price", 150, 101);
+    doc.text("Total", 180, 101);
     
     // Items Table Body
     doc.setFont("helvetica", "normal");
-    let y = 100;
+    let y = 110;
+    let subtotal = 0;
     (order.items || []).forEach((item) => {
+      const itemTotal = item.price * item.qty;
+      subtotal += itemTotal;
       doc.text(item.name || "Fragrance", 15, y);
       doc.text(item.selectedSize || "N/A", 100, y);
       doc.text(String(item.qty), 130, y);
-      doc.text(`INR ${item.price}`, 150, y);
-      doc.text(`INR ${item.price * item.qty}`, 180, y);
+      doc.text(`INR ${item.price.toLocaleString()}`, 150, y);
+      doc.text(`INR ${itemTotal.toLocaleString()}`, 180, y);
       y += 8;
     });
 
-    // Summary
+    // Summary Section
+    y += 10;
     doc.setDrawColor(212, 175, 55);
     doc.setLineWidth(0.5);
-    doc.line(10, y + 5, 200, y + 5);
+    doc.line(130, y, 200, y);
     
-    doc.setFontSize(14);
+    y += 10;
+    doc.setFontSize(10);
+    doc.text("Subtotal:", 130, y);
+    doc.text(`INR ${subtotal.toLocaleString()}`, 180, y);
+    
+    y += 7;
+    doc.text("Shipping:", 130, y);
+    doc.text(`INR ${(order.shippingFee || 0).toLocaleString()}`, 180, y);
+
+    if (order.handlingFee > 0) {
+      y += 7;
+      doc.text("Handling Fee (2%):", 130, y);
+      doc.text(`INR ${order.handlingFee.toLocaleString()}`, 180, y);
+    }
+
+    if (order.codFee > 0) {
+      y += 7;
+      doc.text("COD Fee:", 130, y);
+      doc.text(`INR ${order.codFee.toLocaleString()}`, 180, y);
+    }
+
+    y += 10;
+    doc.setFillColor(212, 175, 55);
+    doc.rect(130, y - 5, 70, 8, "F");
+    doc.setTextColor(0, 0, 0);
     doc.setFont("helvetica", "bold");
-    doc.text(`Grand Total: INR ${order.totalPrice}`, 130, y + 15);
+    doc.text("GRAND TOTAL:", 132, y);
+    doc.text(`INR ${order.totalAmount.toLocaleString()}`, 180, y);
 
     // Footer
     doc.setFontSize(8);
@@ -1066,6 +1098,7 @@ export default function Admin() {
     
     doc.save(`DEZA_Invoice_${orderId}.pdf`);
   };
+
 
   const handleLogout = () => {
     localStorage.removeItem("currentUser");
@@ -2041,6 +2074,8 @@ export default function Admin() {
                           <option value="Shipped">Shipped</option>
                           <option value="Out for Delivery">Out for Delivery</option>
                           <option value="Delivered">Delivered</option>
+                          <option value="Picked Up">Picked Up (Auto-Refund)</option>
+                          <option value="Returned">Returned</option>
                         </select>
 
                         <div style={{ marginTop: "10px", display: "flex", gap: "5px" }}>

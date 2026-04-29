@@ -4,6 +4,7 @@ import Order from "../models/Order.js";
 import AuditLog from "../models/AuditLog.js";
 import { auth, adminOnly } from "../middleware/auth.js";
 import { sendEmail, getBrandedTemplate } from "../utils/emailHelper.js";
+import { processAutomatedRefund } from "../utils/refundService.js";
 import razorpay from "../utils/razorpay.js";
 
 const router = express.Router();
@@ -149,11 +150,8 @@ router.post("/:id/refund", auth, adminOnly, async (req, res) => {
         const ticket = await SupportTicket.findById(req.params.id);
         if (!ticket) return res.status(404).json({ error: "Ticket not found." });
 
-        // ✅ NEW: RAZORPAY AUTOMATED REFUND INTEGRATION
-        let razorpayRefundId = "N/A";
         if (ticket.orderId) {
             try {
-                // Find order by Number or ID (Case-insensitive)
                 const order = await Order.findOne({ 
                     $or: [
                         { orderNumber: { $regex: new RegExp(`^${ticket.orderId?.trim()}$`, 'i') } }, 
@@ -163,110 +161,30 @@ router.post("/:id/refund", auth, adminOnly, async (req, res) => {
 
                 if (!order) {
                     return res.status(404).json({ 
-                        error: `Order "${ticket.orderId}" not found. Please verify the Order ID is correct in the ticket.` 
+                        error: `Order "${ticket.orderId}" not found.` 
                     });
                 }
 
-                const paymentId = order.paymentDetails?.paymentId;
-
-                if (order.paymentMethod === "Cash On Delivery") {
-                     // For COD, we just proceed with the notification email
-                     console.log("COD Order: Skipping Razorpay, proceeding with notification.");
-                     order.refundStatus = "Completed";
-                     order.statusHistory.push({ status: "Refund Completed", comment: `COD Refund Processed Manually` });
-                     await order.save();
-                     ticket.refundStatus = "Completed";
-                     ticket.razorpayRefundId = "COD_REFUND";
-                } else if (order.paymentMethod === "UPI (Dummy)" || (paymentId && paymentId.startsWith("DUMMY_"))) {
-                     console.log("Dummy Payment Order: Skipping Razorpay, proceeding with notification.");
-                     razorpayRefundId = "DUMMY_REFUND_" + Date.now();
-                     order.refundStatus = "Completed";
-                     order.statusHistory.push({ status: "Refund Completed", comment: `Dummy Refund ID: ${razorpayRefundId}` });
-                     await order.save();
-                     ticket.refundStatus = "Completed";
-                     ticket.razorpayRefundId = razorpayRefundId;
-                } else if (paymentId) {
-                    console.log(`💸 Attempting Razorpay Refund for Payment: ${paymentId}`);
-                    try {
-                        const refund = await razorpay.payments.refund(paymentId, {
-                            amount: Math.round(order.totalAmount * 100), // Full refund in paise
-                            notes: {
-                                ticketId: String(ticket._id),
-                                customerEmail: ticket.email
-                            }
-                        });
-                        razorpayRefundId = refund.id;
-                        console.log(`✅ Razorpay Refund Success: ${refund.id}`);
-                        
-                        // Update Order Status
-                        order.refundStatus = "Completed";
-                        order.statusHistory.push({ status: "Refund Completed", comment: `Razorpay Refund ID: ${refund.id}` });
-                        await order.save();
-                        
-                        // Update Ticket too
-                        ticket.refundStatus = "Completed";
-                        ticket.razorpayRefundId = refund.id;
-                    } catch (rzpErr) {
-                        const rzpMsg = rzpErr.description || rzpErr.message || "Unknown Razorpay Error";
-                        console.error("❌ Razorpay API Refund failed:", rzpMsg);
-                        return res.status(400).json({ 
-                            error: `Razorpay API Error: ${rzpMsg}. Please refund manually in Razorpay Dashboard.` 
-                        });
-                    }
-                } else {
-                    return res.status(400).json({ 
-                        error: "This order is prepaid but missing a Razorpay Payment ID. Please refund manually." 
-                    });
+                const result = await processAutomatedRefund(order._id, `Refund for Ticket DZ-TK-${String(ticket._id).slice(-6).toUpperCase()}`);
+                
+                if (!result.success) {
+                    return res.status(400).json({ error: result.error });
                 }
+
+                ticket.refundStatus = "Completed";
+                ticket.razorpayRefundId = result.refundId || "PROCESSED";
             } catch (err) {
-                console.error("Order lookup error:", err);
-                return res.status(500).json({ error: "Internal error while looking up order." });
+                console.error("Refund processing error:", err);
+                return res.status(500).json({ error: "Failed to process refund." });
             }
         }
 
-        // Only save ticket as Resolved IF we successfully processed the logic above
         ticket.status = "Resolved";
         ticket.resolved = true;
         await ticket.save();
 
-        // Send Professional Refund Email
-        try {
-            const emailBody = `
-                <div style="font-family: 'Times New Roman', serif; line-height: 1.8; color: #1a1a1a;">
-                    <p>Dear ${ticket.name},</p>
-                    
-                    <p>We are writing to inform you that your refund request regarding Case <b>#DZ-TK-${String(ticket._id).slice(-6).toUpperCase()}</b> has been formally approved and initiated by our finance department.</p>
-                    
-                    <div style="background: #f9f7f2; border: 1px solid #d4af37; padding: 20px; border-radius: 10px; margin: 25px 0;">
-                        <h3 style="color: #d4af37; margin-top: 0; text-transform: uppercase; letter-spacing: 2px; font-size: 14px;">Refund Details</h3>
-                        <p style="margin: 5px 0;"><b>Reference ID:</b> DZ-RFND-${Date.now().toString().slice(-6)}</p>
-                        <p style="margin: 5px 0;"><b>Order ID:</b> ${ticket.orderId || "N/A"}</p>
-                        <p style="margin: 5px 0;"><b>Refund Transaction ID:</b> ${razorpayRefundId}</p>
-                        <p style="margin: 5px 0;"><b>Processing Period:</b> Within 24 Business Hours</p>
-                    </div>
-
-                    <p><b>Important Information:</b></p>
-                    <ul>
-                        <li>The pickup of your fragrance will be scheduled within the next 48 hours if not already completed.</li>
-                        <li>Post pickup, the amount will be credited back to your original payment method (Account/Card/UPI) within our promised 24-hour window.</li>
-                        <li>You will receive a final confirmation from your bank once the credit is successful.</li>
-                    </ul>
-
-                    <p>We sincerely apologize for any inconvenience caused and hope to serve you with a perfect signature scent in the future.</p>
-                    
-                    <p style="margin-top: 40px;">Warm regards,</p>
-                    <p><b>Finance Concierge</b><br/>
-                    DEZA Luxury Fragrances</p>
-                </div>
-            `;
-            const template = getBrandedTemplate("Refund Initiated - DEZA Luxury", emailBody);
-            await sendEmail(ticket.email, `[DEZA Luxury] Refund Notification - Case #DZ-TK-${String(ticket._id).slice(-6).toUpperCase()}`, template);
-        } catch (emailErr) {
-            console.error("Failed to send refund email:", emailErr);
-        }
-
-        await logAdminAction(req.user.id, "Initiate Refund", "Finance", `Refund for ticket ${ticket._id} initiated and email sent.`, req.ip);
-        res.json({ message: "Refund initiated and customer notified.", ticket });
+        await logAdminAction(req.user.id, "Initiate Refund", "Finance", `Refund for ticket ${ticket._id} initiated.`, req.ip);
+        res.json({ message: "Refund processed and customer notified.", ticket });
     } catch (err) {
         res.status(500).json({ error: "Failed to process refund." });
     }

@@ -58,7 +58,10 @@ const orderSchema = new mongoose.Schema(
         discountAmount: { type: Number, default: 0 },
         taxAmount: { type: Number, default: 0 },
         shippingFee: { type: Number, default: 0 },
+        handlingFee: { type: Number, default: 0 },
+        codFee: { type: Number, default: 0 },
         currency: { type: String, default: "INR" },
+
         paymentMethod: { type: String, required: true },
         paymentStatus: { 
             type: String, 
@@ -68,7 +71,7 @@ const orderSchema = new mongoose.Schema(
         paymentDetails: mongoose.Schema.Types.Mixed,
         orderStatus: {
             type: String,
-            enum: ["Pending", "Processing", "Packed", "Shipped", "Out for Delivery", "Delivered", "Cancelled", "Returned"],
+            enum: ["Pending", "Processing", "Packed", "Shipped", "Out for Delivery", "Delivered", "Cancelled", "Returned", "Picked Up"],
             default: "Pending",
         },
         statusHistory: [statusHistorySchema],

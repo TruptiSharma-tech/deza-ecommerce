@@ -13,14 +13,20 @@ export default function PaymentGateway() {
   const [loading, setLoading] = useState(false);
   const [showUPIModal, setShowUPIModal] = useState(false);
   const [dummyProcessing, setDummyProcessing] = useState(false);
+  const [selectedMethod, setSelectedMethod] = useState(null); // 'Prepaid' or 'COD'
 
   const checkoutInfo = JSON.parse(localStorage.getItem("checkoutInfo")) || {};
-  const rawTotal = checkoutInfo.total || 0;
-  const total = typeof rawTotal === "string" ? Number(rawTotal.replace(/[^0-9.]/g, "")) : Number(rawTotal);
+  const subtotal = checkoutInfo.subtotal || 0;
+  const shipping = checkoutInfo.shipping || 0;
   const { name, phone, email, address, cart = [] } = checkoutInfo;
   const cleanPhone = (phone || "").replace(/\D/g, "");
 
   const { user: currentUser, clearCart } = useAuth();
+
+  // Dynamic Calculations
+  const handlingFee = selectedMethod === "Prepaid" ? Math.round(0.02 * (subtotal + shipping)) : 0;
+  const codFee = selectedMethod === "COD" ? 50 : 0; // Flat ₹50 COD Fee
+  const finalTotal = subtotal + shipping + handlingFee + codFee;
 
   useEffect(() => {
     if (!cart || cart.length === 0) navigate("/checkout");
@@ -43,22 +49,23 @@ export default function PaymentGateway() {
         customerName: name || currentUser?.name || "Guest",
         customerPhone: "+91" + (cleanPhone || phone || ""),
         customerEmail: email || currentUser?.email || "",
-        address: address || {},
+        shippingAddress: address || {},
         items: cart,
-        totalPrice: total,
+        totalAmount: finalTotal,
+        shippingFee: shipping,
+        handlingFee: handlingFee,
+        codFee: codFee,
         paymentMethod,
         paymentId,
         paymentStatus,
         status: "Pending",
       });
-      // ✅ Save the created order details so OrderSuccess can display them
+
       localStorage.setItem("lastOrder", JSON.stringify(createdOrder));
       
-      // ✅ Use central clearCart method (clears local + remote)
       if (typeof clearCart === "function") {
         await clearCart();
       } else {
-        // Fallback if context not ready
         const userEmail = getUserEmail();
         localStorage.removeItem(cartKey(userEmail));
         localStorage.removeItem("deza_cart");
@@ -73,6 +80,7 @@ export default function PaymentGateway() {
   };
 
   const handleRazorpayPayment = async (selectedType) => {
+    setSelectedMethod("Prepaid");
     try {
       setLoading(true);
       const isLoaded = await loadRazorpayScript();
@@ -81,8 +89,11 @@ export default function PaymentGateway() {
         return;
       }
 
-      // 1. Create Order on Backend
-      const order = await apiCreateRazorpayOrder({ amount: total });
+      // Manually calculate to ensure state sync issues don't affect Razorpay
+      const prepaidHandling = Math.round(0.02 * (subtotal + shipping));
+      const prepaidTotal = subtotal + shipping + prepaidHandling;
+
+      const order = await apiCreateRazorpayOrder({ amount: prepaidTotal });
 
       const options = {
         key: import.meta.env.VITE_RAZORPAY_KEY_ID || "rzp_test_SdJA8ZBmvE42IN",
@@ -90,47 +101,38 @@ export default function PaymentGateway() {
         currency: order.currency,
         name: "DEZA Luxury Store",
         description: `Order #${order.id.slice(-6)} - ${selectedType}`,
-        order_id: order.id, // VITAL: Required for UPI/QR to work!
+        order_id: order.id,
         image: "https://img.icons8.com/color/96/000000/perfume-bottle-2.png",
 
         handler: async function (response) {
           try {
-            // 2. Verify Payment on Backend
             await apiVerifyRazorpayPayment({
               razorpay_order_id: response.razorpay_order_id,
               razorpay_payment_id: response.razorpay_payment_id,
               razorpay_signature: response.razorpay_signature,
             });
 
-            console.log("PAYMENT VERIFIED SUCCESS");
             await saveOrder(selectedType, "Paid", response.razorpay_payment_id);
             setPaymentDone(true);
             toast.success("Payment Successful! 🎉");
             setTimeout(() => navigate("/checkout/success", { replace: true }), 1500);
           } catch (verifyErr) {
-            toast.error("Payment Verification Failed! Safety breach. Contact Support.");
+            toast.error("Payment Verification Failed!");
           }
         },
         prefill: {
           name: name || currentUser?.name || "Customer",
           contact: cleanPhone || "9999999999",
           email: currentUser?.email || "support@deza.com",
-          method: selectedType.toLowerCase() === "upi" ? "upi" : "card"
         },
         theme: { color: "#D4AF37" },
-        modal: {
-          ondismiss: () => setLoading(false)
-        }
+        modal: { ondismiss: () => setLoading(false) }
       };
 
       const rzp = new window.Razorpay(options);
-      rzp.on('payment.failed', function (response) {
-        toast.error("Payment Failed: " + response.error.description);
-      });
       rzp.open();
     } catch (err) {
-      console.error("RAZORPAY ERROR:", err);
-      toast.error("Failed to initiate payment. " + err.message);
+      toast.error("Failed to initiate payment.");
     } finally {
       setLoading(false);
     }
@@ -154,6 +156,7 @@ export default function PaymentGateway() {
   };
 
   const handleCOD = async () => {
+    setSelectedMethod("COD");
     setLoading(true);
     try {
       await saveOrder("Cash On Delivery", "Pending");
@@ -173,10 +176,9 @@ export default function PaymentGateway() {
       <h1 className="payment-title">Select <span>Payment</span></h1>
 
       <div className="payment-options">
-        {/* UPI BUTTON */}
         <button
-          className="payment-btn upi-btn"
-          onClick={() => setShowUPIModal(true)}
+          className={`payment-btn upi-btn ${selectedMethod === 'Prepaid' ? 'active' : ''}`}
+          onClick={() => { setSelectedMethod("Prepaid"); setShowUPIModal(true); }}
           disabled={loading || dummyProcessing}
         >
           <div className="icon-stack">
@@ -192,10 +194,9 @@ export default function PaymentGateway() {
           </div>
         </button>
 
-        {/* CARD BUTTON */}
         <button
-          className="payment-btn card-btn"
-          onClick={() => handleRazorpayPayment("Card")}
+          className={`payment-btn card-btn ${selectedMethod === 'Prepaid' ? 'active' : ''}`}
+          onClick={() => { setSelectedMethod("Prepaid"); handleRazorpayPayment("Card"); }}
           disabled={loading}
         >
           <div className="icon-stack">
@@ -210,9 +211,8 @@ export default function PaymentGateway() {
           </div>
         </button>
 
-        {/* COD BUTTON */}
         <button
-          className="payment-btn cod-btn"
+          className={`payment-btn cod-btn ${selectedMethod === 'COD' ? 'active' : ''}`}
           onClick={handleCOD}
           disabled={loading}
         >
@@ -235,8 +235,30 @@ export default function PaymentGateway() {
             <p><b>Contact:</b> {phone}</p>
           </div>
           <div className="price-info">
-            <p className="total-label">Total Amount</p>
-            <p className="total-amount">₹{total}</p>
+            <div className="fee-row">
+              <span>Subtotal:</span>
+              <span>₹{subtotal.toLocaleString()}</span>
+            </div>
+            <div className="fee-row">
+              <span>Shipping:</span>
+              <span>₹{shipping.toLocaleString()}</span>
+            </div>
+            {handlingFee > 0 && (
+              <div className="fee-row">
+                <span>Handling Fee (2%):</span>
+                <span>₹{handlingFee.toLocaleString()}</span>
+              </div>
+            )}
+            {codFee > 0 && (
+              <div className="fee-row">
+                <span>COD Fee:</span>
+                <span>₹{codFee.toLocaleString()}</span>
+              </div>
+            )}
+            <div className="total-row">
+              <p className="total-label">Total Amount</p>
+              <p className="total-amount">₹{finalTotal.toLocaleString()}</p>
+            </div>
           </div>
         </div>
 
@@ -247,31 +269,27 @@ export default function PaymentGateway() {
               <div className="item-text">
                 <p className="item-name">{item.name}</p>
                 <p className="item-meta">{item.selectedSize} | Qty: {item.qty}</p>
-                <p className="item-price">₹{item.price * item.qty}</p>
+                <p className="item-price">₹{(item.price * item.qty).toLocaleString()}</p>
               </div>
             </div>
           ))}
         </div>
       </div>
 
-      {/* DUMMY UPI MODAL */}
       {showUPIModal && (
         <div className="upi-modal-overlay">
           <div className="upi-modal-content">
-            <button className="close-modal" onClick={() => setShowUPIModal(false)}>×</button>
+            <button className="close-modal" onClick={() => { setShowUPIModal(false); setSelectedMethod(null); }}>×</button>
             <h2>Scan to Pay</h2>
             <p className="upi-id-text">deza@dummyupi</p>
-            
             <div className="qr-container">
               <img 
-                src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=upi://pay?pa=deza@dummyupi&pn=DEZA%20Luxury&am=${total}&cu=INR`} 
+                src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=upi://pay?pa=deza@dummyupi&pn=DEZA%20Luxury&am=${finalTotal}&cu=INR`} 
                 alt="UPI QR Code" 
                 className="qr-code-img"
               />
             </div>
-            
-            <p className="amount-to-pay">Amount: <span>₹{total}</span></p>
-
+            <p className="amount-to-pay">Amount: <span>₹{finalTotal}</span></p>
             <button 
               className="simulate-success-btn" 
               onClick={handleDummyUPIPayment}
@@ -279,7 +297,7 @@ export default function PaymentGateway() {
             >
               {dummyProcessing ? "Processing..." : "Simulate Payment Success"}
             </button>
-            <p className="test-mode-note">This is a dummy payment for testing purposes.</p>
+            <p className="test-mode-note">Prepaid handling fee (2%) included.</p>
           </div>
         </div>
       )}

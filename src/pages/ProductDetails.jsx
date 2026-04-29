@@ -314,36 +314,27 @@ export default function ProductDetails() {
       return;
     }
     setIsChecking(true);
-    setDeliveryMessage("⚡ Checking logistics from Mulund Hub...");
+    setDeliveryMessage("⚡ Calculating logistics from Mumbai Hub...");
+    
     try {
-      const response = await fetch(`https://api.postalpincode.in/pincode/${pincode}`);
-      const data = await response.json();
-      if (data[0].Status === "Success") {
-        const details = data[0].PostOffice[0];
-        const city = details.District;
-        const state = details.State;
-        let days = "5 - 8 Business Days";
-        const pPrefix = pincode.substring(0, 3);
-        const firstDigit = pincode[0];
-        if (pincode === "400080") {
-          days = "Same-day Express Delivery! 🚀";
-        } else if (pPrefix === "400") {
-          days = "1-2 Business Days";
-        } else if (firstDigit === "4") {
-          days = "2-3 Business Days";
-        } else if (["3", "5", "6"].includes(firstDigit)) {
-          days = "4-6 Business Days";
-        }
-        setDeliveryMessage(`📍 ${city}, ${state}: Expected in ${days}`);
+      const { calculateShipping } = await import("../utils/shipping");
+      const res = await calculateShipping(pincode);
+      
+      if (res.success) {
+        setDeliveryMessage(
+          `📍 ${res.city}, ${res.state}\n` +
+          `🚚 Shipping: ₹${res.charge} | Expect in ${res.days}`
+        );
       } else {
-        setDeliveryMessage("❌ Service not available for this pincode.");
+        setDeliveryMessage(`❌ ${res.message || "Service not available."}`);
       }
     } catch (err) {
-      setDeliveryMessage("❌ Error checking pincode.");
+      setDeliveryMessage("❌ Error checking logistics.");
     } finally {
       setIsChecking(false);
     }
   };
+
 
   return (
     <div className="pd-page">

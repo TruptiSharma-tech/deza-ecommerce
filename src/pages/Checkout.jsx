@@ -1,7 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { getCart, getUserEmail, setCart } from "../utils/userStorage";
+import { calculateShipping } from "../utils/shipping";
 import "./Checkout.css";
 
 export default function Checkout() {
@@ -31,11 +32,46 @@ export default function Checkout() {
     },
   );
 
-  // Calculate total
-  const totalAmount = cart.reduce(
+  const [shippingCharges, setShippingCharges] = useState(0);
+  const [isCalculating, setIsCalculating] = useState(false);
+  const [shippingStatus, setShippingStatus] = useState("");
+
+  // Calculate Subtotal
+  const subtotal = cart.reduce(
     (sum, item) => sum + item.price * item.qty,
     0,
   );
+
+  // Auto-calculate shipping when pincode changes
+  useEffect(() => {
+    if (address.pincode.length === 6) {
+      handleShippingCalculation(address.pincode);
+    } else {
+      setShippingCharges(0);
+      setShippingStatus("");
+    }
+  }, [address.pincode]);
+
+  const handleShippingCalculation = async (pin) => {
+    setIsCalculating(true);
+    setShippingStatus("Calculating shipping...");
+    const res = await calculateShipping(pin);
+    if (res.success) {
+      setShippingCharges(res.charge);
+      setAddress(prev => ({
+        ...prev,
+        city: res.city,
+        state: res.state
+      }));
+      setShippingStatus(`🚚 Shipping to ${res.city}: ₹${res.charge}`);
+      toast.success(`Shipping calculated for ${res.city}`);
+    } else {
+      setShippingCharges(0);
+      setShippingStatus(`❌ ${res.message}`);
+      toast.error(res.message);
+    }
+    setIsCalculating(false);
+  };
 
   // Validation
   const validateForm = () => {
@@ -86,7 +122,9 @@ export default function Checkout() {
       email,
       address,
       cart,
-      total: totalAmount,
+      subtotal: subtotal,
+      shipping: shippingCharges,
+      total: subtotal + shippingCharges,
     };
 
     localStorage.setItem("checkoutInfo", JSON.stringify(checkoutData));
@@ -148,24 +186,6 @@ export default function Checkout() {
           <div className="row">
             <input
               type="text"
-              placeholder="City"
-              value={address.city}
-              onChange={(e) => setAddress({ ...address, city: e.target.value })}
-            />
-
-            <input
-              type="text"
-              placeholder="State"
-              value={address.state}
-              onChange={(e) =>
-                setAddress({ ...address, state: e.target.value })
-              }
-            />
-          </div>
-
-          <div className="row">
-            <input
-              type="text"
               placeholder="Pincode"
               maxLength={6}
               value={address.pincode}
@@ -176,16 +196,38 @@ export default function Checkout() {
                 })
               }
             />
+            
+            <input
+              type="text"
+              placeholder="City"
+              value={address.city}
+              readOnly
+              className="readonly-input"
+            />
+          </div>
+
+          <div className="row">
+            <input
+              type="text"
+              placeholder="State"
+              value={address.state}
+              readOnly
+              className="readonly-input"
+            />
 
             <input
               type="text"
               placeholder="Country"
               value={address.country}
-              onChange={(e) =>
-                setAddress({ ...address, country: e.target.value })
-              }
+              readOnly
             />
           </div>
+          
+          {shippingStatus && (
+            <p className={`shipping-status ${shippingStatus.includes("❌") ? "error" : "success"}`}>
+              {shippingStatus}
+            </p>
+          )}
         </div>
 
         {/* RIGHT SIDE */}
@@ -207,20 +249,34 @@ export default function Checkout() {
                     <p className="item-name">{item.name}</p>
                     <p>Size: {item.selectedSize}</p>
                     <p>Qty: {item.qty}</p>
-                    <p className="item-price">₹{item.price * item.qty}</p>
+                    <p className="item-price">₹{(item.price * item.qty).toLocaleString("en-IN")}</p>
                   </div>
                 </div>
               ))}
             </div>
           )}
 
-          <h3 className="checkout-total">Total: ₹{totalAmount}</h3>
+          <div className="summary-details">
+            <div className="summary-row">
+              <span>Subtotal:</span>
+              <span>₹{subtotal.toLocaleString("en-IN")}</span>
+            </div>
+            <div className="summary-row">
+              <span>Shipping:</span>
+              <span>{shippingCharges === 0 ? (isCalculating ? "Calculating..." : "₹0") : `₹${shippingCharges}`}</span>
+            </div>
+            <div className="summary-row total">
+              <span>Total Amount:</span>
+              <span>₹{(subtotal + shippingCharges).toLocaleString("en-IN")}</span>
+            </div>
+          </div>
 
-          <button className="checkout-btn" onClick={handleProceedPayment}>
-            Proceed to Payment →
+          <button className="checkout-btn" onClick={handleProceedPayment} disabled={isCalculating}>
+            {isCalculating ? "Calculating Shipping..." : "Proceed to Payment →"}
           </button>
         </div>
       </div>
     </div>
   );
 }
+
