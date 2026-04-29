@@ -51,9 +51,8 @@ router.post("/register", async (req, res) => {
             return res.status(400).json({ error: "Please enter a valid email address (Only letters, numbers, @ and . are allowed)." });
         }
 
-        const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
-        if (!strongPasswordRegex.test(password)) {
-            return res.status(400).json({ error: "Password must be at least 8 characters long, include an uppercase letter, a lowercase letter, a number, and a special character." });
+        if (!password || password.length < 6) {
+            return res.status(400).json({ error: "Password must be at least 6 characters long." });
         }
 
         // ✅ DOB validation — must be at least 10 years old

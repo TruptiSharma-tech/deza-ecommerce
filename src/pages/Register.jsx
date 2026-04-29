@@ -42,31 +42,24 @@ export default function Register() {
   };
 
   const handleSendOtp = async () => {
-    if (!formData.name || formData.name.trim().length < 3) {
-      toast.error("Full name must be at least 3 characters.");
-      showMsg("❌ Full name must be at least 3 characters.");
+    if (!formData.name || formData.name.trim().length < 2) {
+      alert("Please enter a valid name.");
       return;
     }
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!formData.email || !emailRegex.test(formData.email)) {
-      toast.error("Please enter a valid email address.");
-      showMsg("❌ Please enter a valid email address.");
+    if (!formData.email || !formData.email.includes("@")) {
+      alert("Please enter a valid email address.");
       return;
     }
 
-    const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
-    if (!formData.password || !strongPasswordRegex.test(formData.password)) {
-      toast.error("Password must be 8+ chars with uppercase, lowercase, number & special char.");
-      showMsg("❌ Password must be 8+ characters with uppercase, lowercase, number & special character.");
+    if (!formData.password || formData.password.length < 6) {
+      alert("Password must be at least 6 characters.");
       return;
     }
 
-    // Clean and validate phone
     const cleanNumber = formData.contact.replace(/\D/g, "");
-    if (cleanNumber.length < 10 || cleanNumber.length > 12) {
-      toast.error("Please enter a valid 10-digit mobile number.");
-      showMsg("❌ Please enter a valid 10-digit mobile number (with or without +91).");
+    if (cleanNumber.length < 8) {
+      alert("Please enter a valid phone number.");
       return;
     }
 
@@ -80,11 +73,11 @@ export default function Register() {
     setGeneratedOtp(newOtp);
 
     try {
-      await apiSendEmailOtp({ email: formData.email, otp: newOtp });
+      // Don't await the email send so the modal opens instantly
+      apiSendEmailOtp({ email: formData.email, otp: newOtp }).catch(e => console.error(e));
       toast.success("Verification code sent! ✨");
     } catch (err) {
-      toast.error("SMTP Error: Backend couldn't send email. Check Server Logs.");
-      console.warn("⚠️ Proceeding anyway so you can use the DEBUG OTP from console.");
+      console.warn("SMTP API failed");
     }
 
     // Always show modal so development isn't completely blocked
