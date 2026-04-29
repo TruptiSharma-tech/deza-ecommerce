@@ -72,6 +72,7 @@ export default function Register() {
 
     console.log("Attempting to send Email OTP to:", formData.email);
     const newOtp = Math.floor(100000 + Math.random() * 900000).toString();
+    console.log("🚀 DEBUG OTP:", newOtp); // ADDED FOR DEBUGGING
     setGeneratedOtp(newOtp);
 
     try {
