@@ -123,16 +123,6 @@ export default function Cart() {
               <span>Product Price</span>
               <span>₹{totalPrice}</span>
             </div>
-            <div className="summary-row">
-              <span>Shipping Fee</span>
-              <span>
-                {shippingCharge === 0 ? "FREE" : `₹${shippingCharge}`}
-              </span>
-            </div>
-            <div className="summary-row total-row">
-              <span>Total</span>
-              <span>₹{grandTotal}</span>
-            </div>
             <button className="checkout-btn" onClick={checkout}>
               Proceed to Checkout →
             </button>
