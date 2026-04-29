@@ -2074,7 +2074,7 @@ export default function Admin() {
                           <option value="Shipped">Shipped</option>
                           <option value="Out for Delivery">Out for Delivery</option>
                           <option value="Delivered">Delivered</option>
-                          <option value="Picked Up">Picked Up (Auto-Refund)</option>
+                          <option value="Picked Up">Picked Up</option>
                           <option value="Returned">Returned</option>
                         </select>
 

@@ -313,12 +313,6 @@ router.patch("/:id/status", auth, adminOnly, async (req, res) => {
 
         await order.save();
         
-        // ✅ NEW: AUTOMATED REFUND ON PICKUP
-        if (status === "Picked Up") {
-            console.log(`🚛 Order ${order.orderNumber} Picked Up. Triggering Automated Refund...`);
-            processAutomatedRefund(order._id).catch(e => console.error("Pickup refund failed:", e.message));
-        }
-
         await logAdminAction(req.user.id, "Update Order", "Orders", `Updated ${order.orderNumber} to ${status}`, req.ip);
 
 

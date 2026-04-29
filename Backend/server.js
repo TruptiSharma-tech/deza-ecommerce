@@ -10,7 +10,6 @@ import queryRoutes from "./routes/queries.js";
 import reviewRoutes from "./routes/reviews.js";
 import adminRoutes from "./routes/admin.js";
 import paymentRoutes from "./routes/payments.js";
-import webhookRoutes from "./routes/webhooks.js";
 import compression from "compression";
 
 dotenv.config();
@@ -49,7 +48,6 @@ app.use(["/api/queries", "/queries"], queryRoutes);
 app.use(["/api/reviews", "/reviews"], reviewRoutes);
 app.use(["/api/admin", "/admin"], adminRoutes);
 app.use(["/api/payments", "/payments"], paymentRoutes);
-app.use("/api/webhooks", webhookRoutes);
 
 // ─── Health & Test Routes ──────────────────────────────────────────────────
 app.get("/", (req, res) => res.json({ 
