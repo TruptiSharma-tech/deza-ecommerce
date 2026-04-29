@@ -8,8 +8,8 @@ const transporter = nodemailer.createTransport({
     port: 465,
     secure: true, // Use SSL/TLS
     auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
+        user: (process.env.SMTP_USER || "").trim(),
+        pass: (process.env.SMTP_PASS || "").replace(/\s+/g, ""),
     },
     tls: {
         rejectUnauthorized: false
