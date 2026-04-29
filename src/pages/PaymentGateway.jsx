@@ -24,7 +24,10 @@ export default function PaymentGateway() {
   const { user: currentUser, clearCart } = useAuth();
 
   // Dynamic Calculations
-  const handlingFee = selectedMethod === "Prepaid" ? Math.round(0.02 * (subtotal + shipping)) : 0;
+  const baseHandlingFee = selectedMethod === "Prepaid" ? (subtotal + shipping) * 0.02 : 0;
+  const handlingGst = selectedMethod === "Prepaid" ? baseHandlingFee * 0.18 : 0;
+  const handlingFee = Math.round(baseHandlingFee + handlingGst);
+  
   const codFee = selectedMethod === "COD" ? 50 : 0; // Flat ₹50 COD Fee
   const finalTotal = subtotal + shipping + handlingFee + codFee;
 
@@ -90,7 +93,9 @@ export default function PaymentGateway() {
       }
 
       // Manually calculate to ensure state sync issues don't affect Razorpay
-      const prepaidHandling = Math.round(0.02 * (subtotal + shipping));
+      const baseHandling = (subtotal + shipping) * 0.02;
+      const gstOnHandling = baseHandling * 0.18;
+      const prepaidHandling = Math.round(baseHandling + gstOnHandling);
       const prepaidTotal = subtotal + shipping + prepaidHandling;
 
       const order = await apiCreateRazorpayOrder({ amount: prepaidTotal });
@@ -244,10 +249,16 @@ export default function PaymentGateway() {
               <span>₹{shipping.toLocaleString()}</span>
             </div>
             {handlingFee > 0 && (
-              <div className="fee-row">
-                <span>Handling Fee (2%):</span>
-                <span>₹{handlingFee.toLocaleString()}</span>
-              </div>
+              <>
+                <div className="fee-row">
+                  <span>Handling Fee (2%):</span>
+                  <span>₹{Math.round(baseHandlingFee).toLocaleString()}</span>
+                </div>
+                <div className="fee-row">
+                  <span>GST on Handling (18%):</span>
+                  <span>₹{Math.round(handlingGst).toLocaleString()}</span>
+                </div>
+              </>
             )}
             {codFee > 0 && (
               <div className="fee-row">
