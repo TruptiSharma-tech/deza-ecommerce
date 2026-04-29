@@ -8,12 +8,12 @@ const createTransporter = () => {
     const user = (process.env.SMTP_USER || "").trim();
     const pass = (process.env.SMTP_PASS || "").replace(/\s+/g, "");
 
-    console.log(`📡 [SMTP DEBUG] ATOMIC IPv4 FIX: Forcing lookup for ${user}`);
+    console.log(`📡 [SMTP DEBUG] NUCLEAR MODE: Forcing IPv4 to Port 465 for ${user}`);
 
     return nodemailer.createTransport({
         host: "smtp.gmail.com",
-        port: 587,
-        secure: false, 
+        port: 465,
+        secure: true, 
         // 🔒 ATOMIC FIX: Force DNS to only return IPv4 addresses
         lookup: (hostname, options, callback) => {
             dns.lookup(hostname, { family: 4 }, callback);
@@ -24,7 +24,11 @@ const createTransporter = () => {
         },
         tls: {
             rejectUnauthorized: false
-        }
+        },
+        logger: true, // 📝 Log everything to console
+        debug: true,  // 📝 Show debug info
+        connectionTimeout: 5000,
+        greetingTimeout: 5000
     });
 };
 
