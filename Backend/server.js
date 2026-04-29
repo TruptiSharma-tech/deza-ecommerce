@@ -100,7 +100,11 @@ const autoUpdateOrders = async () => {
 
 // ─── Start Server ────────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 5000;
-const MONGO_URI = process.env.MONGO_URI;
+const MONGO_URI = process.env.MONGODB_URI || process.env.MONGO_URI;
+
+if (!MONGO_URI) {
+    console.error("❌ CRITICAL ERROR: MongoDB URI is missing in Environment Variables!");
+}
 
 mongoose.connect(MONGO_URI)
     .then(() => {
