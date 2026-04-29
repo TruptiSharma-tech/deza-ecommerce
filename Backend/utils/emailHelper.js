@@ -8,13 +8,12 @@ const createTransporter = () => {
     const user = (process.env.SMTP_USER || "").trim();
     const pass = (process.env.SMTP_PASS || "").trim();
 
-    console.log(`📡 [SMTP] PERMANENT MODE: Using Brevo Relay for ${user}`);
+    console.log(`📡 [SMTP] BREVO MODE: Using Alternate Port 2525 for ${user}`);
 
     return nodemailer.createTransport({
         host: "smtp-relay.brevo.com",
-        port: 587,
-        secure: false, // Brevo uses STARTTLS on 587
-        // 🔒 Keep IPv4 force just in case Render has DNS issues
+        port: 2525,
+        secure: false, // Port 2525 also uses STARTTLS
         lookup: (hostname, options, callback) => {
             dns.lookup(hostname, { family: 4 }, callback);
         },
@@ -24,7 +23,8 @@ const createTransporter = () => {
         },
         tls: {
             rejectUnauthorized: false
-        }
+        },
+        connectionTimeout: 10000
     });
 };
 
