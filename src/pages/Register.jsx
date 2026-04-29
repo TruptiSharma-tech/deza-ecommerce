@@ -102,13 +102,16 @@ export default function Register() {
   };
 
   const handleVerifyOtp = (forcedOtp) => {
-    const enteredOtp = forcedOtp || otpArray.join("");
+    // Only use forcedOtp if it's a string (not a React event object)
+    const enteredOtp = (typeof forcedOtp === 'string') ? forcedOtp : otpArray.join("");
+    
     if (!generatedOtp) {
       toast.error("Please request a code first.");
       return;
     }
+
     if (timer === 0) {
-      toast.error("Code has expired. Please resend.");
+      toast.error("⏱️ Code has expired. Please resend a new one.");
       return;
     }
     
@@ -509,7 +512,7 @@ export default function Register() {
                 )}
               </div>
 
-              <button className="auth-btn otp-submit-btn" onClick={handleVerifyOtp}>
+              <button className="auth-btn otp-submit-btn" onClick={() => handleVerifyOtp()}>
                 Verify & Continue
               </button>
 
