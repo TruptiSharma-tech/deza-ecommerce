@@ -1,5 +1,6 @@
 import nodemailer from "nodemailer";
 import dotenv from "dotenv";
+import dns from "dns";
 
 dotenv.config();
 
@@ -7,15 +8,16 @@ const createTransporter = () => {
     const user = (process.env.SMTP_USER || "").trim();
     const pass = (process.env.SMTP_PASS || "").replace(/\s+/g, "");
 
-    console.log(`📡 [SMTP DEBUG] FORCING IPv4 connection for: ${user}`);
+    console.log(`📡 [SMTP DEBUG] ATOMIC IPv4 FIX: Forcing lookup for ${user}`);
 
     return nodemailer.createTransport({
         host: "smtp.gmail.com",
         port: 587,
-        secure: false, // STARTTLS
-        family: 4,     // Force IPv4 at top level
-        connectionTimeout: 10000, // 10 seconds
-        greetingTimeout: 10000,
+        secure: false, 
+        // 🔒 ATOMIC FIX: Force DNS to only return IPv4 addresses
+        lookup: (hostname, options, callback) => {
+            dns.lookup(hostname, { family: 4 }, callback);
+        },
         auth: {
             user: user,
             pass: pass,
