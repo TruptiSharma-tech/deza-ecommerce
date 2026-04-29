@@ -241,24 +241,18 @@ export default function PaymentGateway() {
           </div>
           <div className="price-info">
             <div className="fee-row">
-              <span>Subtotal:</span>
+              <span>Product Price:</span>
               <span>₹{subtotal.toLocaleString()}</span>
             </div>
             <div className="fee-row">
-              <span>Shipping:</span>
+              <span>Shipping Fee:</span>
               <span>₹{shipping.toLocaleString()}</span>
             </div>
             {handlingFee > 0 && (
-              <>
-                <div className="fee-row">
-                  <span>Handling Fee (2%):</span>
-                  <span>₹{Math.round(baseHandlingFee).toLocaleString()}</span>
-                </div>
-                <div className="fee-row">
-                  <span>GST on Handling (18%):</span>
-                  <span>₹{Math.round(handlingGst).toLocaleString()}</span>
-                </div>
-              </>
+              <div className="fee-row">
+                <span>Platform Handling Fee:</span>
+                <span>₹{handlingFee.toLocaleString()}</span>
+              </div>
             )}
             {codFee > 0 && (
               <div className="fee-row">

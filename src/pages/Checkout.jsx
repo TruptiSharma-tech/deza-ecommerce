@@ -258,11 +258,11 @@ export default function Checkout() {
 
           <div className="summary-details">
             <div className="summary-row">
-              <span>Subtotal:</span>
+              <span>Product Price:</span>
               <span>₹{subtotal.toLocaleString("en-IN")}</span>
             </div>
             <div className="summary-row">
-              <span>Shipping:</span>
+              <span>Shipping Fee:</span>
               <span>{shippingCharges === 0 ? (isCalculating ? "Calculating..." : "₹0") : `₹${shippingCharges}`}</span>
             </div>
             <div className="summary-row total">

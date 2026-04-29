@@ -120,11 +120,11 @@ export default function Cart() {
           <div className="cart-summary">
             <h2>Order Summary</h2>
             <div className="summary-row">
-              <span>Subtotal</span>
+              <span>Product Price</span>
               <span>₹{totalPrice}</span>
             </div>
             <div className="summary-row">
-              <span>Shipping</span>
+              <span>Shipping Fee</span>
               <span>
                 {shippingCharge === 0 ? "FREE" : `₹${shippingCharge}`}
               </span>
