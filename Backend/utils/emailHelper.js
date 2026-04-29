@@ -3,27 +3,38 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-const transporter = nodemailer.createTransport({
-    host: "smtp.gmail.com",
-    port: 465,
-    secure: true, // Use SSL/TLS
-    auth: {
-        user: (process.env.SMTP_USER || "").trim(),
-        pass: (process.env.SMTP_PASS || "").replace(/\s+/g, ""),
-    },
-    tls: {
-        rejectUnauthorized: false
-    }
-});
+const createTransporter = () => {
+    const user = (process.env.SMTP_USER || "").trim();
+    const pass = (process.env.SMTP_PASS || "").replace(/\s+/g, "");
+
+    console.log(`📡 Attempting SMTP connection for: ${user}`);
+
+    return nodemailer.createTransport({
+        service: "gmail",
+        auth: {
+            user: user,
+            pass: pass,
+        },
+        tls: {
+            rejectUnauthorized: false
+        }
+    });
+};
+
+let transporter = createTransporter();
 
 // Verify connection on startup
-transporter.verify((error, success) => {
-    if (error) {
-        console.error("❌ SMTP Connection Error:", error.message);
-    } else {
-        console.log("✅ SMTP Server is ready to take our messages");
+const verifyTransporter = async () => {
+    try {
+        await transporter.verify();
+        console.log("✅ SMTP Server is ready (verified)");
+    } catch (error) {
+        console.error("❌ SMTP Verification Failed:", error.message);
+        console.log("💡 Tip: Check if App Password is correct and 2-Step Verification is ON.");
     }
-});
+};
+
+verifyTransporter();
 
 export const sendEmail = async (to, subject, html) => {
     try {
