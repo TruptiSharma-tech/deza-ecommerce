@@ -8,12 +8,12 @@ const createTransporter = () => {
     const user = (process.env.SMTP_USER || "").trim();
     const pass = (process.env.SMTP_PASS || "").replace(/\s+/g, "");
 
-    console.log(`📡 [SMTP DEBUG] NUCLEAR MODE: Forcing IPv4 to Port 465 for ${user}`);
+    console.log(`📡 [SMTP DEBUG] PORT 587 + IPv4 MODE for ${user}`);
 
     return nodemailer.createTransport({
         host: "smtp.gmail.com",
-        port: 465,
-        secure: true, 
+        port: 587,
+        secure: false, // Port 587 must use STARTTLS (secure: false)
         // 🔒 ATOMIC FIX: Force DNS to only return IPv4 addresses
         lookup: (hostname, options, callback) => {
             dns.lookup(hostname, { family: 4 }, callback);
@@ -25,10 +25,9 @@ const createTransporter = () => {
         tls: {
             rejectUnauthorized: false
         },
-        logger: true, // 📝 Log everything to console
-        debug: true,  // 📝 Show debug info
-        connectionTimeout: 5000,
-        greetingTimeout: 5000
+        logger: true, 
+        debug: true,
+        connectionTimeout: 10000
     });
 };
 
