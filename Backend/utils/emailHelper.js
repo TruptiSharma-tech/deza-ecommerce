@@ -8,27 +8,19 @@ const createTransporter = () => {
     const user = (process.env.SMTP_USER || "").trim();
     const pass = (process.env.SMTP_PASS || "").replace(/\s+/g, "");
 
-    console.log(`📡 [SMTP DEBUG] ALTERNATE HOST: Trying smtp.googlemail.com:587 for ${user}`);
+    console.log(`📡 [SMTP DEBUG] REVERTING TO ORIGINAL: Service Gmail for ${user}`);
 
     return nodemailer.createTransport({
-        host: "smtp.googlemail.com",
-        port: 587,
-        secure: false, // STARTTLS
-        lookup: (hostname, options, callback) => {
-            dns.lookup(hostname, { family: 4 }, callback);
-        },
+        service: "gmail",
         auth: {
             user: user,
             pass: pass,
         },
         tls: {
-            rejectUnauthorized: false,
-            minVersion: "TLSv1.2",
-            servername: "smtp.googlemail.com"
+            rejectUnauthorized: false
         },
         logger: true,
-        debug: true,
-        connectionTimeout: 10000
+        debug: true
     });
 };
 
