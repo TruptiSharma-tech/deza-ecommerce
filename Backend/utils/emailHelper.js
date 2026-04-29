@@ -22,7 +22,7 @@ export const sendEmail = async (to, subject, htmlContent) => {
 
     try {
         const response = await axios.post(
-            "https://api.brevo.com/v3/smtp/email",
+            "https://api.sendinblue.com/v3/smtp/email",
             {
                 sender: { name: "DEZA Luxury", email: senderEmail },
                 to: [{ email: to }],
@@ -32,15 +32,17 @@ export const sendEmail = async (to, subject, htmlContent) => {
             {
                 headers: {
                     "api-key": apiKey,
+                    "api_key": apiKey, // Double insurance
                     "Content-Type": "application/json",
+                    "Accept": "application/json",
                 },
             }
         );
 
-        console.log(`✅ [SUCCESS] Email sent! ID: ${response.data.messageId}`);
+        console.log(`✅ [API SUCCESS] Email sent! ID: ${response.data.messageId}`);
         return true;
     } catch (err) {
-        console.error("❌ [FAILED] Brevo API Error:");
+        console.error("❌ [API FAILED] Brevo/Sendinblue Error:");
         const errorMsg = err.response?.data?.message || err.message;
         console.error(`❌ [REASON]: ${errorMsg}`);
         return false;
