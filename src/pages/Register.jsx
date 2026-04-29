@@ -43,18 +43,21 @@ export default function Register() {
 
   const handleSendOtp = async () => {
     if (!formData.name || formData.name.trim().length < 3) {
+      toast.error("Full name must be at least 3 characters.");
       showMsg("❌ Full name must be at least 3 characters.");
       return;
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!formData.email || !emailRegex.test(formData.email)) {
+      toast.error("Please enter a valid email address.");
       showMsg("❌ Please enter a valid email address.");
       return;
     }
 
     const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
     if (!formData.password || !strongPasswordRegex.test(formData.password)) {
+      toast.error("Password must be 8+ chars with uppercase, lowercase, number & special char.");
       showMsg("❌ Password must be 8+ characters with uppercase, lowercase, number & special character.");
       return;
     }
@@ -62,6 +65,7 @@ export default function Register() {
     // Clean and validate phone
     const cleanNumber = formData.contact.replace(/\D/g, "");
     if (cleanNumber.length < 10 || cleanNumber.length > 12) {
+      toast.error("Please enter a valid 10-digit mobile number.");
       showMsg("❌ Please enter a valid 10-digit mobile number (with or without +91).");
       return;
     }
